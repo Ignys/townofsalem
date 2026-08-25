@@ -1,0 +1,58 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import test from "node:test";
+
+const databaseRules = JSON.parse(readFileSync(new URL("../../../database.rules.json", import.meta.url), "utf8"));
+const gameRules = databaseRules.rules.games.$gameId;
+
+test("security rules parse and keep every administrative night branch host-only", () => {
+  for (const branch of ["phaseSessions", "nightSessions", "hostNightActions", "hostNotes", "nightResolutions", "nightResolutionVersions", "events"]) {
+    assert.match(gameRules[branch][".read"], /hostUid/);
+    assert.match(gameRules[branch][".write"], /hostUid/);
+    assert.doesNotMatch(gameRules[branch][".write"], /auth\.uid === \$uid/);
+  }
+});
+
+test("players cannot write legacy automated actions or votes in principal mode", () => {
+  assert.match(gameRules.actions[".write"], /hostUid/);
+  assert.match(gameRules.votes[".write"], /hostUid/);
+  assert.equal(gameRules.actions.$nightNumber.$uid[".write"], undefined);
+  assert.equal(gameRules.votes.$dayNumber.accusations.$uid[".write"], undefined);
+});
+
+test("private roles are readable only by their owner or through the host parent rule", () => {
+  assert.match(gameRules.privatePlayers[".read"], /hostUid/);
+  assert.equal(gameRules.privatePlayers.$uid[".read"], "auth !== null && auth.uid === $uid");
+  assert.equal(gameRules[".read"], undefined);
+});
+
+test("phase validation permits free host selection without transition graph checks", () => {
+  const validation = gameRules.public.phase[".validate"] as string;
+  for (const phase of ["day", "discussion", "trial", "defense", "verdict", "night", "custom"]) assert.match(validation, new RegExp(`'${phase}'`));
+  assert.doesNotMatch(validation, /data\.val\(\) === 'day'/);
+});
+
+test("role rules include the complete physical catalog and copy limits", () => {
+  const compositionValidation =
+    gameRules.settings.roleComposition.$roleId[".validate"] as string;
+  const assignmentValidation =
+    gameRules.privatePlayers.$uid.roleId[".validate"] as string;
+
+  for (const roleId of [
+    "bodyguard",
+    "mayor",
+    "townie",
+    "blackmailer",
+    "janitor",
+    "amnesiac",
+    "werewolf",
+    "witch",
+  ]) {
+    assert.match(compositionValidation, new RegExp(`'${roleId}'`));
+    assert.match(assignmentValidation, new RegExp(`'${roleId}'`));
+  }
+
+  assert.match(compositionValidation, /townie.*<= 8/);
+  assert.match(compositionValidation, /mafioso.*<= 5/);
+  assert.match(compositionValidation, /politician.*<= 2/);
+});
