@@ -4,7 +4,7 @@ import test from "node:test";
 import { checkWinCondition, type WinConditionRule } from "./win-condition";
 import type { EngineGameState } from "./types";
 
-const state: EngineGameState = { gameId: "g", nightId: "n", players: [{ uid: "town", name: "Town", alive: true, roleId: "r", faction: "town", defense: "none", statuses: [] }] };
+const state: EngineGameState = { gameId: "g", nightId: "n", players: [{ uid: "town", name: "Town", alive: true, roleId: "r", faction: "town", canDieAtNight: true, statuses: [] }] };
 
 test("does not invent a winner when no confirmed rule is supplied", () => {
   const result = checkWinCondition(state);

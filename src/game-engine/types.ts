@@ -1,4 +1,4 @@
-import type { AttackLevel, DefenseLevel, EngineEffectType, Faction, RoleDefinition } from "@/types";
+import type { EngineEffectType, Faction } from "@/types";
 
 export interface EnginePlayer {
   uid: string;
@@ -6,7 +6,7 @@ export interface EnginePlayer {
   alive: boolean;
   roleId: string;
   faction: Faction;
-  defense: DefenseLevel;
+  canDieAtNight: boolean;
   statuses: readonly string[];
   investigativeAppearance?: Readonly<Record<string, string>>;
 }
@@ -25,8 +25,6 @@ export interface EngineNightAction {
   targetUids: readonly string[];
   effectType?: EngineEffectType;
   priority?: number;
-  attackLevel?: AttackLevel;
-  protectionLevel?: DefenseLevel;
   investigationType?: string;
   statusType?: string;
   blockedByTargetStatuses?: readonly string[];
@@ -83,15 +81,4 @@ export interface NightResolution {
     sourceActionId: string;
   }[];
   partial: boolean;
-}
-
-export interface AttackDefenseRule {
-  attackLevel: AttackLevel;
-  defenseLevel: DefenseLevel;
-  success: boolean;
-}
-
-export interface EngineRulesContext {
-  roleDefinitions: readonly RoleDefinition[];
-  attackDefenseRules: readonly AttackDefenseRule[];
 }

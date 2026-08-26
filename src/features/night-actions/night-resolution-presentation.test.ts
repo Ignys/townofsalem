@@ -16,8 +16,8 @@ test("derives no-death and causal copy from structured resolution", () => {
     ...base,
     deaths: ["joao"],
     investigationResults: [{ actorUid: "ana", targetUid: "joao", investigationType: "sheriff", result: "SUSPEITO", sourceActionId: "a" }],
-    engineEvents: [{ type: "PLAYER_DIED", targetUid: "joao", reasonCode: "LETHAL_ATTACK_RESOLVED" }],
+    engineEvents: [{ type: "PLAYER_DIED", targetUid: "joao", reasonCode: "NIGHT_KILL_RESOLVED" }],
   }, { ana: "Ana", joao: "João" });
   assert.deepEqual(presentation.summary, ["João morreu.", "Ana investigou João: informe SUSPEITO."]);
-  assert.match(presentation.details[0], /LETHAL_ATTACK_RESOLVED/);
+  assert.match(presentation.details[0], /NIGHT_KILL_RESOLVED/);
 });

@@ -2,7 +2,7 @@ import type { RoleDefinition } from "@/types";
 
 import { nightAction } from "./action-builders";
 import {
-  AMBIGUOUS_NIGHT_IMMUNITY_NOTE,
+  NIGHT_IMMUNITY_RULE,
   investigativeAppearance,
   TOWN_GOAL,
 } from "./role-helpers";
@@ -24,7 +24,6 @@ const vigilanteShot = nightAction({
   maxUses: 1,
   priority: 50,
   engineEffectType: "attack",
-  engineEffectConfig: { attackLevel: "basic" },
 });
 
 export const TOWN_KILLING_ROLES = [
@@ -43,10 +42,9 @@ export const TOWN_KILLING_ROLES = [
     importantInteractions: [
       "Mata qualquer visitante durante Alert, inclusive aliados.",
       "Pode usar Alert na primeira noite e atingir uma Witch visitante.",
-      AMBIGUOUS_NIGHT_IMMUNITY_NOTE,
+      NIGHT_IMMUNITY_RULE,
     ],
-    attack: "powerful",
-    defense: "none",
+    canDieAtNight: true,
     wakesAtNight: true,
     wakeOrder: 20,
     actionDefinitions: [alertAction],
@@ -54,7 +52,7 @@ export const TOWN_KILLING_ROLES = [
     investigativeAppearance: investigativeAppearance("Veteran", "town"),
     verificationStatus: "needs-verification",
     verificationNotes: [
-      "É preciso definir qual membro da Mafia visita no ataque coletivo e a precedência contra imunidade noturna.",
+      "É preciso definir qual membro da Mafia visita no ataque coletivo.",
     ],
   },
   {
@@ -73,8 +71,7 @@ export const TOWN_KILLING_ROLES = [
       "Não pode matar na primeira noite.",
       "Não se suicida automaticamente se atingir uma role da Town.",
     ],
-    attack: "basic",
-    defense: "none",
+    canDieAtNight: true,
     wakesAtNight: true,
     wakeOrder: 50,
     actionDefinitions: [vigilanteShot],

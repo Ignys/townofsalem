@@ -1,184 +1,111 @@
 "use client";
 
 import { useState } from "react";
-import { useSortable } from "@dnd-kit/sortable";
-import { CSS } from "@dnd-kit/utilities";
+import { Bot, ChevronRight, FaceSlightlySmiling, Heart, Skull } from "lucide-react";
 
 import { getRoleById } from "@/data/roles";
-import { HostPlayerAliveControl } from "@/features/game-state/host-player-alive-control";
-import { HostPlayerStatusControl } from "@/features/game-state/host-player-status-control";
-import type {
-  PrivatePlayerRecord,
-  PublicPlayerRecord,
-} from "@/lib/firebase/schema";
+import type { PrivatePlayerRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
 
+import { HostPlayerDetailsDialog } from "./host-player-details-dialog";
 import { kickPlayerFromGame } from "./host-player-actions";
+import { HostPlayerRemovalDialog } from "./host-player-removal-dialog";
+import { FACTION_STYLES } from "../roles/role-selection-options";
 
 interface HostPlayerSidebarRowProps {
-  gameId: string;
-  playerUid: string;
-  player: PublicPlayerRecord;
-  houseNumber: number;
-  assignment?: PrivatePlayerRecord;
-  rolesLoaded: boolean;
-  gameStarted: boolean;
-  statusEditable: boolean;
-  reorderEnabled: boolean;
-  onComposeAction?: (playerUid: string) => void;
+    gameId: string;
+    playerUid: string;
+    player: PublicPlayerRecord;
+    houseNumber: number;
+    assignment?: PrivatePlayerRecord;
+    rolesLoaded: boolean;
+    gameStarted: boolean;
+    statusEditable: boolean;
+    onComposeAction?: (playerUid: string) => void;
 }
 
-export function HostPlayerSidebarRow({
-  gameId,
-  playerUid,
-  player,
-  houseNumber,
-  assignment,
-  rolesLoaded,
-  gameStarted,
-  statusEditable,
-  reorderEnabled,
-  onComposeAction,
-}: HostPlayerSidebarRowProps) {
-  const [confirmingKick, setConfirmingKick] = useState(false);
-  const [kicking, setKicking] = useState(false);
-  const [kickError, setKickError] = useState(false);
-  const {
-    attributes,
-    isDragging,
-    listeners,
-    setActivatorNodeRef,
-    setNodeRef,
-    transform: sortableTransform,
-    transition,
-  } = useSortable({ id: playerUid, disabled: !reorderEnabled });
-  const role = assignment ? getRoleById(assignment.roleId) : undefined;
-  const transform = CSS.Transform.toString(sortableTransform);
+export function HostPlayerSidebarRow({ gameId, playerUid, player, houseNumber, assignment, rolesLoaded, gameStarted, statusEditable, onComposeAction }: HostPlayerSidebarRowProps) {
+    const [detailsOpen, setDetailsOpen] = useState(false);
+    const [confirmingKick, setConfirmingKick] = useState(false);
+    const [kicking, setKicking] = useState(false);
+    const [kickError, setKickError] = useState(false);
+    const role = assignment ? getRoleById(assignment.roleId) : undefined;
+    const roleLabel = assignment ? (role?.name ?? "Role não reconhecida") : rolesLoaded ? "Role não atribuída" : "Carregando role…";
+    const style = role ? FACTION_STYLES[role.faction] : FACTION_STYLES.neutral;
 
-  const handleKick = async () => {
-    setKicking(true);
-    setKickError(false);
+    const requestKick = () => {
+        setDetailsOpen(false);
+        setConfirmingKick(true);
+    };
 
-    try {
-      await kickPlayerFromGame(gameId, playerUid);
-    } catch {
-      setKickError(true);
-      setConfirmingKick(false);
-      setKicking(false);
-    }
-  };
+    const cancelKick = () => {
+        setConfirmingKick(false);
+        setKickError(false);
+        setDetailsOpen(true);
+    };
 
-  return (
-    <li
-      ref={setNodeRef}
-      style={{ transform, transition }}
-      className={`rounded-2xl border bg-black/20 p-3 transition-colors ${
-        isDragging
-          ? "z-10 border-[#d3b88c]/60 shadow-xl"
-          : "border-white/8"
-      } ${player.disconnected ? "opacity-60" : ""}`}
-    >
-      <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3">
-        <button
-          type="button"
-          ref={setActivatorNodeRef}
-          {...attributes}
-          {...listeners}
-          disabled={!reorderEnabled}
-          aria-label={`Mover ${player.name} para outra casa`}
-          className="flex size-10 touch-none items-center justify-center rounded-xl border border-white/10 bg-white/[0.03] text-lg text-[#d3b88c] hover:bg-white/8 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-default disabled:text-[#756f68]"
-        >
-          ⠿
-        </button>
+    const handleKick = async () => {
+        setKicking(true);
+        setKickError(false);
 
-        <div className="min-w-0">
-          <p className="truncate font-semibold text-[#fffaf0]">{player.name}</p>
-          <p className="mt-0.5 text-xs text-[#9f9990]">
-            {player.disconnected ? "Desconectado" : `Casa ${houseNumber}`}
-          </p>
-        </div>
+        try {
+            await kickPlayerFromGame(gameId, playerUid);
+        } catch {
+            setKickError(true);
+            setKicking(false);
+        }
+    };
 
-        {gameStarted ? (
-          <span
-            className={`rounded-full px-2.5 py-1 text-xs font-bold ${
-              player.alive
-                ? "bg-[#6f9b77]/15 text-[#bfe0c5]"
-                : "bg-[#a33843]/15 text-[#f0b9bd]"
-            }`}
-          >
-            {player.alive ? "Vivo" : "Morto"}
-          </span>
-        ) : (
-          <span className="rounded-lg bg-[#d3b88c]/10 px-2.5 py-1 font-mono text-sm font-bold text-[#e6cfa9]">
-            {houseNumber}
-          </span>
-        )}
-      </div>
+    return (
+        <li className={player.disconnected ? "opacity-60" : undefined}>
+            <button
+                type="button"
+                onClick={() => setDetailsOpen(true)}
+                aria-label={`Abrir detalhes de ${player.name}, casa ${houseNumber}`}
+                className="group p-1.5 w-full flex items-center justify-between rounded-2xl border border-white/8 bg-black/20 text-left transition hover:border-[#d3b88c]/35 hover:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c]"
+            >
+                <div className="flex min-w-0 items-center gap-2">
+                    <span className="flex size-6 items-center justify-center rounded-full bg-[#d3b88c]/10 font-mono text-sm font-bold text-[#e6cfa9]">{houseNumber}</span>
 
-      {gameStarted && (
-        <div className="mt-3 border-t border-white/8 pt-3">
-          <p className="text-sm font-semibold text-[#d3b88c]">
-            {assignment
-              ? role?.name ?? "Role não reconhecida"
-              : rolesLoaded
-                ? "Role não atribuída"
-                : "Carregando role…"}
-          </p>
-          <HostPlayerAliveControl
-            gameId={gameId}
-            playerUid={playerUid}
-            playerName={player.name}
-            alive={player.alive}
-            disabled={!statusEditable}
-          />
-          <div className="mt-2 flex justify-end">
-            <HostPlayerStatusControl
-              gameId={gameId}
-              playerUid={playerUid}
-              roleId={role?.id}
-              statuses={assignment?.statuses}
-              disabled={!statusEditable}
+                    <span className="flex items-center gap-1">
+                      {Boolean(player.isBot) ? <Bot size={16} className="text-[#9f9990]" /> : null}
+                        <span className="truncate text-sm font-medium text-[#fffaf0]">{player.name}</span>
+                        <span className={`ml-1 w-fit max-w-full truncate rounded-md border px-2 py-0.5 text-[0.6875rem] font-medium text-[#e6cfa9] ${style.tag} `}>{roleLabel}</span>
+                    </span>
+                </div>
+
+                <span className="flex items-center gap-1">
+                    <span className={`rounded-full text-[0.6875rem] font-bold ${player.alive ? " text-[#bfe0c5]" : "bg-[#a33843]/15 text-[#f0b9bd]"}`}>
+                        {player.alive ? <Heart size={18} /> : <Skull aria-hidden="true" size={18} className="inline-block" />}
+                    </span>
+                    <ChevronRight aria-hidden="true" size={16} className="text-[#756f68] transition group-hover:translate-x-0.5 group-hover:text-[#d3b88c]" />
+                </span>
+            </button>
+
+            <HostPlayerDetailsDialog
+                gameId={gameId}
+                playerUid={playerUid}
+                player={player}
+                houseNumber={houseNumber}
+                assignment={assignment}
+                role={role}
+                roleLabel={roleLabel}
+                gameStarted={gameStarted}
+                statusEditable={statusEditable}
+                open={detailsOpen}
+                onClose={() => setDetailsOpen(false)}
+                onRequestKick={requestKick}
+                onComposeAction={onComposeAction}
             />
-          </div>
-          {onComposeAction && role?.actionDefinitions?.length ? (
-            <button
-              type="button"
-              onClick={() => onComposeAction(playerUid)}
-              className="mt-2 min-h-9 w-full rounded-lg border border-[#d3b88c]/25 px-3 text-xs font-bold text-[#e6cfa9] hover:bg-[#d3b88c]/8"
-            >
-              Registrar ação
-            </button>
-          ) : null}
-        </div>
-      )}
 
-      <div className="mt-3 flex items-center justify-between gap-2 border-t border-white/8 pt-2">
-        <p
-          role={kickError ? "alert" : undefined}
-          className="min-w-0 text-xs text-[#9f9990]"
-        >
-          {kickError ? "Não foi possível expulsar." : confirmingKick ? "Expulsar da sala?" : ""}
-        </p>
-        <div className="flex shrink-0 gap-2">
-          {confirmingKick && (
-            <button
-              type="button"
-              onClick={() => setConfirmingKick(false)}
-              disabled={kicking}
-              className="rounded-lg px-2.5 py-1.5 text-xs font-semibold text-[#bdb7ad] hover:bg-white/8 disabled:opacity-50"
-            >
-              Cancelar
-            </button>
-          )}
-          <button
-            type="button"
-            onClick={() => confirmingKick ? void handleKick() : setConfirmingKick(true)}
-            disabled={kicking}
-            className="rounded-lg px-2.5 py-1.5 text-xs font-bold text-[#f0b9bd] hover:bg-[#a33843]/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-50"
-          >
-            {kicking ? "Expulsando…" : confirmingKick ? "Confirmar" : "Expulsar"}
-          </button>
-        </div>
-      </div>
-    </li>
-  );
+            <HostPlayerRemovalDialog
+                playerName={player.name}
+                isBot={Boolean(player.isBot)}
+                open={confirmingKick}
+                busy={kicking}
+                error={kickError}
+                onCancel={cancelKick}
+                onConfirm={() => void handleKick()}
+            />
+        </li>
+    );
 }

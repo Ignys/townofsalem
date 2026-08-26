@@ -1,16 +1,4 @@
 export const FACTIONS = ["town", "mafia", "neutral"] as const;
-export const ATTACK_LEVELS = [
-  "none",
-  "basic",
-  "powerful",
-  "unstoppable",
-] as const;
-export const DEFENSE_LEVELS = [
-  "none",
-  "basic",
-  "powerful",
-  "invincible",
-] as const;
 export const ROLE_VERIFICATION_STATUSES = [
   "verified",
   "needs-verification",
@@ -18,12 +6,8 @@ export const ROLE_VERIFICATION_STATUSES = [
 export const NEEDS_VERIFICATION = "needs-verification" as const;
 
 export type Faction = (typeof FACTIONS)[number];
-export type AttackLevel = (typeof ATTACK_LEVELS)[number];
-export type DefenseLevel = (typeof DEFENSE_LEVELS)[number];
 export type RoleVerificationStatus =
   (typeof ROLE_VERIFICATION_STATUSES)[number];
-export type RoleAttackLevel = AttackLevel | typeof NEEDS_VERIFICATION;
-export type RoleDefenseLevel = DefenseLevel | typeof NEEDS_VERIFICATION;
 
 export const ENGINE_EFFECT_TYPES = [
   "protect",
@@ -63,8 +47,6 @@ export interface RoleActionDefinition {
   priority?: number;
   engineEffectType?: EngineEffectType;
   engineEffectConfig?: {
-    attackLevel?: AttackLevel;
-    protectionLevel?: DefenseLevel;
     investigationType?: string;
     statusType?: string;
     blockedByTargetStatuses?: readonly string[];
@@ -85,8 +67,8 @@ export interface RoleDefinition {
   /** Number of copies included in the physical card game. */
   cardCount: number;
   importantInteractions: readonly string[];
-  attack: RoleAttackLevel;
-  defense: RoleDefenseLevel;
+  /** Whether this role can be killed by an unprevented night kill. */
+  canDieAtNight: boolean;
   wakesAtNight?: boolean;
   wakeOrder?: number;
   wakeGroupId?: string;

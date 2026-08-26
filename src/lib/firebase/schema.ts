@@ -59,7 +59,7 @@ export type RoomCodeRecord = string | RoomCodeReservation;
 
 export type PublicPlayerRecord = Pick<
   Player,
-  "name" | "alive" | "disconnected" | "experience" | "seat"
+  "name" | "isBot" | "alive" | "disconnected" | "experience" | "seat"
 >;
 
 export type PrivatePlayerRecord = Pick<

@@ -61,13 +61,23 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
     customDurationSeconds <= 86_400;
 
   const handleEndGame = async () => {
-    if (busy || !window.confirm("Encerrar a partida? Logs e histórico continuarão disponíveis.")) return;
+    if (
+      busy ||
+      !window.confirm(
+        "Encerrar a partida? Todos os jogadores voltarão ao lobby para uma nova composição de roles.",
+      )
+    ) {
+      return;
+    }
     setBusy(true);
     setFeedback(null);
     try {
       const { endGame } = await import("./end-game");
       await endGame(gameId);
-      setFeedback({ kind: "success", message: "Partida encerrada pelo mestre." });
+      setFeedback({
+        kind: "success",
+        message: "Partida encerrada. Retornando todos ao lobby.",
+      });
     } catch {
       setFeedback({ kind: "error", message: "Não foi possível encerrar a partida." });
     } finally {

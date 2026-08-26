@@ -2,7 +2,7 @@
 
 Itens abaixo dependem de regra oficial confirmada, validação humana ou infraestrutura externa. Eles não são inferidos pelo Companion para evitar inventar mecânicas.
 
-- Confirmar, para cada edição física adotada, níveis de ataque/defesa/proteção, imunidades, roleblocks e ordem das interações especiais.
+- Confirmar, para cada edição física adotada, quais cartas não podem morrer à noite, roleblocks e a ordem das interações especiais.
 - Completar metadados de despertar conjunto da Máfia e de outras roles somente após validar a condução oficial dessa edição.
 - Cadastrar resultados investigativos e aparências excepcionais com fontes de regra confirmadas.
 - Adicionar condições especiais de vitória de roles neutras por regras injetadas no módulo de vitória.

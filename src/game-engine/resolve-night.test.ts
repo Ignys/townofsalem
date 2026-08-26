@@ -1,23 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { resolveAttackAgainstDefense } from "./attack-defense";
 import { resolveNight } from "./resolve-night";
-import type { AttackDefenseRule, EngineGameState, EngineNightAction, EngineRulesContext } from "./types";
+import type { EngineGameState, EngineNightAction } from "./types";
 
-const rules: AttackDefenseRule[] = [
-  { attackLevel: "basic", defenseLevel: "none", success: true },
-  { attackLevel: "basic", defenseLevel: "basic", success: false },
-  { attackLevel: "powerful", defenseLevel: "basic", success: true },
-  { attackLevel: "powerful", defenseLevel: "powerful", success: false },
-];
-const context: EngineRulesContext = { roleDefinitions: [], attackDefenseRules: rules };
 const game: EngineGameState = {
   gameId: "game", nightId: "night", players: [
-    { uid: "attacker", name: "Atacante", alive: true, roleId: "a", faction: "mafia", defense: "none", statuses: [] },
-    { uid: "protector", name: "Protetor", alive: true, roleId: "p", faction: "town", defense: "none", statuses: [] },
-    { uid: "target", name: "Alvo", alive: true, roleId: "t", faction: "town", defense: "none", statuses: [], investigativeAppearance: { sheriff: "INOCENTE" } },
-    { uid: "blocker", name: "Bloqueador", alive: true, roleId: "b", faction: "town", defense: "none", statuses: [] },
+    { uid: "attacker", name: "Atacante", alive: true, roleId: "a", faction: "mafia", canDieAtNight: true, statuses: [] },
+    { uid: "protector", name: "Protetor", alive: true, roleId: "p", faction: "town", canDieAtNight: true, statuses: [] },
+    { uid: "target", name: "Alvo", alive: true, roleId: "t", faction: "town", canDieAtNight: true, statuses: [], investigativeAppearance: { sheriff: "INOCENTE" } },
+    { uid: "blocker", name: "Bloqueador", alive: true, roleId: "b", faction: "town", canDieAtNight: true, statuses: [] },
+    { uid: "immune", name: "Imune", alive: true, roleId: "i", faction: "neutral", canDieAtNight: false, statuses: [] },
   ],
 };
 
@@ -25,40 +18,54 @@ function action(overrides: Partial<EngineNightAction> & Pick<EngineNightAction, 
   return { roleId: "fixture", actionId: overrides.id, ...overrides };
 }
 
-test("attack and defense are exclusively driven by the configured table", () => {
-  assert.equal(resolveAttackAgainstDefense("basic", "none", rules).success, true);
-  assert.equal(resolveAttackAgainstDefense("basic", "basic", rules).success, false);
-  assert.equal(resolveAttackAgainstDefense("unstoppable", "none", rules).success, null);
+test("an unprotected night kill eliminates a role that can die at night", () => {
+  const result = resolveNight(game, [
+    action({ id: "kill", actorUid: "attacker", targetUids: ["target"], effectType: "attack", priority: 50 }),
+  ]);
+
+  assert.deepEqual(result.deaths, ["target"]);
+  assert.equal(result.partial, false);
 });
 
 test("priority is deterministic and independent from Action Log order", () => {
   const actions = [
-    action({ id: "attack", actorUid: "attacker", targetUids: ["target"], effectType: "attack", priority: 50, attackLevel: "basic" }),
-    action({ id: "protect", actorUid: "protector", targetUids: ["target"], effectType: "protect", priority: 30, protectionLevel: "basic" }),
+    action({ id: "attack", actorUid: "attacker", targetUids: ["target"], effectType: "attack", priority: 50 }),
+    action({ id: "protect", actorUid: "protector", targetUids: ["target"], effectType: "protect", priority: 30 }),
   ];
-  const first = resolveNight(game, actions, context);
-  const second = resolveNight(game, [...actions].reverse(), context);
+  const first = resolveNight(game, actions);
+  const second = resolveNight(game, [...actions].reverse());
   assert.deepEqual(first, second);
   assert.deepEqual(first.deaths, []);
   assert.equal(first.survivors[0].reasonCode, "TARGET_SURVIVED_ATTACK");
+  assert.deepEqual(first.survivors[0].sourceActionIds, ["protect"]);
+});
+
+test("a role marked as unable to die at night survives without protection", () => {
+  const result = resolveNight(game, [
+    action({ id: "kill", actorUid: "attacker", targetUids: ["immune"], effectType: "attack", priority: 50 }),
+  ]);
+
+  assert.deepEqual(result.deaths, []);
+  assert.deepEqual(result.survivors, [{ targetUid: "immune", reasonCode: "TARGET_SURVIVED_ATTACK", sourceActionIds: [] }]);
+  assert.equal(result.engineEvents[0].reasonCode, "TARGET_CANNOT_DIE_AT_NIGHT");
 });
 
 test("roleblock prevents an eligible later effect", () => {
   const result = resolveNight(game, [
-    action({ id: "attack", actorUid: "attacker", targetUids: ["target"], effectType: "attack", priority: 50, attackLevel: "basic" }),
+    action({ id: "attack", actorUid: "attacker", targetUids: ["target"], effectType: "attack", priority: 50 }),
     action({ id: "block", actorUid: "blocker", targetUids: ["attacker"], effectType: "roleblock", priority: 10 }),
-  ], context);
+  ]);
   assert.deepEqual(result.deaths, []);
   assert.deepEqual(result.blockedActions, ["attack"]);
 });
 
 test("supports multiple attacks, investigations and conditional post-death clean", () => {
   const result = resolveNight(game, [
-    action({ id: "weak", actorUid: "attacker", targetUids: ["target"], effectType: "attack", priority: 50, attackLevel: "basic" }),
-    action({ id: "strong", actorUid: "blocker", targetUids: ["target"], effectType: "attack", priority: 50, attackLevel: "powerful" }),
+    action({ id: "first-kill", actorUid: "attacker", targetUids: ["target"], effectType: "attack", priority: 50 }),
+    action({ id: "second-kill", actorUid: "blocker", targetUids: ["target"], effectType: "attack", priority: 50 }),
     action({ id: "investigate", actorUid: "protector", targetUids: ["target"], effectType: "investigate", priority: 40, investigationType: "sheriff" }),
     action({ id: "clean", actorUid: "attacker", targetUids: ["target"], effectType: "clean", priority: 60 }),
-  ], context);
+  ]);
   assert.deepEqual(result.deaths, ["target"]);
   assert.deepEqual(result.cleanedPlayerUids, ["target"]);
   assert.equal(result.investigationResults[0].result, "INOCENTE");
@@ -74,7 +81,7 @@ test("resolves configured persistent status effects", () => {
       priority: 55,
       statusType: "cursed",
     }),
-  ], context);
+  ]);
 
   assert.deepEqual(result.appliedStatuses, [
     { targetUid: "target", statusType: "cursed", sourceActionId: "curse" },
@@ -98,10 +105,9 @@ test("lets action metadata block protection for a target status", () => {
       targetUids: ["target"],
       effectType: "protect",
       priority: 30,
-      protectionLevel: "basic",
       blockedByTargetStatuses: ["mayor-revealed"],
     }),
-  ], context);
+  ]);
 
   assert.deepEqual(result.failedActions, ["heal"]);
   assert.equal(result.engineEvents[0].reasonCode, "TARGET_STATUS_BLOCKS_PROTECTION");

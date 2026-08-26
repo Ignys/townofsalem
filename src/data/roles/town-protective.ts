@@ -2,7 +2,7 @@ import type { RoleDefinition } from "@/types";
 
 import { nightAction } from "./action-builders";
 import {
-  AMBIGUOUS_NIGHT_IMMUNITY_NOTE,
+  NIGHT_IMMUNITY_RULE,
   investigativeAppearance,
   TOWN_GOAL,
 } from "./role-helpers";
@@ -22,7 +22,6 @@ const doctorProtection = nightAction({
   priority: 30,
   engineEffectType: "protect",
   engineEffectConfig: {
-    protectionLevel: "basic",
     blockedByTargetStatuses: ["mayor-revealed"],
   },
 });
@@ -42,17 +41,18 @@ export const TOWN_PROTECTIVE_ROLES = [
     cardCount: 1,
     importantInteractions: [
       "O protegido não morre pelo ataque que dispara a proteção.",
-      AMBIGUOUS_NIGHT_IMMUNITY_NOTE,
+      NIGHT_IMMUNITY_RULE,
     ],
-    attack: "powerful",
-    defense: "none",
+    canDieAtNight: true,
     wakesAtNight: true,
     wakeOrder: 30,
     actionDefinitions: [bodyguardProtection],
     action: bodyguardProtection,
     investigativeAppearance: investigativeAppearance("Bodyguard", "town"),
     verificationStatus: "needs-verification",
-    verificationNotes: [AMBIGUOUS_NIGHT_IMMUNITY_NOTE],
+    verificationNotes: [
+      "As mortes de sacrifício do Bodyguard ainda não são resolvidas automaticamente.",
+    ],
   },
   {
     id: "doctor",
@@ -62,7 +62,7 @@ export const TOWN_PROTECTIVE_ROLES = [
     description:
       "Toda noite, escolha uma pessoa para curar. Se ela for atacada durante a mesma noite, não morrerá por causa desse ataque.",
     beginnerDescription:
-      "Escolha uma pessoa por noite para impedir que um ataque comum a mate.",
+      "Escolha uma pessoa por noite para impedir que uma tentativa de morte noturna a elimine.",
     goal: TOWN_GOAL,
     virtueValue: 4,
     cardCount: 1,
@@ -70,8 +70,7 @@ export const TOWN_PROTECTIVE_ROLES = [
       "Um Mayor já revelado não pode ser curado.",
       "A interação com a morte de sacrifício do Bodyguard depende da regra adotada pelo grupo.",
     ],
-    attack: "none",
-    defense: "none",
+    canDieAtNight: true,
     wakesAtNight: true,
     wakeOrder: 30,
     actionDefinitions: [doctorProtection],

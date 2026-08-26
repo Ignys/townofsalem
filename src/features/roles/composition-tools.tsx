@@ -3,129 +3,175 @@
 import { useState } from "react";
 
 import { ROLE_DEFINITIONS } from "@/data/roles";
-import type { Faction } from "@/types";
 
-import { BalanceSummary } from "./balance-summary";
-import { calculateRoleBalance } from "./balance-score";
 import { generateBalancedRoleComposition } from "./balanced-composition-generator";
+import { getFeasibleFactionCounts } from "./composition-faction-constraints";
 import { ROLE_COMPOSITION_PRESETS } from "./role-presets";
+import { SemiAutomaticCompositionDialog } from "./semi-automatic-composition-dialog";
+import {
+  formatFactionCounts,
+  getSuggestedFactionCounts,
+  MAX_SUPPORTED_PLAYER_COUNT,
+  MIN_SUPPORTED_PLAYER_COUNT,
+} from "./suggested-faction-counts";
 
 interface CompositionToolsProps {
   playerCount: number;
-  roleIds: readonly string[];
   disabled: boolean;
   onApply: (roleIds: readonly string[]) => void;
 }
 
-const FACTION_FIELDS: ReadonlyArray<{ key: Faction; label: string }> = [
-  { key: "town", label: "Town" },
-  { key: "mafia", label: "Mafia" },
-  { key: "neutral", label: "Neutral" },
-];
-
 export function CompositionTools({
   playerCount,
-  roleIds,
   disabled,
   onApply,
 }: CompositionToolsProps) {
-  const [presetId, setPresetId] = useState("");
-  const [counts, setCounts] = useState<Record<Faction, string>>({
-    town: String(playerCount),
-    mafia: "0",
-    neutral: "0",
-  });
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const balance = calculateRoleBalance(roleIds, ROLE_DEFINITIONS);
 
-  const generate = () => {
-    const factionCounts = {
-      town: Number(counts.town),
-      mafia: Number(counts.mafia),
-      neutral: Number(counts.neutral),
-    };
-    const result = generateBalancedRoleComposition(
-      playerCount,
-      factionCounts,
+  const applySuggestedComposition = (
+    requestedPlayerCount: number,
+    requiredRoleIds: readonly string[] = [],
+  ) => {
+    const suggestedFactionCounts = getSuggestedFactionCounts(requestedPlayerCount);
+
+    if (!suggestedFactionCounts) {
+      setFeedback(
+        `Escolha entre ${MIN_SUPPORTED_PLAYER_COUNT} e ${MAX_SUPPORTED_PLAYER_COUNT} jogadores.`,
+      );
+      return;
+    }
+
+    const factionCounts = getFeasibleFactionCounts(
+      requestedPlayerCount,
+      suggestedFactionCounts,
+      requiredRoleIds,
       ROLE_DEFINITIONS,
     );
 
+    if (!factionCounts) {
+      setFeedback(
+        "Não foi possível acomodar as roles obrigatórias com o baralho disponível.",
+      );
+      return;
+    }
+
+    const result = generateBalancedRoleComposition(
+      requestedPlayerCount,
+      factionCounts,
+      ROLE_DEFINITIONS,
+      requiredRoleIds,
+    );
+
     if (!result.ok) {
-      const detail = result.faction ? ` para ${result.faction}` : "";
-      setFeedback(`Não foi possível gerar${detail}: ${result.code}.`);
+      setFeedback(
+        "Não foi possível gerar uma composição com o baralho disponível.",
+      );
       return;
     }
 
     onApply(result.roleIds);
     setFeedback(
-      `Melhor composição encontrada: Virtue Value ${result.virtueTotal > 0 ? "+" : ""}${result.virtueTotal}.`,
+      `${requestedPlayerCount} jogadores (${formatFactionCounts(factionCounts)}) aplicada · Virtue ${result.virtueTotal > 0 ? "+" : ""}${result.virtueTotal}.`,
     );
   };
 
   return (
-    <section className="mt-6 rounded-2xl border border-white/10 bg-black/15 p-4">
-      <h3 className="font-semibold">Preparação assistida</h3>
-      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-        <select
-          aria-label="Preset de composição"
-          value={presetId}
-          disabled={disabled}
-          onChange={(event) => setPresetId(event.target.value)}
-          className="min-h-11 min-w-0 flex-1 rounded-xl border border-white/15 bg-[#161719] px-3"
-        >
-          <option value="">Composição manual</option>
-          {ROLE_COMPOSITION_PRESETS.map((preset) => (
-            <option key={preset.id} value={preset.id}>
-              {preset.label}
-            </option>
-          ))}
-        </select>
+    <section className="rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
+      <header>
+        <p className="text-xs font-semibold tracking-[0.18em] text-[#d3b88c] uppercase">
+          PRESETS DE ROLES
+        </p>
+      </header>
+
+      <div className="mt-5 grid gap-2">
         <button
           type="button"
-          disabled={disabled || !presetId}
-          onClick={() => {
-            const preset = ROLE_COMPOSITION_PRESETS.find(
-              ({ id }) => id === presetId,
-            );
-            if (preset) onApply(preset.roleIds);
-          }}
-          className="min-h-11 rounded-xl border border-white/15 px-3 font-bold disabled:opacity-50"
+          disabled={
+            disabled ||
+            playerCount < MIN_SUPPORTED_PLAYER_COUNT ||
+            playerCount > MAX_SUPPORTED_PLAYER_COUNT
+          }
+          onClick={() => applySuggestedComposition(playerCount)}
+          className="rounded-xl border border-[#d3b88c]/35 bg-[#d3b88c]/8 px-3 py-2 text-left transition hover:border-[#d3b88c]/60 hover:bg-[#d3b88c]/12 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Aplicar preset
+          <span className="block font-medium text-sm text-[#f4dfbd]">
+            Predefinição automática
+          </span>
+          <span className=" block text-xs leading-5 text-[#aaa49b]">
+            Baseado nos jogadores conectados.
+          </span>
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setDialogOpen(true)}
+          className="rounded-xl border border-white/15 px-3 py-2 text-left transition hover:border-white/30 hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <span className="block font-medium text-sm text-[#f8f1e5]">
+            Predefinição semiautomática
+          </span>
+          <span className=" block text-xs leading-5 text-[#9f9990]">
+            Escolha suas preferências
+          </span>
         </button>
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        {FACTION_FIELDS.map(({ key, label }) => (
-          <label key={key} className="grid gap-1 text-xs font-semibold">
-            {label}
-            <input
-              type="number"
-              min={0}
-              value={counts[key]}
-              disabled={disabled}
-              onChange={(event) =>
-                setCounts((current) => ({
-                  ...current,
-                  [key]: event.target.value,
-                }))
-              }
-              className="min-h-10 rounded-lg border border-white/15 bg-[#161719] px-2"
-            />
-          </label>
+
+      <div className="my-5 flex items-center gap-3" aria-hidden="true">
+        <span className="text-[10px] font-bold tracking-[0.18em] text-[#77726b] uppercase">
+          Composições prontas
+        </span>
+        <span className="h-px flex-1 bg-white/10" />
+      </div>
+
+      <div className="grid gap-2">
+        {ROLE_COMPOSITION_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            disabled={disabled}
+            onClick={() => {
+              onApply(preset.roleIds);
+              setFeedback(`${preset.label} aplicada · Virtue 0.`);
+            }}
+            className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-[#161719] px-3 py-2 text-left transition hover:border-[#d3b88c]/40 hover:bg-[#201e1c] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <span>
+              <span className="block font-medium text-sm text-[#fffaf0]">
+                {preset.label}
+              </span>
+            </span>
+            <span className="shrink-0 rounded-lg bg-[#6f9b77]/12 px-2 py-1 text-xs font-bold text-[#bfe0c5]">
+              Virtue 0
+            </span>
+          </button>
         ))}
       </div>
-      <button
-        type="button"
-        disabled={disabled}
-        onClick={generate}
-        className="mt-3 min-h-10 w-full rounded-xl border border-[#d3b88c]/30 px-3 text-sm font-bold text-[#e6cfa9] disabled:opacity-50"
+
+      <p
+        role="status"
+        aria-live="polite"
+        className="mt-4 min-h-5 text-xs leading-5 text-[#bdb7ad]"
       >
-        Gerar composição mais balanceada
-      </button>
-      <p role="status" className="mt-2 min-h-5 text-xs text-[#bdb7ad]">
         {feedback}
       </p>
-      <BalanceSummary balance={balance} />
+
+      {dialogOpen && (
+        <SemiAutomaticCompositionDialog
+          initialPlayerCount={
+            playerCount >= MIN_SUPPORTED_PLAYER_COUNT &&
+            playerCount <= MAX_SUPPORTED_PLAYER_COUNT
+              ? playerCount
+              : 10
+          }
+          roles={ROLE_DEFINITIONS}
+          onCancel={() => setDialogOpen(false)}
+          onConfirm={(requestedPlayerCount, requiredRoleIds) => {
+            applySuggestedComposition(requestedPlayerCount, requiredRoleIds);
+            setDialogOpen(false);
+          }}
+        />
+      )}
     </section>
   );
 }

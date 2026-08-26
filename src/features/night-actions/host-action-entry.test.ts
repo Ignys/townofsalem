@@ -20,8 +20,7 @@ const role: RoleDefinition = {
   virtueValue: 7,
   cardCount: 1,
   importantInteractions: [],
-  attack: "none",
-  defense: "none",
+  canDieAtNight: true,
   verificationStatus: "verified",
   actionDefinitions: [{
     id: "investigate", label: "Investigar", verb: "investiga", type: "investigate",

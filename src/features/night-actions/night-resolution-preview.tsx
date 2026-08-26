@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { ROLE_DEFINITIONS } from "@/data/roles";
 import { adaptHostActions, createEngineGameState } from "@/game-engine/host-action-adapter";
 import { resolveNight } from "@/game-engine/resolve-night";
-import { CARD_GAME_ATTACK_DEFENSE_RULES } from "@/game-engine/card-game-rules";
 import type { NightResolution } from "@/game-engine/types";
 import type { HostNightActionEntry, NightSession, Player } from "@/types";
 
@@ -58,10 +57,7 @@ export function NightResolutionPreview({ gameId, nightId, nightNumber, session, 
     }
     const adapted = adaptHostActions(confirmedEntries, ROLE_DEFINITIONS);
     const engineState = createEngineGameState({ gameId, nightId, players, assignments, roleDefinitions: ROLE_DEFINITIONS });
-    const resolution = resolveNight(engineState, adapted.actions, {
-      roleDefinitions: ROLE_DEFINITIONS,
-      attackDefenseRules: CARD_GAME_ATTACK_DEFENSE_RULES,
-    });
+    const resolution = resolveNight(engineState, adapted.actions);
     setPreview({
       id: crypto.randomUUID(),
       actionsRevision: session.actionsRevision ?? 0,

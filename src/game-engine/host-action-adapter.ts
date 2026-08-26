@@ -25,7 +25,7 @@ export function createEngineGameState(input: HostActionAdapterInput): EngineGame
         alive: player.alive,
         roleId: role.id,
         faction: role.faction,
-        defense: role.defense === "needs-verification" ? "none" : role.defense,
+        canDieAtNight: role.canDieAtNight,
         statuses: (player.statuses ?? []).map(({ type }) => type),
         investigativeAppearance: role.investigativeAppearance,
       }];
@@ -60,8 +60,6 @@ export function adaptHostActions(
       targetUids: [...entry.targetUids],
       effectType: definition?.engineEffectType,
       priority: definition?.priority,
-      attackLevel: definition?.engineEffectConfig?.attackLevel,
-      protectionLevel: definition?.engineEffectConfig?.protectionLevel,
       investigationType: definition?.engineEffectConfig?.investigationType,
       statusType: definition?.engineEffectConfig?.statusType,
       blockedByTargetStatuses:
@@ -98,7 +96,6 @@ export function adaptHostActions(
         targetUids: [targetUid],
         effectType: "attack",
         priority: 50,
-        attackLevel: "basic",
       });
     }
   }

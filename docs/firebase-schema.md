@@ -38,6 +38,7 @@ games/
     players/
       {uid}/
         name
+        isBot
         alive
         disconnected
         experience
@@ -145,6 +146,7 @@ The intended future access model is:
 ## Design decisions
 
 - Player, action, and vote records use the authenticated Firebase UID as their key. This avoids duplicating identity fields and supports direct comparisons between path wildcards and `auth.uid` in Security Rules.
+- Host-created simulated players use generated `bot-{uuid}` keys and `isBot: true`. They share the normal roster, seat ordering, role assignment, status, action, and removal flows, but have no authenticated player session.
 - `hostUid` remains outside `public`. Rules can consult it without exposing it through the public game-state read.
 - The host is not inserted into `players` when a game is created. The host is a separate moderator identity, and creation does not yet collect the name and experience required for a valid public player record. A future explicit player-join flow may add the same UID to `players` if the host also wants to play.
 - A public code is first reserved with the transient `{ gameId, reservedByUid }` shape in a transaction. The following multipath update replaces it with the stable `gameId` string while creating the game. This prevents two clients from claiming the same code and permits only the reserving UID to finalize or release it.

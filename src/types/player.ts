@@ -15,6 +15,7 @@ export interface Player {
   id: string;
   uid: string;
   name: string;
+  isBot?: boolean;
   seat?: number;
   alive: boolean;
   disconnected: boolean;

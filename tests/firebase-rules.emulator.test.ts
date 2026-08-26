@@ -7,6 +7,41 @@ import { get, ref, set, update } from "firebase/database";
 
 let environment: RulesTestEnvironment;
 const projectId = "demo-townofsalem";
+const resetGameFixture = {
+  hostUid: "host",
+  public: {
+    code: "RESET1",
+    status: "in-progress",
+    phase: "night",
+    day: 2,
+    currentNightId: "night-current",
+  },
+  settings: {
+    roleComposition: { doctor: 1, mafioso: 1 },
+    rolesAssignedAt: 1,
+  },
+  players: {
+    player: {
+      name: "Player",
+      alive: false,
+      disconnected: false,
+      experience: "beginner",
+      seat: 1,
+    },
+    other: {
+      name: "Other",
+      alive: true,
+      disconnected: true,
+      experience: "experienced",
+      seat: 2,
+    },
+  },
+  privatePlayers: {
+    player: { roleId: "doctor", faction: "town" },
+    other: { roleId: "mafioso", faction: "mafia" },
+  },
+  votes: { 2: { accusations: { player: "other" } } },
+};
 
 before(async () => {
   environment = await initializeTestEnvironment({
@@ -36,6 +71,7 @@ before(async () => {
       public: { code: "QWERTY", status: "lobby", phase: "lobby", day: 0 },
       settings: { maxPlayers: 15 },
     });
+    await set(ref(context.database(), "games/resetGame"), resetGameFixture);
   });
 });
 
@@ -68,6 +104,70 @@ test("host can operate protected branches while Event History stays append-only"
   assert.equal(snapshot.child("player/roleId").val(), "doctor");
 });
 
+test("host can end a game without declaring winners", async () => {
+  const host = environment.authenticatedContext("host").database();
+
+  await assertSucceeds(update(ref(host), {
+    "games/game/public/status": "finished",
+    "games/game/public/phase": "game-over",
+    "games/game/public/phaseLabel": "Fim de jogo",
+    "games/game/public/phaseEndsAt": null,
+    "games/game/public/timerPaused": false,
+    "games/game/public/timerRemainingMs": 0,
+    "games/game/public/winningFactions": [],
+    "games/game/public/winningPlayerUids": [],
+    "games/game/public/gameEndedAt": 1,
+    "games/game/events/game-ended": {
+      type: "GAME_ENDED",
+      timestamp: 1,
+      actorUid: "host",
+      visibility: "public",
+      payload: {
+        endedByHost: true,
+        winningFactions: [],
+        winningPlayerUids: [],
+      },
+    },
+  }));
+});
+
+test("host can return an active game to the lobby without removing players", async () => {
+  const host = environment.authenticatedContext("host").database();
+
+  await assertSucceeds(update(ref(host), {
+    "games/resetGame/public/status": "lobby",
+    "games/resetGame/public/phase": "lobby",
+    "games/resetGame/public/day": 0,
+    "games/resetGame/public/currentNightId": null,
+    "games/resetGame/settings/rolesAssignedAt": null,
+    "games/resetGame/privatePlayers": null,
+    "games/resetGame/votes": null,
+    "games/resetGame/players/player/alive": true,
+    "games/resetGame/players/other/alive": true,
+    "games/resetGame/events/game-ended": {
+      type: "GAME_ENDED",
+      timestamp: 2,
+      actorUid: "host",
+      visibility: "public",
+      payload: { endedByHost: true, returnedToLobby: true },
+    },
+  }));
+
+  const [publicGame, settings, privatePlayers, players] = await Promise.all([
+    assertSucceeds(get(ref(host, "games/resetGame/public"))),
+    assertSucceeds(get(ref(host, "games/resetGame/settings"))),
+    assertSucceeds(get(ref(host, "games/resetGame/privatePlayers"))),
+    assertSucceeds(get(ref(host, "games/resetGame/players"))),
+  ]);
+  assert.equal(publicGame.child("status").val(), "lobby");
+  assert.equal(publicGame.child("phase").val(), "lobby");
+  assert.equal(settings.child("rolesAssignedAt").exists(), false);
+  assert.equal(privatePlayers.exists(), false);
+  assert.equal(players.child("player/alive").val(), true);
+  assert.equal(players.child("other/alive").val(), true);
+  assert.equal(players.size, 2);
+});
+
 test("host can save every new role and valid physical copy counts", async () => {
   const host = environment.authenticatedContext("host").database();
   await assertSucceeds(update(ref(host), {
@@ -81,6 +181,36 @@ test("host can save every new role and valid physical copy counts", async () => 
     roleId: "werewolf",
     faction: "neutral",
   }));
+});
+
+test("only the host can add a simulated player with a bot key", async () => {
+  const host = environment.authenticatedContext("host").database();
+  const player = environment.authenticatedContext("intruder").database();
+  const bot = {
+    name: "Bot 1",
+    isBot: true,
+    alive: true,
+    disconnected: false,
+    experience: "experienced",
+    seat: 1,
+  };
+
+  await assertSucceeds(
+    set(ref(host, "games/lobbyGame/players/bot-test"), bot),
+  );
+  await assertSucceeds(
+    update(ref(host, "games/lobbyGame/players/bot-test"), {
+      name: "Jogador reserva",
+    }),
+  );
+  await assertFails(
+    set(ref(player, "games/lobbyGame/players/intruder"), bot),
+  );
+  await assertFails(
+    update(ref(player, "games/lobbyGame/players/bot-test"), {
+      name: "Nome adulterado",
+    }),
+  );
 });
 
 test("role composition rejects unknown roles and counts above the deck limit", async () => {

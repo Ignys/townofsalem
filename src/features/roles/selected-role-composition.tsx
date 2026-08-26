@@ -1,54 +1,83 @@
+"use client";
+
+import { useMemo } from "react";
+import { X } from "lucide-react";
+
 import { getRoleById } from "@/data/roles";
 
+import { FACTION_LABELS } from "./role-presentation";
+import { orderSelectedRoles, type RoleCompositionOrder } from "./role-composition-order";
+import { FACTION_STYLES } from "./role-selection-options";
+
 interface SelectedRoleCompositionProps {
-  roleIds: readonly string[];
-  disabled: boolean;
-  onRemove: (index: number) => void;
+    roleIds: readonly string[];
+    order: RoleCompositionOrder;
+    disabled: boolean;
+    onRemove: (index: number) => void;
 }
 
-export function SelectedRoleComposition({
-  roleIds,
-  disabled,
-  onRemove,
-}: SelectedRoleCompositionProps) {
-  if (roleIds.length === 0) {
+export function SelectedRoleComposition({ roleIds, order, disabled, onRemove }: SelectedRoleCompositionProps) {
+    const orderedRoles = useMemo(() => orderSelectedRoles(roleIds, order), [order, roleIds]);
+    const virtueStyle = (virtueValue: number) => {
+      if (virtueValue > 0) {
+        return "text-emerald-950 bg-emerald-400/80 border border-transparent";
+      } else if (virtueValue < 0) {
+        return "text-red-950 bg-red-400/80 border border-transparent";
+      } else {
+        return "text-slate-950 bg-[#ffffff]/80 border border-transparent";
+      }
+    }
+
+
     return (
-      <p className="rounded-xl border border-dashed border-white/10 px-4 py-5 text-center text-sm text-[#9f9990]">
-        Nenhuma role selecionada.
-      </p>
-    );
-  }
+        <div>
+            {orderedRoles.length === 0 ? (
+                <p className="rounded-xl border border-dashed border-white/10 px-4 py-5 text-center text-sm text-[#9f9990]">Nenhuma role selecionada.</p>
+            ) : (
+                <ol className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2">
+                    {orderedRoles.map(({ roleId, originalIndex }) => {
+                        const role = getRoleById(roleId);
+                        const style = role ? FACTION_STYLES[role.faction] : FACTION_STYLES.neutral;
+                        const roleName = role?.name ?? roleId;
 
-  return (
-    <ol className="grid gap-2">
-      {roleIds.map((roleId, index) => {
-        const role = getRoleById(roleId);
+                        return (
+                            <li key={`${roleId}-${originalIndex}`} className={`flex min-h-20 flex-col justify-between rounded-xl border p-3 transition ${style.card}`}>
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-center h-full gap-1">
+                                        {role ? (
+                                            <span
+                                                aria-label={`Virtue Value ${role.virtueValue}`}
+                                                title="Virtue Value"
+                                                className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase text-xs ${virtueStyle(role.virtueValue)}`}
+                                            >
+                                                {role.virtueValue > 0 ? "+" : ""}
+                                                {role.virtueValue}
+                                            </span>
+                                        ) : null}
+                                        <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${style.tag}`}>
+                                            {role ? FACTION_LABELS[role.faction] : "Desconhecida"}
+                                        </span>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => onRemove(originalIndex)}
+                                        disabled={disabled}
+                                        aria-label={`Remover ${roleName}`}
+                                        title={`Remover ${roleName}`}
+                                        className="grid size-full w-6 shrink-0 place-items-center rounded-lg text-[#bdb7ad] transition hover:bg-red-500/15 hover:text-red-300 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-50"
+                                    >
+                                        <X aria-hidden="true" size={14} strokeWidth={1.8} />
+                                    </button>
+                                </div>
 
-        return (
-          <li
-            key={`${roleId}-${index}`}
-            className="flex min-h-11 items-center gap-3 rounded-xl border border-white/8 bg-black/15 px-4 py-2"
-          >
-            <span className="min-w-0 flex-1 truncate font-medium text-[#f8f1e5]">
-              {role?.name ?? roleId}
-            </span>
-            {role && (
-              <span className="text-xs font-semibold text-[#9f9990]">
-                {role.virtueValue > 0 ? "+" : ""}{role.virtueValue}
-              </span>
+                                <div className="flex items-end justify-between gap-2">
+                                    <span className="min-w-0 truncate font-semibold text-[#f8f1e5]">{roleName}</span>
+                                </div>
+                            </li>
+                        );
+                    })}
+                </ol>
             )}
-            <button
-              type="button"
-              onClick={() => onRemove(index)}
-              disabled={disabled}
-              aria-label={`Remover ${role?.name ?? roleId}`}
-              className="rounded-lg px-2 py-1 text-sm font-semibold text-[#e6cfa9] hover:bg-white/8 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              Remover
-            </button>
-          </li>
-        );
-      })}
-    </ol>
-  );
+        </div>
+    );
 }

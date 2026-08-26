@@ -35,3 +35,37 @@ test("rejects mismatched totals and unavailable physical copies", () => {
     { ok: false, code: "INSUFFICIENT_CARDS", faction: "neutral" },
   );
 });
+
+test("includes every required role and balances the remaining slots", () => {
+  const requiredRoleIds = [
+    "investigator",
+    "witch",
+    "serial-killer",
+    "godfather",
+  ];
+  const result = generateBalancedRoleComposition(
+    15,
+    { town: 9, mafia: 4, neutral: 2 },
+    ROLE_DEFINITIONS,
+    requiredRoleIds,
+  );
+
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.roleIds.length, 15);
+  for (const roleId of requiredRoleIds) {
+    assert.ok(result.roleIds.includes(roleId));
+  }
+});
+
+test("rejects required copies that do not exist in the physical deck", () => {
+  assert.deepEqual(
+    generateBalancedRoleComposition(
+      4,
+      { town: 2, mafia: 1, neutral: 1 },
+      ROLE_DEFINITIONS,
+      ["investigator", "investigator"],
+    ),
+    { ok: false, code: "INSUFFICIENT_CARDS", faction: "town" },
+  );
+});

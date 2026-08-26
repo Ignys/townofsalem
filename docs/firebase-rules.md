@@ -11,6 +11,7 @@ The first ruleset is deny-by-default and follows the data boundaries documented 
 - Any authenticated client can read the narrow `public` branch needed to validate a room-code lookup. Settings, the roster, and the complete `games/{gameId}` node remain restricted to members and the host.
 - A player can create their own public record during the lobby with `alive: true`. They can update their name and experience only while the game remains in the lobby, and can update their own `disconnected` state later. Only the host can change `alive` or `seat` after creation.
 - New player records require both public status and phase to be `lobby`; nickname and experience are validated at the data boundary, and clients cannot write roles through the public player path.
+- Only the host can create the optional `isBot: true` marker, and it is accepted only for generated `bot-*` roster keys.
 - A player can read their own exact public record even after it is removed. This narrow permission lets the reconnection listener receive a missing record without opening the complete roster.
 - Private player records are readable only by their owner or the host. Only the host can write them.
 - A night action is readable by its author and the host and writable only by its author.

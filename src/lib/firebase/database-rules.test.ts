@@ -22,14 +22,32 @@ test("players cannot write legacy automated actions or votes in principal mode",
 
 test("private roles are readable only by their owner or through the host parent rule", () => {
   assert.match(gameRules.privatePlayers[".read"], /hostUid/);
+  assert.match(gameRules.privatePlayers[".write"], /hostUid/);
   assert.equal(gameRules.privatePlayers.$uid[".read"], "auth !== null && auth.uid === $uid");
   assert.equal(gameRules[".read"], undefined);
 });
 
+test("simulated player markers are restricted to host-created bot keys", () => {
+  const botValidation = gameRules.players.$uid.isBot[".validate"] as string;
+
+  assert.match(botValidation, /hostUid/);
+  assert.match(botValidation, /\^bot-/);
+  assert.match(botValidation, /newData\.val\(\) === true/);
+});
+
 test("phase validation permits free host selection without transition graph checks", () => {
   const validation = gameRules.public.phase[".validate"] as string;
-  for (const phase of ["day", "discussion", "trial", "defense", "verdict", "night", "custom"]) assert.match(validation, new RegExp(`'${phase}'`));
+  for (const phase of ["lobby", "day", "discussion", "trial", "defense", "verdict", "night", "custom"]) assert.match(validation, new RegExp(`'${phase}'`));
   assert.doesNotMatch(validation, /data\.val\(\) === 'day'/);
+});
+
+test("host can atomically return a game to an editable lobby", () => {
+  const statusValidation = gameRules.public.status[".validate"] as string;
+  const assignmentWrite = gameRules.settings.rolesAssignedAt[".write"] as string;
+
+  assert.match(statusValidation, /in-progress.*lobby/);
+  assert.match(assignmentWrite, /hostUid/);
+  assert.match(assignmentWrite, /!newData\.exists\(\)/);
 });
 
 test("role rules include the complete physical catalog and copy limits", () => {

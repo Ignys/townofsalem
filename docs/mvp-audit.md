@@ -16,7 +16,7 @@ Legenda: **Sim** = implementado; **Parcial** = estrutura segura entregue, mas da
 | Notas manuais fora do engine | Sim | CRUD host-only e separação estrutural | Conteúdo livre depende do host |
 | Game Engine puro e determinístico | Sim | Testes unitários de adaptador, prioridade, efeitos e resolução | Cobertura mecânica limitada ao catálogo confirmado |
 | Investigação e interações especiais | Parcial | Registry e calculadora retornam resultados ou reason codes testados | Mapeamentos oficiais pendentes |
-| Ataques, proteção, roleblock e mortes | Parcial | Pipeline e testes unitários config-driven | Níveis e exceções da edição física precisam confirmação |
+| Mortes noturnas, proteção e roleblock | Sim | Pipeline binário e testes unitários para morte, imunidade e proteção | Interações especiais de Bodyguard e Veteran ainda exigem confirmação |
 | Preview e explicação causal | Sim | Testes de apresentação e E2E | Warnings devem ser respeitados pelo host |
 | Aplicação idempotente e concorrência | Sim | Claim transacional, revision guard e testes de estado | Interrupção extrema de rede pode exigir repetir a operação |
 | Rollback administrativo | Sim | Snapshot dos campos tocados e E2E | Bloqueado de propósito após avanço incompatível de fase |

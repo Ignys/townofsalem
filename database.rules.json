@@ -34,10 +34,10 @@
             ".validate": "newData.isString() && newData.val().length >= 4 && newData.val().length <= 12 && (!data.exists() || newData.val() === data.val())"
           },
           "status": {
-            ".validate": "newData.isString() && ((!data.exists() && newData.val() === 'lobby') || newData.val() === data.val() || (data.val() === 'lobby' && newData.val() === 'in-progress') || (data.val() === 'in-progress' && newData.val() === 'finished'))"
+            ".validate": "newData.isString() && ((!data.exists() && newData.val() === 'lobby') || newData.val() === data.val() || (data.val() === 'lobby' && newData.val() === 'in-progress') || (data.val() === 'in-progress' && (newData.val() === 'lobby' || newData.val() === 'finished')))"
           },
           "phase": {
-            ".validate": "newData.isString() && ((!data.exists() && newData.val() === 'lobby') || newData.val() === data.val() || (root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' && (newData.val() === 'day' || newData.val() === 'discussion' || newData.val() === 'trial' || newData.val() === 'defense' || newData.val() === 'verdict' || newData.val() === 'night' || newData.val() === 'custom' || newData.val() === 'game-over')))"
+            ".validate": "newData.isString() && ((!data.exists() && newData.val() === 'lobby') || newData.val() === data.val() || (root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' && (newData.val() === 'lobby' || newData.val() === 'day' || newData.val() === 'discussion' || newData.val() === 'trial' || newData.val() === 'defense' || newData.val() === 'verdict' || newData.val() === 'night' || newData.val() === 'custom' || newData.val() === 'game-over')))"
           },
           "day": {
             ".validate": "newData.isNumber() && newData.val() >= 0"
@@ -104,6 +104,7 @@
             }
           },
           "rolesAssignedAt": {
+            ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid && !newData.exists()",
             ".validate": "!data.exists() && newData.isNumber() && newData.val() > 0"
           },
           "phaseDurations": {
@@ -127,6 +128,9 @@
             "name": {
               ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 32 && newData.val().matches(/.*[^ ].*/)"
             },
+            "isBot": {
+              ".validate": "newData.isBoolean() && newData.val() === true && root.child('games').child($gameId).child('hostUid').val() === auth.uid && $uid.matches(/^bot-[a-z0-9-]+$/)"
+            },
             "alive": {
               ".validate": "newData.isBoolean()"
             },
@@ -146,6 +150,7 @@
         },
         "privatePlayers": {
           ".read": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
           "$uid": {
             ".read": "auth !== null && auth.uid === $uid",
             ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid && root.child('games').child($gameId).child('players').child($uid).exists()",

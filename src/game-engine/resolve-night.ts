@@ -1,4 +1,3 @@
-import { resolveAttackAgainstDefense } from "./attack-defense";
 import { createEffects } from "./effect-registry";
 import { sortEffectsByPriority } from "./priority";
 import type {
@@ -6,7 +5,6 @@ import type {
   EngineEvent,
   EngineGameState,
   EngineNightAction,
-  EngineRulesContext,
   EngineWarning,
   InvestigationResult,
   NightResolution,
@@ -19,7 +17,6 @@ function warning(code: string, message: string, actionId?: string): EngineWarnin
 export function resolveNight(
   gameState: EngineGameState,
   actions: readonly EngineNightAction[],
-  rulesContext: EngineRulesContext,
 ): NightResolution {
   const playersByUid = new Map(gameState.players.map((player) => [player.uid, player]));
   const generated = createEffects(actions);
@@ -30,7 +27,7 @@ export function resolveNight(
   const blockedActors = new Set<string>();
   const blockedActions = new Set<string>();
   const failedActions = new Set<string>();
-  const protections = new Map<string, Array<{ actionId: string; level: NonNullable<EngineEffect["protectionLevel"]> }>>();
+  const protections = new Map<string, Set<string>>();
   const attacks: EngineEffect[] = [];
   const postDeathEffects: EngineEffect[] = [];
   const investigationResults: InvestigationResult[] = [];
@@ -61,11 +58,6 @@ export function resolveNight(
         events.push(...effect.targetUids.map((targetUid) => ({ type: "PLAYER_ROLEBLOCKED", actorUid: effect.actorUid, targetUid, actionId: effect.id, reasonCode: "ROLEBLOCK_APPLIED" })));
         break;
       case "protect":
-        if (!effect.protectionLevel) {
-          failedActions.add(effect.id);
-          warnings.push(warning("PROTECTION_LEVEL_NOT_CONFIGURED", "O nível da proteção ainda não foi confirmado.", effect.id));
-          break;
-        }
         if (targets.some((target) =>
           effect.blockedByTargetStatuses?.some((status) =>
             target?.statuses.includes(status),
@@ -81,7 +73,11 @@ export function resolveNight(
           });
           break;
         }
-        effect.targetUids.forEach((targetUid) => protections.set(targetUid, [...(protections.get(targetUid) ?? []), { actionId: effect.id, level: effect.protectionLevel! }]));
+        effect.targetUids.forEach((targetUid) => {
+          const sources = protections.get(targetUid) ?? new Set<string>();
+          sources.add(effect.id);
+          protections.set(targetUid, sources);
+        });
         appliedEffects.push(effect);
         break;
       case "investigate": {
@@ -147,37 +143,31 @@ export function resolveNight(
   const successfulAttackTargets = new Set<string>();
   const survivalSources = new Map<string, Set<string>>();
   for (const attack of attacks) {
-    if (!attack.attackLevel) {
-      failedActions.add(attack.id);
-      warnings.push(warning("ATTACK_LEVEL_NOT_CONFIGURED", "O nível do ataque ainda não foi confirmado.", attack.id));
-      continue;
-    }
+    let killedTarget = false;
     for (const targetUid of attack.targetUids) {
       const target = playersByUid.get(targetUid)!;
-      const defenses = [{ actionId: "base-defense", level: target.defense }, ...(protections.get(targetUid) ?? [])];
-      let configured = true;
-      let stopped = false;
-      for (const defense of defenses) {
-        const result = resolveAttackAgainstDefense(attack.attackLevel, defense.level, rulesContext.attackDefenseRules);
-        if (result.success === null) {
-          configured = false;
-          warnings.push(warning("ATTACK_DEFENSE_NOT_CONFIGURED", `Interação ${attack.attackLevel}/${defense.level} não configurada.`, attack.id));
-        } else if (!result.success) {
-          stopped = true;
-          const sources = survivalSources.get(targetUid) ?? new Set<string>();
-          sources.add(defense.actionId);
-          survivalSources.set(targetUid, sources);
-          events.push({ type: "PLAYER_SURVIVED", actorUid: attack.actorUid, targetUid, actionId: attack.id, reasonCode: defense.actionId === "base-defense" ? "ATTACK_BLOCKED_BY_DEFENSE" : "TARGET_PROTECTED" });
-          break;
-        }
+      const protectionSources = protections.get(targetUid);
+
+      if (protectionSources?.size) {
+        const sources = survivalSources.get(targetUid) ?? new Set<string>();
+        protectionSources.forEach((source) => sources.add(source));
+        survivalSources.set(targetUid, sources);
+        events.push({ type: "PLAYER_SURVIVED", actorUid: attack.actorUid, targetUid, actionId: attack.id, reasonCode: "TARGET_PROTECTED" });
+        continue;
       }
-      if (configured && !stopped) {
-        successfulAttackTargets.add(targetUid);
-        appliedEffects.push(attack);
-        events.push({ type: "PLAYER_ATTACKED", actorUid: attack.actorUid, targetUid, actionId: attack.id, reasonCode: "ATTACK_SUCCEEDED" });
-      } else if (!configured) {
-        failedActions.add(attack.id);
+
+      if (!target.canDieAtNight) {
+        survivalSources.set(targetUid, survivalSources.get(targetUid) ?? new Set<string>());
+        events.push({ type: "PLAYER_SURVIVED", actorUid: attack.actorUid, targetUid, actionId: attack.id, reasonCode: "TARGET_CANNOT_DIE_AT_NIGHT" });
+        continue;
       }
+
+      killedTarget = true;
+      successfulAttackTargets.add(targetUid);
+      events.push({ type: "PLAYER_ATTACKED", actorUid: attack.actorUid, targetUid, actionId: attack.id, reasonCode: "KILL_SUCCEEDED" });
+    }
+    if (killedTarget) {
+      appliedEffects.push(attack);
     }
   }
 
@@ -194,7 +184,7 @@ export function resolveNight(
       events.push({ type: "CLEAN_FAILED", actorUid: effect.actorUid, targetUid, actionId: effect.id, reasonCode: "TARGET_DID_NOT_DIE" });
     }
   }
-  deaths.forEach((targetUid) => events.push({ type: "PLAYER_DIED", targetUid, reasonCode: "LETHAL_ATTACK_RESOLVED" }));
+  deaths.forEach((targetUid) => events.push({ type: "PLAYER_DIED", targetUid, reasonCode: "NIGHT_KILL_RESOLVED" }));
 
   return {
     nightId: gameState.nightId,

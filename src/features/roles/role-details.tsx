@@ -3,7 +3,7 @@ import type { RoleDefinition } from "@/types";
 import {
   FACTION_LABELS,
   formatRoleAlignment,
-  getConfirmedCombatStats,
+  getNightSurvivabilityStat,
 } from "./role-presentation";
 
 interface RoleDetailsProps {
@@ -11,7 +11,7 @@ interface RoleDetailsProps {
 }
 
 export function RoleDetails({ role }: RoleDetailsProps) {
-  const combatStats = getConfirmedCombatStats(role);
+  const nightSurvivability = getNightSurvivabilityStat(role);
 
   return (
     <article className="rounded-3xl border border-white/10 bg-[#1a1c1e] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.3)] sm:p-9">
@@ -80,23 +80,16 @@ export function RoleDetails({ role }: RoleDetailsProps) {
             </ul>
           </section>
         )}
-        {combatStats.length > 0 && (
-          <dl className="grid grid-cols-2 gap-3">
-            {combatStats.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl border border-white/10 bg-black/15 p-4"
-              >
-                <dt className="text-xs font-bold tracking-wide text-[#9f9990] uppercase">
-                  {stat.label}
-                </dt>
-                <dd className="mt-1 font-semibold text-[#fffaf0]">
-                  {stat.value}
-                </dd>
-              </div>
-            ))}
-          </dl>
-        )}
+        <dl className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl border border-white/10 bg-black/15 p-4">
+            <dt className="text-xs font-bold tracking-wide text-[#9f9990] uppercase">
+              {nightSurvivability.label}
+            </dt>
+            <dd className="mt-1 font-semibold text-[#fffaf0]">
+              {nightSurvivability.value}
+            </dd>
+          </div>
+        </dl>
       </div>
     </article>
   );

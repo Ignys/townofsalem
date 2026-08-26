@@ -2,7 +2,7 @@ import type { RoleDefinition } from "@/types";
 
 import { nightAction } from "./action-builders";
 import {
-  AMBIGUOUS_NIGHT_IMMUNITY_NOTE,
+  NIGHT_IMMUNITY_RULE,
   investigativeAppearance,
 } from "./role-helpers";
 
@@ -29,7 +29,6 @@ const serialKillerAttack = nightAction({
   availableFromNight: 2,
   priority: 50,
   engineEffectType: "attack",
-  engineEffectConfig: { attackLevel: "basic" },
 });
 
 const werewolfAttack = nightAction({
@@ -42,7 +41,6 @@ const werewolfAttack = nightAction({
   evenNightsOnly: true,
   priority: 50,
   engineEffectType: "attack",
-  engineEffectConfig: { attackLevel: "powerful" },
 });
 
 const curseAction = nightAction({
@@ -72,8 +70,7 @@ export const NEUTRAL_ROLES = [
       "O conjunto de roles possíveis precisa ser registrado antes da partida.",
       "A transformação ocorre na Night 3 e altera alinhamento, habilidades e condição de vitória.",
     ],
-    attack: "none",
-    defense: "none",
+    canDieAtNight: true,
     wakesAtNight: true,
     wakeOrder: 5,
     actionDefinitions: [rememberAction],
@@ -97,8 +94,7 @@ export const NEUTRAL_ROLES = [
       "Se o alvo morrer durante a noite, transforma-se em Jester.",
       "A consequência de uma morte diurna que não seja enforcamento deve ser configurada pelo grupo.",
     ],
-    attack: "none",
-    defense: "none",
+    canDieAtNight: true,
     wakesAtNight: true,
     wakeOrder: 6,
     actionDefinitions: [chooseExecutionTarget],
@@ -125,8 +121,7 @@ export const NEUTRAL_ROLES = [
       "A vingança só pode escolher um eleitor que votou Guilty.",
       "Peaceful Townie não é elegível; Spiteful Townie sempre é elegível se votou.",
     ],
-    attack: "unstoppable",
-    defense: "none",
+    canDieAtNight: true,
     investigativeAppearance: investigativeAppearance("Jester", "neutral"),
     verificationStatus: "verified",
   },
@@ -138,25 +133,24 @@ export const NEUTRAL_ROLES = [
     description:
       "A partir da segunda noite, escolha uma pessoa por noite para matar. Você possui imunidade a mortes noturnas.",
     beginnerDescription:
-      "Você joga sozinho, ataca toda noite a partir da Night 2 e normalmente não morre para ataques noturnos.",
+      "Você joga sozinho, ataca toda noite a partir da Night 2 e não morre durante a noite.",
     goal:
       "Permaneça como a ameaça independente vencedora depois de eliminar os demais lados, conforme a regra configurada pelo grupo.",
     virtueValue: -8,
     cardCount: 1,
     importantInteractions: [
       "Não pode atacar na primeira noite.",
-      AMBIGUOUS_NIGHT_IMMUNITY_NOTE,
+      NIGHT_IMMUNITY_RULE,
     ],
-    attack: "basic",
-    defense: "invincible",
+    canDieAtNight: false,
     wakesAtNight: true,
     wakeOrder: 50,
     actionDefinitions: [serialKillerAttack],
     action: serialKillerAttack,
     investigativeAppearance: investigativeAppearance("Serial Killer", "neutral"),
-    verificationStatus: "needs-verification",
+    verificationStatus: "verified",
     verificationNotes: [
-      "A condição formal de vitória e as exceções à imunidade noturna devem ser configuradas.",
+      "A condição formal de vitória ainda deve ser configurada.",
     ],
   },
   {
@@ -176,8 +170,7 @@ export const NEUTRAL_ROLES = [
       "Ataca somente nas noites pares, começando na Night 2.",
       "Os dois alvos precisam ocupar assentos adjacentes.",
     ],
-    attack: "powerful",
-    defense: "none",
+    canDieAtNight: true,
     wakesAtNight: true,
     wakeOrder: 50,
     actionDefinitions: [werewolfAttack],
@@ -205,8 +198,7 @@ export const NEUTRAL_ROLES = [
       "A maldição permanece entre noites.",
       "Pode visitar um Veteran em Alert já na primeira noite.",
     ],
-    attack: "unstoppable",
-    defense: "none",
+    canDieAtNight: true,
     wakesAtNight: true,
     wakeOrder: 55,
     actionDefinitions: [curseAction],

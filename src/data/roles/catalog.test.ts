@@ -31,7 +31,11 @@ test("getRoleById returns a known role", () => {
 
   assert.equal(doctor?.name, "Doctor");
   assert.equal(doctor?.faction, "town");
-  assert.equal(doctor?.attack, "none");
+  assert.equal(doctor?.canDieAtNight, true);
+  assert.equal(
+    doctor?.actionDefinitions?.[0].engineEffectType,
+    "protect",
+  );
 });
 
 test("getRolesByFaction returns only roles from that faction", () => {
@@ -46,8 +50,9 @@ test("isValidRoleId narrows known ids and rejects unknown ids", () => {
   assert.equal(isValidRoleId("invented-role"), false);
 });
 
-test("confirmed investigation exceptions and ambiguous mechanics are explicit", () => {
+test("confirmed investigation exceptions and night immunity are explicit", () => {
   assert.equal(getRoleById("godfather")?.investigativeAppearance?.sheriff, "Good");
   assert.equal(getRoleById("politician")?.investigativeAppearance?.sheriff, "Evil");
-  assert.equal(getRoleById("serial-killer")?.verificationStatus, "needs-verification");
+  assert.equal(getRoleById("serial-killer")?.canDieAtNight, false);
+  assert.equal(getRoleById("survivor")?.canDieAtNight, false);
 });

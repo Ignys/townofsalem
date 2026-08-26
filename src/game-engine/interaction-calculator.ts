@@ -1,9 +1,4 @@
-import { resolveAttackAgainstDefense } from "./attack-defense";
-import type { AttackDefenseRule, EnginePlayer } from "./types";
-
-export function calculateAttackInteraction(attackLevel: Parameters<typeof resolveAttackAgainstDefense>[0], defenseLevel: Parameters<typeof resolveAttackAgainstDefense>[1], rules: readonly AttackDefenseRule[]) {
-  return resolveAttackAgainstDefense(attackLevel, defenseLevel, rules);
-}
+import type { EnginePlayer } from "./types";
 
 export function calculateInvestigationInteraction(target: EnginePlayer, investigationType: string) {
   const result = target.investigativeAppearance?.[investigationType];

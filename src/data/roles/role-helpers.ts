@@ -18,5 +18,5 @@ export function investigativeAppearance(
   };
 }
 
-export const AMBIGUOUS_NIGHT_IMMUNITY_NOTE =
-  "A precedência desta interação com imunidade noturna deve ser decidida nas regras da partida antes da resolução automática.";
+export const NIGHT_IMMUNITY_RULE =
+  "Uma role que não pode morrer à noite ignora tentativas de morte noturnas.";
