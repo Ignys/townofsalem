@@ -4,6 +4,8 @@ import { canTransition } from "@/game-engine/game-phase-machine";
 import {
   readGameDayVotes,
   readGamePlayers,
+  readGameSettings,
+  readHostPrivatePlayers,
   readPublicGame,
 } from "@/lib/firebase/game-access-repository";
 import { firebasePaths } from "@/lib/firebase/paths";
@@ -15,6 +17,8 @@ import {
   getVotesRequired,
 } from "@/game-engine/accusation-counting";
 import { DEFAULT_ACCUSATION_VOTING_SETTINGS } from "./voting-settings";
+import { withDefaultVariants } from "@/game-engine/variants";
+import { getEligibleVoterUids, getVoterWeights } from "./voter-rules";
 
 export async function startAccusedTrial(
   gameId: string,
@@ -32,9 +36,11 @@ export async function startAccusedTrial(
     throw new Error("The game is not accepting an accusation trial.");
   }
 
-  const [players, dayVotes] = await Promise.all([
+  const [players, dayVotes, privatePlayers, settings] = await Promise.all([
     readGamePlayers(gameId),
     readGameDayVotes(gameId, game.day),
+    readHostPrivatePlayers(gameId),
+    readGameSettings(gameId),
   ]);
   const target = players?.[targetUid];
 
@@ -45,14 +51,15 @@ export async function startAccusedTrial(
   const alivePlayers = Object.values(players ?? {}).filter(
     (player) => player.alive,
   ).length;
-  const eligibleVoterUids = new Set(
-    Object.entries(players ?? {})
-      .filter(([, player]) => player.alive)
-      .map(([playerUid]) => playerUid),
+  const eligibleVoterUids = getEligibleVoterUids(
+    players ?? {},
+    privatePlayers ?? {},
+    withDefaultVariants(settings?.gameVariants),
   );
   const votesForTarget = countAccusationVotes(
     dayVotes?.accusations,
     eligibleVoterUids,
+    getVoterWeights(privatePlayers ?? {}, Object.keys(players ?? {}).length),
   )[targetUid] ?? 0;
   const votesRequired = getVotesRequired(
     alivePlayers,

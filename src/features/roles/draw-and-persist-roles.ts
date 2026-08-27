@@ -17,6 +17,7 @@ import { validateRoleComposition } from "./validate-role-composition";
 export interface DrawAndPersistRolesOptions {
   random?: RandomSource;
   now?: () => number;
+  createId?: () => string;
 }
 
 export async function drawAndPersistRoles(
@@ -81,6 +82,10 @@ export async function drawAndPersistRoles(
     gameId,
     assignments,
     (options.now ?? Date.now)(),
+    {
+      phaseSessionId: (options.createId ?? (() => crypto.randomUUID()))(),
+      nightId: (options.createId ?? (() => crypto.randomUUID()))(),
+    },
   );
 
   try {

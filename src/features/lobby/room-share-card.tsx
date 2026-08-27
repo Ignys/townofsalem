@@ -21,27 +21,16 @@ export function RoomShareCard({ code }: RoomShareCardProps) {
     getBrowserOrigin,
     getServerOrigin,
   );
-  const [copyFeedback, setCopyFeedback] = useState<CopyFeedback>(null);
 
   const shareUrl = buildRoomShareUrl(origin, code);
 
   const copyValue = async (value: string, feedback: "code" | "link") => {
     try {
       await navigator.clipboard.writeText(value);
-      setCopyFeedback(feedback);
     } catch {
-      setCopyFeedback("error");
+      console.log(feedback)
     }
   };
-
-  const feedbackMessage =
-    copyFeedback === "code"
-      ? "Código copiado."
-      : copyFeedback === "link"
-        ? "Link copiado."
-        : copyFeedback === "error"
-          ? "Não foi possível copiar."
-          : "Compartilhe o link ou o código com os jogadores.";
 
   return (
     <div className="min-w-0">

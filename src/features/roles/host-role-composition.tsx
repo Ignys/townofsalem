@@ -72,13 +72,8 @@ export function HostRoleComposition({ gameId, playerCount, editable }: HostRoleC
     }
 
     return (
-        <section className="w-full p-1 pr-4">
-            <header className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-                <div></div>
-            </header>
-
-            <div className=" grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(18rem,1fr)]">
-                <section className="min-w-0">
+            <div className="pr-4 p-1 grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(18rem,0.7fr)]">
+                <section className="min-w-0 pb-5">
                     <header>
                         <h3 className="mt-2 font-serif text-2xl font-semibold text-[#fffaf0]">Composição de roles</h3>
                     </header>
@@ -104,40 +99,38 @@ export function HostRoleComposition({ gameId, playerCount, editable }: HostRoleC
                 </section>
                 <section className="space-y-2">
                     <RoleCompositionSummary roleCount={composition.roleIds.length} playerCount={playerCount} balance={balance} />
-                    <CompositionTools playerCount={playerCount} disabled={controlsDisabled} onApply={(roleIds) => void persistRoleIds(roleIds)} />
+                    <CompositionTools gameId={gameId} playerCount={playerCount} disabled={controlsDisabled} onApply={(roleIds) => void persistRoleIds(roleIds)} />
+                    <div className=" border-white/10">
+                        {!composition.loaded ? (
+                            <p role="status" className="text-sm text-[#bdb7ad]">
+                                Carregando composição…
+                            </p>
+                        ) : composition.error ? (
+                            <p role="alert" className="rounded-xl border border-[#a33843]/35 bg-[#a33843]/10 px-4 py-3 text-sm text-[#f0b9bd]">
+                                Não foi possível salvar ou acompanhar a composição. Tente novamente.
+                            </p>
+                        ) : (
+                            <RoleCompositionValidation result={validation} />
+                        )}
+
+                        <button
+                            type="button"
+                            onClick={() => void roleDraw.start(gameId, validation)}
+                            disabled={!editable || !composition.loaded || composition.saving || roleDraw.drawing || !validation.valid}
+                            className="mt-2 min-h-12 w-full rounded-xl bg-[#7d2330] px-5 py-3 font-bold text-white transition-colors hover:bg-[#681c27] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:bg-[#5d5552]"
+                        >
+                            {roleDraw.drawing ? "Sorteando roles…" : "Sortear roles & Iniciar partida"}
+                        </button>
+
+                        <p
+                            role={roleDraw.feedback?.kind === "error" ? "alert" : "status"}
+                            aria-live="polite"
+                            className={`mt-3 min-h-5 text-sm ${roleDraw.feedback?.kind === "error" ? "text-[#f0b9bd]" : roleDraw.feedback?.kind === "success" ? "text-[#bfe0c5]" : "text-[#bdb7ad]"}`}
+                        >
+                            {composition.saving ? "Salvando composição…" : (roleDraw.feedback?.message ?? "")}
+                        </p>
+                    </div>
                 </section>
             </div>
-
-            <div className="mt-7 border-t border-white/10 pt-6">
-                {!composition.loaded ? (
-                    <p role="status" className="text-sm text-[#bdb7ad]">
-                        Carregando composição…
-                    </p>
-                ) : composition.error ? (
-                    <p role="alert" className="rounded-xl border border-[#a33843]/35 bg-[#a33843]/10 px-4 py-3 text-sm text-[#f0b9bd]">
-                        Não foi possível salvar ou acompanhar a composição. Tente novamente.
-                    </p>
-                ) : (
-                    <RoleCompositionValidation result={validation} />
-                )}
-
-                <button
-                    type="button"
-                    onClick={() => void roleDraw.start(gameId, validation)}
-                    disabled={!editable || !composition.loaded || composition.saving || roleDraw.drawing || !validation.valid}
-                    className="mt-4 min-h-12 w-full rounded-xl bg-[#7d2330] px-5 py-3 font-bold text-white transition-colors hover:bg-[#681c27] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:bg-[#5d5552]"
-                >
-                    {roleDraw.drawing ? "Sorteando roles…" : "Sortear roles"}
-                </button>
-
-                <p
-                    role={roleDraw.feedback?.kind === "error" ? "alert" : "status"}
-                    aria-live="polite"
-                    className={`mt-3 min-h-5 text-sm ${roleDraw.feedback?.kind === "error" ? "text-[#f0b9bd]" : roleDraw.feedback?.kind === "success" ? "text-[#bfe0c5]" : "text-[#bdb7ad]"}`}
-                >
-                    {composition.saving ? "Salvando composição…" : (roleDraw.feedback?.message ?? "")}
-                </p>
-            </div>
-        </section>
     );
 }

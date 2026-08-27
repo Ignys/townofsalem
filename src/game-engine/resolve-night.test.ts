@@ -59,7 +59,7 @@ test("roleblock prevents an eligible later effect", () => {
   assert.deepEqual(result.blockedActions, ["attack"]);
 });
 
-test("supports multiple attacks, investigations and conditional post-death clean", () => {
+test("does not let a legacy arbitrary clean target replace automatic Janitor cleaning", () => {
   const result = resolveNight(game, [
     action({ id: "first-kill", actorUid: "attacker", targetUids: ["target"], effectType: "attack", priority: 50 }),
     action({ id: "second-kill", actorUid: "blocker", targetUids: ["target"], effectType: "attack", priority: 50 }),
@@ -67,7 +67,7 @@ test("supports multiple attacks, investigations and conditional post-death clean
     action({ id: "clean", actorUid: "attacker", targetUids: ["target"], effectType: "clean", priority: 60 }),
   ]);
   assert.deepEqual(result.deaths, ["target"]);
-  assert.deepEqual(result.cleanedPlayerUids, ["target"]);
+  assert.deepEqual(result.cleanedPlayerUids, []);
   assert.equal(result.investigationResults[0].result, "INOCENTE");
 });
 

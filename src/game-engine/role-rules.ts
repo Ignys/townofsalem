@@ -1,4 +1,5 @@
 import type { Player, RoleActionDefinition } from "@/types";
+import { getRoleResourceLimit } from "./role-resource-limits";
 
 export type ForcedVerdict = "guilty" | "innocent" | null;
 
@@ -11,8 +12,11 @@ export function getForcedVerdict(roleId: string): ForcedVerdict {
 export function getVerdictVoteWeight(
   roleId: string,
   statuses: readonly string[],
+  playerCount = 9,
 ): number {
-  return roleId === "mayor" && statuses.includes("mayor-revealed") ? 2 : 1;
+  return roleId === "mayor" && statuses.includes("mayor-revealed")
+    ? getRoleResourceLimit("mayor", playerCount) ?? 1
+    : 1;
 }
 
 export function canReceiveDoctorProtection(
@@ -40,9 +44,15 @@ export function executionerBecomesJester(
 }
 
 export function deputyHasSheriffAbility(
-  players: ReadonlyArray<Pick<Player, "alive"> & { roleId?: string }>,
+  players: ReadonlyArray<Pick<Player, "alive"> & {
+    roleId?: string;
+    originalRoleId?: string;
+  }>,
 ): boolean {
-  return !players.some((player) => player.alive && player.roleId === "sheriff");
+  const sheriffs = players.filter(
+    (player) => (player.originalRoleId ?? player.roleId) === "sheriff",
+  );
+  return sheriffs.length > 0 && sheriffs.every((player) => !player.alive);
 }
 
 export function canUseActionOnNight(
@@ -64,7 +74,7 @@ export function canUseActionOnNight(
 export function arePlayersAdjacent(
   left: Pick<Player, "uid" | "seat">,
   right: Pick<Player, "uid" | "seat">,
-  players: readonly Pick<Player, "uid" | "seat">[],
+  players: readonly (Pick<Player, "uid" | "seat"> & Partial<Pick<Player, "alive">>)[],
 ): boolean {
   if (
     left.uid === right.uid ||
@@ -76,6 +86,7 @@ export function arePlayersAdjacent(
 
   const occupiedSeats = [...new Set(
     players
+      .filter((player) => player.alive !== false)
       .map((player) => player.seat)
       .filter((seat): seat is number => seat !== undefined),
   )].sort((a, b) => a - b);

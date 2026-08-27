@@ -16,7 +16,6 @@ const exactInvestigation = nightAction({
   id: "investigate-exact-role",
   label: "Descobrir role",
   verb: "descobre a role de",
-  maxUses: 2,
   ...exactInvestigationConfig,
 });
 
@@ -51,9 +50,9 @@ export const TOWN_INVESTIGATIVE_ROLES = [
     faction: "town",
     alignment: "Town Investigative",
     description:
-      "Durante a noite, escolha uma pessoa para descobrir exatamente qual é a role dela. Você possui duas investigações na partida.",
+      "Durante a noite, escolha uma pessoa para descobrir exatamente qual é a role dela. O limite de investigações varia com o tamanho da partida.",
     beginnerDescription:
-      "Diferente do Sheriff, você recebe o nome exato da role. Use suas duas investigações com cuidado.",
+      "Diferente do Sheriff, você recebe o nome exato da role. Use suas investigações com cuidado.",
     goal: TOWN_GOAL,
     virtueValue: 6,
     cardCount: 1,

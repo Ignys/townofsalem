@@ -1,18 +1,15 @@
 import type { RoleDefinition } from "@/types";
 
 import { nightAction } from "./action-builders";
-import {
-  NIGHT_IMMUNITY_RULE,
-  investigativeAppearance,
-  TOWN_GOAL,
-} from "./role-helpers";
+import { investigativeAppearance, TOWN_GOAL } from "./role-helpers";
 
 const bodyguardProtection = nightAction({
   id: "guard",
   label: "Proteger com sacrifício",
   verb: "protege",
   priority: 30,
-  verificationStatus: "needs-verification",
+  engineEffectType: "protect",
+  engineEffectConfig: { protectionType: "bodyguard" },
 });
 
 const doctorProtection = nightAction({
@@ -22,6 +19,7 @@ const doctorProtection = nightAction({
   priority: 30,
   engineEffectType: "protect",
   engineEffectConfig: {
+    protectionType: "doctor",
     blockedByTargetStatuses: ["mayor-revealed"],
   },
 });
@@ -40,8 +38,9 @@ export const TOWN_PROTECTIVE_ROLES = [
     virtueValue: 4,
     cardCount: 1,
     importantInteractions: [
-      "O protegido não morre pelo ataque que dispara a proteção.",
-      NIGHT_IMMUNITY_RULE,
+      "Intercepta somente um ataque; ataques adicionais continuam contra o protegido.",
+      "Por padrão, o sacrifício não pode ser curado pelo Doctor; a variante da partida pode permitir a cura.",
+      "Contra a Mafia, o contra-ataque escolhe aleatoriamente um participante vivo.",
     ],
     canDieAtNight: true,
     wakesAtNight: true,
@@ -49,10 +48,7 @@ export const TOWN_PROTECTIVE_ROLES = [
     actionDefinitions: [bodyguardProtection],
     action: bodyguardProtection,
     investigativeAppearance: investigativeAppearance("Bodyguard", "town"),
-    verificationStatus: "needs-verification",
-    verificationNotes: [
-      "As mortes de sacrifício do Bodyguard ainda não são resolvidas automaticamente.",
-    ],
+    verificationStatus: "verified",
   },
   {
     id: "doctor",
@@ -68,7 +64,7 @@ export const TOWN_PROTECTIVE_ROLES = [
     cardCount: 1,
     importantInteractions: [
       "Um Mayor já revelado não pode ser curado.",
-      "A interação com a morte de sacrifício do Bodyguard depende da regra adotada pelo grupo.",
+      "Por padrão, não impede o sacrifício especial do Bodyguard; a variante da partida pode permitir a cura.",
     ],
     canDieAtNight: true,
     wakesAtNight: true,

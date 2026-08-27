@@ -1,19 +1,16 @@
 import type { RoleDefinition } from "@/types";
 
 import { nightAction } from "./action-builders";
-import {
-  NIGHT_IMMUNITY_RULE,
-  investigativeAppearance,
-  TOWN_GOAL,
-} from "./role-helpers";
+import { investigativeAppearance, TOWN_GOAL } from "./role-helpers";
 
 const alertAction = nightAction({
   id: "alert",
   label: "Entrar em Alert",
   verb: "entra em Alert",
   targetCount: 0,
-  maxUses: 2,
-  verificationStatus: "needs-verification",
+  priority: 20,
+  engineEffectType: "protect",
+  engineEffectConfig: { countsAsVisit: false },
 });
 
 const vigilanteShot = nightAction({
@@ -21,7 +18,6 @@ const vigilanteShot = nightAction({
   label: "Atirar",
   verb: "atira em",
   availableFromNight: 2,
-  maxUses: 1,
   priority: 50,
   engineEffectType: "attack",
 });
@@ -33,7 +29,7 @@ export const TOWN_KILLING_ROLES = [
     faction: "town",
     alignment: "Town Killing",
     description:
-      "Durante a noite, você pode entrar em Alert. Enquanto estiver alerta, não pode ser morto e mata qualquer pessoa que o visitar. Há dois Alerts por partida.",
+      "Durante a noite, você pode entrar em Alert. Enquanto estiver alerta, não pode ser morto e ataca cada pessoa que o visitar. O limite varia com o tamanho da partida.",
     beginnerDescription:
       "O Alert protege você, mas também mata visitantes aliados. Escolha as duas noites com cuidado.",
     goal: TOWN_GOAL,
@@ -42,7 +38,7 @@ export const TOWN_KILLING_ROLES = [
     importantInteractions: [
       "Mata qualquer visitante durante Alert, inclusive aliados.",
       "Pode usar Alert na primeira noite e atingir uma Witch visitante.",
-      NIGHT_IMMUNITY_RULE,
+      "No ataque coletivo da Mafia, somente um representante aleatório recebe o ataque.",
     ],
     canDieAtNight: true,
     wakesAtNight: true,
@@ -50,10 +46,7 @@ export const TOWN_KILLING_ROLES = [
     actionDefinitions: [alertAction],
     action: alertAction,
     investigativeAppearance: investigativeAppearance("Veteran", "town"),
-    verificationStatus: "needs-verification",
-    verificationNotes: [
-      "É preciso definir qual membro da Mafia visita no ataque coletivo.",
-    ],
+    verificationStatus: "verified",
   },
   {
     id: "vigilante",
@@ -63,7 +56,7 @@ export const TOWN_KILLING_ROLES = [
     description:
       "A partir da segunda noite, escolha uma pessoa para atirar e matar. Você possui apenas um tiro durante toda a partida.",
     beginnerDescription:
-      "Você tem um único tiro e não sofre a punição do jogo digital por atingir um Townie.",
+      "Seus tiros variam com o tamanho da mesa e não há punição do jogo digital por atingir um Townie.",
     goal: TOWN_GOAL,
     virtueValue: 5,
     cardCount: 1,

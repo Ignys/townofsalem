@@ -5,6 +5,7 @@ export type AccusationVotes = Record<string, string>;
 export function countAccusationVotes(
   votes: AccusationVotes | null | undefined,
   eligibleVoterUids?: ReadonlySet<string>,
+  voterWeights: Readonly<Record<string, number>> = {},
 ): Record<string, number> {
   return Object.entries(votes ?? {}).reduce<Record<string, number>>(
     (counts, [voterUid, targetUid]) => {
@@ -12,7 +13,7 @@ export function countAccusationVotes(
         return counts;
       }
 
-      counts[targetUid] = (counts[targetUid] ?? 0) + 1;
+      counts[targetUid] = (counts[targetUid] ?? 0) + (voterWeights[voterUid] ?? 1);
       return counts;
     },
     {},

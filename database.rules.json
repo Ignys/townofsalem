@@ -37,7 +37,7 @@
             ".validate": "newData.isString() && ((!data.exists() && newData.val() === 'lobby') || newData.val() === data.val() || (data.val() === 'lobby' && newData.val() === 'in-progress') || (data.val() === 'in-progress' && (newData.val() === 'lobby' || newData.val() === 'finished')))"
           },
           "phase": {
-            ".validate": "newData.isString() && ((!data.exists() && newData.val() === 'lobby') || newData.val() === data.val() || (root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' && (newData.val() === 'lobby' || newData.val() === 'day' || newData.val() === 'discussion' || newData.val() === 'trial' || newData.val() === 'defense' || newData.val() === 'verdict' || newData.val() === 'night' || newData.val() === 'custom' || newData.val() === 'game-over')))"
+            ".validate": "newData.isString() && ((!data.exists() && newData.val() === 'lobby') || newData.val() === data.val() || ((root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' || newData.parent().child('status').val() === 'in-progress') && (newData.val() === 'lobby' || newData.val() === 'day' || newData.val() === 'discussion' || newData.val() === 'trial' || newData.val() === 'defense' || newData.val() === 'verdict' || newData.val() === 'night' || newData.val() === 'custom' || newData.val() === 'game-over')))"
           },
           "day": {
             ".validate": "newData.isNumber() && newData.val() >= 0"
@@ -91,7 +91,7 @@
         "settings": {
           ".read": "auth !== null && (root.child('games').child($gameId).child('hostUid').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).exists())",
           ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid && root.child('games').child($gameId).child('public').child('status').val() === 'lobby' && root.child('games').child($gameId).child('public').child('phase').val() === 'lobby'",
-          ".validate": "newData.hasChild('maxPlayers') || newData.hasChild('roleComposition')",
+          ".validate": "newData.hasChild('maxPlayers') || newData.hasChild('roleComposition') || newData.hasChild('gameVariants')",
           "maxPlayers": {
             ".validate": "newData.isNumber() && newData.val() >= 1"
           },
@@ -101,6 +101,26 @@
           "roleComposition": {
             "$roleId": {
               ".validate": "newData.isNumber() && newData.val() >= 1 && ((($roleId === 'townie') && newData.val() <= 8) || (($roleId === 'mafioso') && newData.val() <= 5) || (($roleId === 'politician' || $roleId === 'survivor' || $roleId === 'jester') && newData.val() <= 2) || (($roleId === 'bodyguard' || $roleId === 'deputy' || $roleId === 'doctor' || $roleId === 'investigator' || $roleId === 'mayor' || $roleId === 'medium' || $roleId === 'peaceful-townie' || $roleId === 'sheriff' || $roleId === 'spiteful-townie' || $roleId === 'veteran' || $roleId === 'vigilante' || $roleId === 'blackmailer' || $roleId === 'consigliere' || $roleId === 'godfather' || $roleId === 'janitor' || $roleId === 'amnesiac' || $roleId === 'executioner' || $roleId === 'serial-killer' || $roleId === 'werewolf' || $roleId === 'witch') && newData.val() === 1))"
+            }
+          },
+          "gameVariants": {
+            ".validate": "newData.hasChildren(['bodyguardCannotGuardSameTargetTwice', 'doctorCanSelfHealOnce', 'doctorCannotSaveBodyguardSacrifice', 'blackmailedCannotVote', 'sheriffWerewolfDetection', 'werewolfImmuneDuringFullMoon', 'godfatherDoubleKillWhenLastMafia', 'survivorLynchBlocksTownNextNight', 'witchDeathKillsCursedPlayers', 'jesterWinEndsGame', 'executionerWinEndsGame']) && newData.child('doctorCannotSaveBodyguardSacrifice').val() === true",
+            "bodyguardCannotGuardSameTargetTwice": { ".validate": "newData.isBoolean()" },
+            "doctorCanSelfHealOnce": { ".validate": "newData.isBoolean()" },
+            "doctorCannotSaveBodyguardSacrifice": { ".validate": "newData.isBoolean() && newData.val() === true" },
+            "blackmailedCannotVote": { ".validate": "newData.isBoolean()" },
+            "sheriffWerewolfDetection": { ".validate": "newData.isString() && (newData.val() === 'normal' || newData.val() === 'full-moon' || newData.val() === 'always')" },
+            "werewolfImmuneDuringFullMoon": { ".validate": "newData.isBoolean()" },
+            "godfatherDoubleKillWhenLastMafia": { ".validate": "newData.isBoolean()" },
+            "survivorLynchBlocksTownNextNight": { ".validate": "newData.isBoolean()" },
+            "witchDeathKillsCursedPlayers": { ".validate": "newData.isBoolean()" },
+            "jesterWinEndsGame": { ".validate": "newData.isBoolean()" },
+            "executionerWinEndsGame": { ".validate": "newData.isBoolean()" },
+            "$other": { ".validate": false }
+          },
+          "amnesiacRolePool": {
+            "$index": {
+              ".validate": "newData.isString() && (newData.val() === 'bodyguard' || newData.val() === 'deputy' || newData.val() === 'doctor' || newData.val() === 'investigator' || newData.val() === 'mayor' || newData.val() === 'medium' || newData.val() === 'peaceful-townie' || newData.val() === 'politician' || newData.val() === 'sheriff' || newData.val() === 'spiteful-townie' || newData.val() === 'survivor' || newData.val() === 'townie' || newData.val() === 'veteran' || newData.val() === 'vigilante' || newData.val() === 'blackmailer' || newData.val() === 'consigliere' || newData.val() === 'godfather' || newData.val() === 'janitor' || newData.val() === 'mafioso' || newData.val() === 'executioner' || newData.val() === 'jester' || newData.val() === 'serial-killer' || newData.val() === 'werewolf' || newData.val() === 'witch')"
             }
           },
           "rolesAssignedAt": {
@@ -154,12 +174,15 @@
           "$uid": {
             ".read": "auth !== null && auth.uid === $uid",
             ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid && root.child('games').child($gameId).child('players').child($uid).exists()",
-            ".validate": "newData.hasChildren(['roleId', 'faction']) && (!data.exists() || (newData.child('roleId').val() === data.child('roleId').val() && newData.child('faction').val() === data.child('faction').val())) && (((newData.child('roleId').val() === 'bodyguard' || newData.child('roleId').val() === 'deputy' || newData.child('roleId').val() === 'doctor' || newData.child('roleId').val() === 'investigator' || newData.child('roleId').val() === 'mayor' || newData.child('roleId').val() === 'medium' || newData.child('roleId').val() === 'peaceful-townie' || newData.child('roleId').val() === 'politician' || newData.child('roleId').val() === 'sheriff' || newData.child('roleId').val() === 'spiteful-townie' || newData.child('roleId').val() === 'survivor' || newData.child('roleId').val() === 'townie' || newData.child('roleId').val() === 'veteran' || newData.child('roleId').val() === 'vigilante') && newData.child('faction').val() === 'town') || ((newData.child('roleId').val() === 'blackmailer' || newData.child('roleId').val() === 'consigliere' || newData.child('roleId').val() === 'godfather' || newData.child('roleId').val() === 'janitor' || newData.child('roleId').val() === 'mafioso') && newData.child('faction').val() === 'mafia') || ((newData.child('roleId').val() === 'amnesiac' || newData.child('roleId').val() === 'executioner' || newData.child('roleId').val() === 'jester' || newData.child('roleId').val() === 'serial-killer' || newData.child('roleId').val() === 'werewolf' || newData.child('roleId').val() === 'witch') && newData.child('faction').val() === 'neutral'))",
+            ".validate": "newData.hasChildren(['roleId', 'faction']) && (((newData.child('roleId').val() === 'bodyguard' || newData.child('roleId').val() === 'deputy' || newData.child('roleId').val() === 'doctor' || newData.child('roleId').val() === 'investigator' || newData.child('roleId').val() === 'mayor' || newData.child('roleId').val() === 'medium' || newData.child('roleId').val() === 'peaceful-townie' || newData.child('roleId').val() === 'politician' || newData.child('roleId').val() === 'sheriff' || newData.child('roleId').val() === 'spiteful-townie' || newData.child('roleId').val() === 'survivor' || newData.child('roleId').val() === 'townie' || newData.child('roleId').val() === 'veteran' || newData.child('roleId').val() === 'vigilante') && newData.child('faction').val() === 'town') || ((newData.child('roleId').val() === 'blackmailer' || newData.child('roleId').val() === 'consigliere' || newData.child('roleId').val() === 'godfather' || newData.child('roleId').val() === 'janitor' || newData.child('roleId').val() === 'mafioso') && newData.child('faction').val() === 'mafia') || ((newData.child('roleId').val() === 'amnesiac' || newData.child('roleId').val() === 'executioner' || newData.child('roleId').val() === 'jester' || newData.child('roleId').val() === 'serial-killer' || newData.child('roleId').val() === 'werewolf' || newData.child('roleId').val() === 'witch') && newData.child('faction').val() === 'neutral'))",
             "roleId": {
               ".validate": "newData.isString() && (newData.val() === 'bodyguard' || newData.val() === 'deputy' || newData.val() === 'doctor' || newData.val() === 'investigator' || newData.val() === 'mayor' || newData.val() === 'medium' || newData.val() === 'peaceful-townie' || newData.val() === 'politician' || newData.val() === 'sheriff' || newData.val() === 'spiteful-townie' || newData.val() === 'survivor' || newData.val() === 'townie' || newData.val() === 'veteran' || newData.val() === 'vigilante' || newData.val() === 'blackmailer' || newData.val() === 'consigliere' || newData.val() === 'godfather' || newData.val() === 'janitor' || newData.val() === 'mafioso' || newData.val() === 'amnesiac' || newData.val() === 'executioner' || newData.val() === 'jester' || newData.val() === 'serial-killer' || newData.val() === 'werewolf' || newData.val() === 'witch')"
             },
             "faction": {
               ".validate": "newData.isString() && (newData.val() === 'town' || newData.val() === 'mafia' || newData.val() === 'neutral')"
+            },
+            "originalRoleId": {
+              ".validate": "newData.isString() && (newData.val() === 'bodyguard' || newData.val() === 'deputy' || newData.val() === 'doctor' || newData.val() === 'investigator' || newData.val() === 'mayor' || newData.val() === 'medium' || newData.val() === 'peaceful-townie' || newData.val() === 'politician' || newData.val() === 'sheriff' || newData.val() === 'spiteful-townie' || newData.val() === 'survivor' || newData.val() === 'townie' || newData.val() === 'veteran' || newData.val() === 'vigilante' || newData.val() === 'blackmailer' || newData.val() === 'consigliere' || newData.val() === 'godfather' || newData.val() === 'janitor' || newData.val() === 'mafioso' || newData.val() === 'amnesiac' || newData.val() === 'executioner' || newData.val() === 'jester' || newData.val() === 'serial-killer' || newData.val() === 'werewolf' || newData.val() === 'witch')"
             },
             "statuses": {
               "$statusId": {
@@ -170,6 +193,11 @@
                 "$other": {
                   ".validate": false
                 }
+              }
+            },
+            "resourceUses": {
+              "$resourceId": {
+                ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() % 1 === 0"
               }
             },
             "$other": {
@@ -196,7 +224,7 @@
           ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
           "$nightId": {
             "$entryId": {
-              ".validate": "newData.hasChildren(['id', 'nightId', 'actorUid', 'roleIdSnapshot', 'actionId', 'targetUids', 'createdAt', 'updatedAt', 'status']) && newData.child('id').val() === $entryId && newData.child('nightId').val() === $nightId"
+              ".validate": "newData.hasChildren(['id', 'nightId', 'actorUid', 'roleIdSnapshot', 'actionId', 'targetUids', 'createdAt', 'updatedAt', 'status']) && newData.child('id').val() === $entryId && newData.child('nightId').val() === $nightId && (!newData.child('nightNumber').exists() || (newData.child('nightNumber').isNumber() && newData.child('nightNumber').val() >= 1))"
             }
           }
         },

@@ -14,6 +14,7 @@ import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate, type AtomicUpdateMap } from "@/lib/firebase/realtime-database-repository";
 import { getDatabaseReference } from "@/lib/firebase/references";
 import type { NightResolutionRecord, NightSession, PlayerStatus } from "@/types";
+import { getRoleById } from "@/data/roles";
 
 import { canRollbackResolution, captureAliveBefore, getResolutionApplicationDecision, isResolutionClaimExpired } from "./resolution-state";
 
@@ -62,15 +63,23 @@ export async function applyNightResolution(
   ]);
   if (!game || !players || game.currentNightId !== draft.nightId || game.status !== "in-progress") throw new Error("night-unavailable");
 
+  const statusChanges = [
+    ...(draft.resolution.appliedStatuses ?? []).map(({ targetUid, statusType }) => ({
+      targetUid,
+      statusType,
+    })),
+    ...(draft.resolution.removedStatuses ?? []),
+  ];
+
   const record: NightResolutionRecord = {
     ...draft,
     playerAliveBefore: captureAliveBefore(players, draft.resolution.deaths),
     cleanStatusBefore: Object.fromEntries(draft.resolution.cleanedPlayerUids.map((uid) => [uid, privatePlayers?.[uid]?.statuses?.cleaned ?? null])),
     appliedStatusBefore: Object.fromEntries(
-      (draft.resolution.appliedStatuses ?? []).map(({ targetUid }) => [
+      [...new Set(statusChanges.map(({ targetUid }) => targetUid))].map((targetUid) => [
         targetUid,
         Object.fromEntries(
-          (draft.resolution.appliedStatuses ?? [])
+          statusChanges
             .filter((status) => status.targetUid === targetUid)
             .map(({ statusType }) => [
               statusType,
@@ -78,6 +87,20 @@ export async function applyNightResolution(
             ]),
         ),
       ]),
+    ),
+    roleStateBefore: Object.fromEntries(
+      (draft.resolution.roleChanges ?? []).flatMap(({ playerUid }) => {
+        const current = privatePlayers?.[playerUid];
+        return current
+          ? [[playerUid, { roleId: current.roleId, faction: current.faction }]]
+          : [];
+      }),
+    ),
+    resourceUsesBefore: Object.fromEntries(
+      (draft.resolution.consumedResources ?? []).flatMap(({ playerUid }) => {
+        const current = privatePlayers?.[playerUid];
+        return current ? [[playerUid, current.resourceUses ?? {}]] : [];
+      }),
     ),
     appliedAt: now,
   };
@@ -124,6 +147,22 @@ export async function applyNightResolution(
       type: statusType,
     } satisfies PlayerStatus;
   }
+  for (const { targetUid, statusType } of record.resolution.removedStatuses ?? []) {
+    updates[firebasePaths.gamePrivatePlayerStatus(gameId, targetUid, statusType)] = null;
+  }
+  for (const change of record.resolution.roleChanges ?? []) {
+    const rememberedRole = getRoleById(change.toRoleId);
+    if (!privatePlayers?.[change.playerUid] || !rememberedRole) continue;
+    updates[firebasePaths.gamePrivatePlayerField(gameId, change.playerUid, "roleId")] = rememberedRole.id;
+    updates[firebasePaths.gamePrivatePlayerField(gameId, change.playerUid, "faction")] = rememberedRole.faction;
+  }
+  for (const consumption of record.resolution.consumedResources ?? []) {
+    const currentUses = privatePlayers?.[consumption.playerUid]?.resourceUses?.[consumption.resource] ?? 0;
+    updates[firebasePaths.gamePrivatePlayerField(gameId, consumption.playerUid, "resourceUses")] = {
+      ...(privatePlayers?.[consumption.playerUid]?.resourceUses ?? {}),
+      [consumption.resource]: currentUses + consumption.amount,
+    };
+  }
   await applyAtomicUpdate(updates);
 }
 
@@ -161,6 +200,13 @@ export async function rollbackNightResolution(gameId: string, nightId: string, n
     for (const [statusType, status] of Object.entries(statuses)) {
       updates[firebasePaths.gamePrivatePlayerStatus(gameId, uid, statusType)] = status;
     }
+  }
+  for (const [uid, roleState] of Object.entries(record.roleStateBefore ?? {})) {
+    updates[firebasePaths.gamePrivatePlayerField(gameId, uid, "roleId")] = roleState.roleId;
+    updates[firebasePaths.gamePrivatePlayerField(gameId, uid, "faction")] = roleState.faction;
+  }
+  for (const [uid, resourceUses] of Object.entries(record.resourceUsesBefore ?? {})) {
+    updates[firebasePaths.gamePrivatePlayerField(gameId, uid, "resourceUses")] = resourceUses;
   }
   await applyAtomicUpdate(updates);
 }

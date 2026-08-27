@@ -12,6 +12,9 @@ const rememberAction = nightAction({
   verb: "lembra a role de",
   targetCount: 0,
   availableOnNight: 3,
+  priority: 5,
+  engineEffectType: "role-trigger",
+  engineEffectConfig: { countsAsVisit: false },
 });
 
 const chooseExecutionTarget = nightAction({
@@ -20,6 +23,9 @@ const chooseExecutionTarget = nightAction({
   verb: "marca como alvo",
   availableOnNight: 1,
   maxUses: 1,
+  priority: 6,
+  engineEffectType: "status-effect",
+  engineEffectConfig: { statusType: "execution-target" },
 });
 
 const serialKillerAttack = nightAction({

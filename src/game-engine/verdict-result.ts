@@ -19,12 +19,13 @@ export interface VerdictResult {
 export function countVerdictVotes(
   votes: Record<string, VerdictVote> | null | undefined,
   eligibleVoterUids?: ReadonlySet<string>,
+  voterWeights: Readonly<Record<string, number>> = {},
 ): VerdictCounts {
   return Object.entries(votes ?? {}).reduce<VerdictCounts>(
     (counts, [voterUid, vote]) =>
       eligibleVoterUids && !eligibleVoterUids.has(voterUid)
         ? counts
-        : { ...counts, [vote]: counts[vote] + 1 },
+        : { ...counts, [vote]: counts[vote] + (voterWeights[voterUid] ?? 1) },
     { guilty: 0, innocent: 0, abstain: 0 },
   );
 }
@@ -33,8 +34,9 @@ export function calculateVerdictResult(
   votes: Record<string, VerdictVote> | null | undefined,
   settings: VerdictVotingSettings,
   eligibleVoterUids?: ReadonlySet<string>,
+  voterWeights: Readonly<Record<string, number>> = {},
 ): VerdictResult {
-  const counts = countVerdictVotes(votes, eligibleVoterUids);
+  const counts = countVerdictVotes(votes, eligibleVoterUids, voterWeights);
   let outcome: VerdictOutcome;
 
   if (counts.guilty > counts.innocent) {

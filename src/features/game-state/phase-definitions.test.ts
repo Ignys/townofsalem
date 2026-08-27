@@ -13,7 +13,15 @@ test("all playable phases remain simultaneously available to the host", () => {
 test("phase definitions expose configurable timer metadata", () => {
   for (const definition of PHASE_DEFINITIONS) {
     assert.equal(typeof definition.label, "string");
-    assert.equal(definition.hasTimer, true);
-    assert.ok((definition.defaultDurationSeconds ?? 0) > 0);
+    if (definition.id === "night") {
+      assert.equal(definition.hasTimer, false);
+      assert.equal(definition.defaultDurationSeconds, null);
+    } else if (definition.id === "day") {
+      assert.equal(definition.hasTimer, true);
+      assert.equal(definition.defaultDurationSeconds, null);
+    } else {
+      assert.equal(definition.hasTimer, true);
+      assert.ok((definition.defaultDurationSeconds ?? 0) > 0);
+    }
   }
 });

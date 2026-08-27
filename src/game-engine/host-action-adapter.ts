@@ -2,6 +2,7 @@ import type { HostNightActionEntry, Player, RoleDefinition } from "@/types";
 
 import type { EngineGameState, EngineNightAction, EngineWarning } from "./types";
 import { resolveMafiaVoteTarget } from "./role-rules";
+import type { PrivatePlayerRecord } from "@/lib/firebase/schema";
 
 export interface HostActionAdapterInput {
   gameId: string;
@@ -9,13 +10,27 @@ export interface HostActionAdapterInput {
   players: readonly Player[];
   assignments: Readonly<Record<string, string>>;
   roleDefinitions: readonly RoleDefinition[];
+  nightNumber?: number;
+  variants?: EngineGameState["variants"];
+  privatePlayerStates?: Readonly<Record<string, PrivatePlayerRecord>>;
+  amnesiacRolePool?: readonly string[];
 }
 
 export function createEngineGameState(input: HostActionAdapterInput): EngineGameState {
   const rolesById = new Map(input.roleDefinitions.map((role) => [role.id, role]));
+  const resourceUses: Record<string, number> = {};
+  for (const [playerUid, state] of Object.entries(input.privatePlayerStates ?? {})) {
+    for (const [resource, uses] of Object.entries(state.resourceUses ?? {})) {
+      resourceUses[`${playerUid}:${resource}`] = uses;
+    }
+  }
   return {
     gameId: input.gameId,
     nightId: input.nightId,
+    nightNumber: input.nightNumber,
+    variants: input.variants,
+    amnesiacRolePool: input.amnesiacRolePool,
+    resourceUses,
     players: input.players.flatMap((player) => {
       const role = rolesById.get(input.assignments[player.uid] ?? "");
       if (!role) return [];
@@ -26,7 +41,11 @@ export function createEngineGameState(input: HostActionAdapterInput): EngineGame
         roleId: role.id,
         faction: role.faction,
         canDieAtNight: role.canDieAtNight,
-        statuses: (player.statuses ?? []).map(({ type }) => type),
+        statuses: Object.keys(input.privatePlayerStates?.[player.uid]?.statuses ?? {})
+          .concat((player.statuses ?? []).map(({ type }) => type))
+          .filter((status, index, statuses) => statuses.indexOf(status) === index),
+        seat: player.seat,
+        originalRoleId: input.privatePlayerStates?.[player.uid]?.originalRoleId ?? role.id,
         investigativeAppearance: role.investigativeAppearance,
       }];
     }),
@@ -64,6 +83,8 @@ export function adaptHostActions(
       statusType: definition?.engineEffectConfig?.statusType,
       blockedByTargetStatuses:
         definition?.engineEffectConfig?.blockedByTargetStatuses,
+      protectionType: definition?.engineEffectConfig?.protectionType,
+      countsAsVisit: definition?.engineEffectConfig?.countsAsVisit,
     };
   });
 
@@ -83,6 +104,9 @@ export function adaptHostActions(
           "A votação da Mafia empatou sem um voto de Godfather capaz de decidir.",
       });
     } else {
+      const targetUids = mafiaVotes.length === 1 && mafiaVotes[0].targetUids.length > 1
+        ? [...new Set(mafiaVotes[0].targetUids)]
+        : [targetUid];
       const actorUid =
         godfather?.actorUid ??
         [...mafiaVotes].sort((left, right) =>
@@ -93,10 +117,28 @@ export function adaptHostActions(
         actorUid,
         roleId: godfather?.roleIdSnapshot ?? "mafioso",
         actionId: "mafia-attack",
-        targetUids: [targetUid],
+        targetUids,
         effectType: "attack",
         priority: 50,
+        sourceType: "faction",
+        sourceFaction: "mafia",
+        participantUids: mafiaVotes.map(({ actorUid: uid }) => uid).sort(),
       });
+      const janitorVote = mafiaVotes.find(
+        (entry) => entry.roleIdSnapshot === "janitor",
+      );
+      if (janitorVote) {
+        actions.push({
+          id: `janitor-auto-clean:${janitorVote.id}`,
+          actorUid: janitorVote.actorUid,
+          roleId: "janitor",
+          actionId: "clean",
+          targetUids: [],
+          effectType: "clean",
+          priority: 60,
+          countsAsVisit: false,
+        });
+      }
     }
   }
 

@@ -37,7 +37,7 @@ export function HostHistoryPanel({ gameId, hostUid, players: playerRecords }: Ho
   };
 
   return (
-    <section className="rounded-3xl border border-white/10 bg-[#1a1c1e] p-5 sm:p-7">
+    <section className="rounded-xl border border-white/10 bg-[#1a1c1e] p-4 sm:p-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><p className="text-xs font-semibold tracking-[0.2em] text-[#d3b88c] uppercase">Auditoria</p><h2 className="mt-2 font-serif text-2xl font-semibold">Histórico da partida</h2></div>
         <button type="button" disabled={!history.loaded} onClick={exportHistory} className="min-h-10 rounded-xl border border-white/15 px-3 text-sm font-bold disabled:opacity-50">Exportar JSON</button>

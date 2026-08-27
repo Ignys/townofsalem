@@ -29,7 +29,7 @@ const DEFAULT_STYLE = FACTION_STYLES.neutral;
 
 export function RoleSelectionOptions({ roles, selectedRoleCounts, allowDuplicateRoleIds, disabled, onAdd }: RoleSelectionOptionsProps) {
     return (
-        <ul className="grid gap-2 sm:grid-cols-2">
+        <ul className="grid gap-2 sm:grid-cols-3">
             {roles.map((role) => {
                 const selectedCount = selectedRoleCounts[role.id] ?? 0;
                 const unavailable = (!allowDuplicateRoleIds && selectedCount > 0) || selectedCount >= role.cardCount;

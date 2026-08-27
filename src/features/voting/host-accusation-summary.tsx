@@ -4,6 +4,9 @@ import { useState } from "react";
 
 import { getPlayerEntries } from "@/features/game-state/player-roster";
 import type { PublicPlayerRecord } from "@/lib/firebase/schema";
+import type { PrivatePlayerRecord } from "@/lib/firebase/schema";
+import type { GameVariants } from "@/game-engine/variants";
+import { getEligibleVoterUids, getVoterWeights } from "./voter-rules";
 
 import {
   countAccusationVotes,
@@ -16,19 +19,24 @@ interface HostAccusationSummaryProps {
   gameId: string;
   accusations?: Record<string, string>;
   players: Record<string, PublicPlayerRecord>;
+  privatePlayers: Record<string, PrivatePlayerRecord>;
+  variants: GameVariants;
 }
 
 export function HostAccusationSummary({
   gameId,
   accusations,
   players,
+  privatePlayers,
+  variants,
 }: HostAccusationSummaryProps) {
   const [busyTarget, setBusyTarget] = useState<string | null>(null);
   const [error, setError] = useState(false);
   const alivePlayers = getPlayerEntries(players).filter(([, player]) => player.alive);
   const counts = countAccusationVotes(
     accusations,
-    new Set(alivePlayers.map(([playerUid]) => playerUid)),
+    getEligibleVoterUids(players, privatePlayers, variants),
+    getVoterWeights(privatePlayers, Object.keys(players).length),
   );
   const votesRequired = getVotesRequired(
     alivePlayers.length,

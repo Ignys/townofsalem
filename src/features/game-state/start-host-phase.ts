@@ -1,6 +1,6 @@
 "use client";
 
-import { readPublicGame } from "@/lib/firebase/game-access-repository";
+import { readHostPrivatePlayers, readPublicGame } from "@/lib/firebase/game-access-repository";
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 import type { PlayablePhase } from "@/types";
@@ -21,7 +21,10 @@ export async function startHostPhase(
   createId: () => string = () => crypto.randomUUID(),
 ): Promise<void> {
   const hostUid = await requireAuthenticatedGameHost(gameId);
-  const game = await readPublicGame(gameId);
+  const [game, privatePlayers] = await Promise.all([
+    readPublicGame(gameId),
+    input.phaseId === "night" ? readHostPrivatePlayers(gameId) : null,
+  ]);
 
   if (!game || game.status !== "in-progress") {
     throw new Error("game-not-in-progress");
@@ -64,5 +67,13 @@ export async function startHostPhase(
         durationSeconds: input.durationSeconds,
       },
     },
+    ...Object.fromEntries(
+      Object.entries(privatePlayers ?? {})
+        .filter(([, player]) => player.statuses?.blackmailed)
+        .map(([uid]) => [
+          firebasePaths.gamePrivatePlayerStatus(gameId, uid, "blackmailed"),
+          null,
+        ]),
+    ),
   });
 }

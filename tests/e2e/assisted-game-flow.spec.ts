@@ -39,7 +39,13 @@ test("complete assisted physical flow keeps player secrets and host authority", 
   await expect(playerOne.getByText("Action Log")).toHaveCount(0);
   await expect(playerOne.getByRole("button", { name: /votar|culpado|inocente|confirmar ação/i })).toHaveCount(0);
 
+  await host.getByRole("button", { name: "Discussão", exact: true }).click();
+  await expect(host.getByRole("alertdialog")).toContainText("Isso finalizará a Noite 1, tem certeza?");
+  await host.getByRole("button", { name: "Não", exact: true }).click();
+
   await host.getByRole("button", { name: "Dia", exact: true }).click();
+  await expect(host.getByRole("alertdialog")).toContainText("Isso finalizará a Noite 1, tem certeza?");
+  await host.getByRole("button", { name: "Sim", exact: true }).click();
   await expect(playerOne.getByText("Dia", { exact: true })).toBeVisible();
   await host.getByRole("button", { name: "Discussão", exact: true }).click();
   await expect(playerOne.getByText("Discussão", { exact: true })).toBeVisible();
@@ -51,6 +57,7 @@ test("complete assisted physical flow keeps player secrets and host authority", 
   await expect(playerOne.getByText("Intervalo", { exact: true })).toBeVisible();
 
   await host.getByRole("button", { name: "Noite", exact: true }).click();
+  await expect(host.getByRole("alertdialog")).toHaveCount(0);
   await expect(host.getByRole("heading", { name: "Noite 1" }).first()).toBeVisible();
   await expect(playerOne.getByText("Noite 1", { exact: true })).toBeVisible();
   await expect(host.getByText(/0 de 2 registrados/)).toBeVisible();

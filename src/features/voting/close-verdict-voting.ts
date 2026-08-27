@@ -4,6 +4,8 @@ import { requireAuthenticatedGameHost } from "@/features/game-state/require-auth
 import {
   readGameDayVotes,
   readGamePlayers,
+  readGameSettings,
+  readHostPrivatePlayers,
   readPublicGame,
 } from "@/lib/firebase/game-access-repository";
 import { firebasePaths } from "@/lib/firebase/paths";
@@ -11,6 +13,8 @@ import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 
 import { calculateVerdictResult } from "@/game-engine/verdict-result";
 import { DEFAULT_VERDICT_VOTING_SETTINGS } from "./voting-settings";
+import { withDefaultVariants } from "@/game-engine/variants";
+import { getEffectiveVerdicts, getEligibleVoterUids, getVoterWeights } from "./voter-rules";
 
 export async function closeVerdictVoting(
   gameId: string,
@@ -29,24 +33,24 @@ export async function closeVerdictVoting(
     throw new Error("The verdict cannot be closed in the current state.");
   }
 
-  const [votes, players] = await Promise.all([
+  const [votes, players, privatePlayers, settings] = await Promise.all([
     readGameDayVotes(gameId, game.day),
     readGamePlayers(gameId),
+    readHostPrivatePlayers(gameId),
+    readGameSettings(gameId),
   ]);
-  const eligibleVoterUids = new Set(
-    Object.entries(players ?? {})
-      .filter(
-        ([playerUid, player]) =>
-          player.alive &&
-          (DEFAULT_VERDICT_VOTING_SETTINGS.accusedCanVote ||
-            playerUid !== game.accusedPlayerUid),
-      )
-      .map(([playerUid]) => playerUid),
+  const variants = withDefaultVariants(settings?.gameVariants);
+  const eligibleVoterUids = getEligibleVoterUids(
+    players ?? {},
+    privatePlayers ?? {},
+    variants,
+    DEFAULT_VERDICT_VOTING_SETTINGS.accusedCanVote ? null : game.accusedPlayerUid,
   );
   const result = calculateVerdictResult(
-    votes?.verdicts,
+    getEffectiveVerdicts(votes?.verdicts, privatePlayers ?? {}),
     DEFAULT_VERDICT_VOTING_SETTINGS,
     eligibleVoterUids,
+    getVoterWeights(privatePlayers ?? {}, Object.keys(players ?? {}).length),
   );
 
   await applyAtomicUpdate({

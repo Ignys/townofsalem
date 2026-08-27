@@ -44,10 +44,10 @@ export function nightAction({
   };
 }
 
-export const mafiaVoteAction = nightAction({
+export const mafiaAttackOrderAction = nightAction({
   id: "mafia-kill-vote",
-  label: "Votar no alvo da Mafia",
-  verb: "vota para atacar",
+  label: "Ordenar ataque da Mafia",
+  verb: "manda atacar",
   sharedFactionAction: true,
   availableFromNight: 2,
 });

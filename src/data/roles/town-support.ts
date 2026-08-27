@@ -9,6 +9,8 @@ const seanceAction = nightAction({
   verb: "consulta",
   allowDeadTarget: true,
   requireDeadTarget: true,
+  priority: 45,
+  engineEffectType: "role-trigger",
 });
 
 export const TOWN_SUPPORT_ROLES = [
@@ -18,14 +20,14 @@ export const TOWN_SUPPORT_ROLES = [
     faction: "town",
     alignment: "Town Support",
     description:
-      "Durante o dia, você pode revelar publicamente sua role. Depois disso, seu voto vale dois votos pelo restante da partida.",
+      "Durante o dia, você pode revelar publicamente sua role. Depois disso, o peso do seu voto aumenta conforme o tamanho da partida.",
     beginnerDescription:
       "Revele-se quando o voto extra fizer diferença, lembrando que você perderá a possibilidade de cura do Doctor.",
     goal: TOWN_GOAL,
     virtueValue: 8,
     cardCount: 1,
     importantInteractions: [
-      "Depois de revelado, cada voto do Mayor vale dois.",
+      "Depois de revelado, o voto vale 2, 3 ou 4 conforme o tamanho da mesa.",
       "Um Mayor revelado não pode ser curado pelo Doctor.",
     ],
     canDieAtNight: true,
@@ -149,7 +151,7 @@ export const TOWN_SUPPORT_ROLES = [
     virtueValue: 1,
     cardCount: 8,
     importantInteractions: [
-      "Seu voto tem peso normal; apenas um Mayor revelado vale dois.",
+      "Seu voto tem peso normal; apenas um Mayor revelado recebe peso ampliado.",
     ],
     canDieAtNight: true,
     investigativeAppearance: investigativeAppearance("Townie", "town"),

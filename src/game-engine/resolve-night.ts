@@ -1,24 +1,50 @@
+import { resolveCombat } from "./combat";
 import { createEffects } from "./effect-registry";
+import { getInvestigationResult } from "./investigation";
+import { isEngineActionAvailableOnNight } from "./night-action-availability";
 import { sortEffectsByPriority } from "./priority";
+import {
+  createRandomRecorder,
+  createSeededRandomSource,
+  type RandomSource,
+} from "./random";
+import { resolveRoleTriggers } from "./role-triggers";
 import type {
   EngineEffect,
   EngineEvent,
   EngineGameState,
   EngineNightAction,
+  EngineRandomDecision,
   EngineWarning,
   InvestigationResult,
   NightResolution,
 } from "./types";
+import { withDefaultVariants } from "./variants";
+import { collectVisits } from "./visits";
+
+export interface ResolveNightOptions {
+  randomSource?: RandomSource;
+}
 
 function warning(code: string, message: string, actionId?: string): EngineWarning {
   return { code, message, ...(actionId ? { actionId } : {}) };
 }
 
+function referencesAreValid(
+  effect: EngineEffect,
+  playersByUid: ReadonlyMap<string, EngineGameState["players"][number]>,
+): boolean {
+  const actorExists = effect.sourceType === "faction" || playersByUid.has(effect.actorUid);
+  return actorExists && effect.targetUids.every((uid) => playersByUid.has(uid));
+}
+
 export function resolveNight(
   gameState: EngineGameState,
   actions: readonly EngineNightAction[],
+  options: ResolveNightOptions = {},
 ): NightResolution {
   const playersByUid = new Map(gameState.players.map((player) => [player.uid, player]));
+  const variants = withDefaultVariants(gameState.variants);
   const generated = createEffects(actions);
   const effects = sortEffectsByPriority(generated.effects);
   const warnings: EngineWarning[] = [...generated.warnings];
@@ -27,177 +53,239 @@ export function resolveNight(
   const blockedActors = new Set<string>();
   const blockedActions = new Set<string>();
   const failedActions = new Set<string>();
-  const protections = new Map<string, Set<string>>();
-  const attacks: EngineEffect[] = [];
-  const postDeathEffects: EngineEffect[] = [];
+  const activeEffects: EngineEffect[] = [];
   const investigationResults: InvestigationResult[] = [];
   const appliedStatuses: Array<{
     targetUid: string;
     statusType: string;
     sourceActionId: string;
   }> = [];
+  const randomDecisions: EngineRandomDecision[] = [];
+  const randomSource = options.randomSource ?? createSeededRandomSource(
+    `${gameState.gameId}:${gameState.nightId}`,
+  );
+  const choose = createRandomRecorder(randomSource, randomDecisions);
 
   for (const effect of effects) {
-    const actor = playersByUid.get(effect.actorUid);
-    const targets = effect.targetUids.map((uid) => playersByUid.get(uid));
-    if (!actor || targets.some((target) => !target)) {
+    if (!referencesAreValid(effect, playersByUid)) {
       failedActions.add(effect.id);
-      warnings.push(warning("INVALID_ENGINE_REFERENCE", "Ator ou alvo não existe no snapshot.", effect.id));
+      warnings.push(warning(
+        "INVALID_ENGINE_REFERENCE",
+        "Ator ou alvo não existe no snapshot.",
+        effect.id,
+      ));
+      continue;
+    }
+    const actor = playersByUid.get(effect.actorUid);
+    if (
+      !isEngineActionAvailableOnNight(effect, gameState.nightNumber ?? 1)
+      || (!actor?.alive && effect.sourceType !== "faction")
+      || actor?.statuses.includes("town-blocked-next-night")
+    ) {
+      failedActions.add(effect.id);
+      events.push({
+        type: "ACTION_UNAVAILABLE",
+        actorUid: effect.actorUid,
+        actionId: effect.id,
+        reasonCode: !actor?.alive
+          ? "ACTOR_IS_DEAD"
+          : actor.statuses.includes("town-blocked-next-night")
+            ? "TOWN_BLOCKED_BY_SURVIVOR_LYNCH"
+            : "ACTION_UNAVAILABLE_THIS_NIGHT",
+      });
       continue;
     }
     if (blockedActors.has(effect.actorUid)) {
       blockedActions.add(effect.id);
-      events.push({ type: "ACTION_BLOCKED", actorUid: effect.actorUid, actionId: effect.id, reasonCode: "ACTOR_ROLEBLOCKED" });
+      events.push({
+        type: "ACTION_BLOCKED",
+        actorUid: effect.actorUid,
+        actionId: effect.id,
+        reasonCode: "ACTOR_ROLEBLOCKED",
+      });
       continue;
     }
 
-    switch (effect.effectType) {
-      case "roleblock":
-        effect.targetUids.forEach((uid) => blockedActors.add(uid));
-        appliedEffects.push(effect);
-        events.push(...effect.targetUids.map((targetUid) => ({ type: "PLAYER_ROLEBLOCKED", actorUid: effect.actorUid, targetUid, actionId: effect.id, reasonCode: "ROLEBLOCK_APPLIED" })));
-        break;
-      case "protect":
-        if (targets.some((target) =>
-          effect.blockedByTargetStatuses?.some((status) =>
-            target?.statuses.includes(status),
-          ),
-        )) {
-          failedActions.add(effect.id);
-          events.push({
-            type: "PROTECTION_BLOCKED",
-            actorUid: effect.actorUid,
-            targetUid: targets[0]?.uid,
-            actionId: effect.id,
-            reasonCode: "TARGET_STATUS_BLOCKS_PROTECTION",
-          });
-          break;
-        }
-        effect.targetUids.forEach((targetUid) => {
-          const sources = protections.get(targetUid) ?? new Set<string>();
-          sources.add(effect.id);
-          protections.set(targetUid, sources);
-        });
-        appliedEffects.push(effect);
-        break;
-      case "investigate": {
-        if (!effect.investigationType) {
-          failedActions.add(effect.id);
-          warnings.push(warning("INVESTIGATION_TYPE_NOT_CONFIGURED", "O tipo de investigação ainda não foi confirmado.", effect.id));
-          break;
-        }
-        const target = targets[0]!;
-        const result = target.investigativeAppearance?.[effect.investigationType];
-        if (!result) {
-          failedActions.add(effect.id);
-          warnings.push(warning("INVESTIGATION_MAPPING_NOT_CONFIGURED", "A aparência investigativa do alvo ainda não foi confirmada.", effect.id));
-          break;
-        }
-        investigationResults.push({ actorUid: effect.actorUid, targetUid: target.uid, investigationType: effect.investigationType, result, sourceActionId: effect.id });
-        appliedEffects.push(effect);
-        events.push({ type: "INVESTIGATION_RESULT", actorUid: effect.actorUid, targetUid: target.uid, actionId: effect.id, reasonCode: "INVESTIGATION_RESOLVED", details: { result } });
-        break;
-      }
-      case "attack":
-        attacks.push(effect);
-        break;
-      case "clean":
-        postDeathEffects.push(effect);
-        break;
-      case "status-effect":
-        if (!effect.statusType) {
-          failedActions.add(effect.id);
-          warnings.push(
-            warning(
-              "STATUS_TYPE_NOT_CONFIGURED",
-              "O status aplicado pela ação não foi configurado.",
-              effect.id,
-            ),
-          );
-          break;
-        }
-        effect.targetUids.forEach((targetUid) => {
-          appliedStatuses.push({
-            targetUid,
-            statusType: effect.statusType!,
-            sourceActionId: effect.id,
-          });
-          events.push({
-            type: "STATUS_APPLIED",
-            actorUid: effect.actorUid,
-            targetUid,
-            actionId: effect.id,
-            reasonCode: "STATUS_EFFECT_RESOLVED",
-            details: { statusType: effect.statusType! },
-          });
-        });
-        appliedEffects.push(effect);
-        break;
-      case "redirect":
-        failedActions.add(effect.id);
-        warnings.push(warning("UNSUPPORTED_EFFECT", `O efeito ${effect.effectType} ainda não é suportado.`, effect.id));
-        break;
-    }
-  }
-
-  const successfulAttackTargets = new Set<string>();
-  const survivalSources = new Map<string, Set<string>>();
-  for (const attack of attacks) {
-    let killedTarget = false;
-    for (const targetUid of attack.targetUids) {
-      const target = playersByUid.get(targetUid)!;
-      const protectionSources = protections.get(targetUid);
-
-      if (protectionSources?.size) {
-        const sources = survivalSources.get(targetUid) ?? new Set<string>();
-        protectionSources.forEach((source) => sources.add(source));
-        survivalSources.set(targetUid, sources);
-        events.push({ type: "PLAYER_SURVIVED", actorUid: attack.actorUid, targetUid, actionId: attack.id, reasonCode: "TARGET_PROTECTED" });
-        continue;
-      }
-
-      if (!target.canDieAtNight) {
-        survivalSources.set(targetUid, survivalSources.get(targetUid) ?? new Set<string>());
-        events.push({ type: "PLAYER_SURVIVED", actorUid: attack.actorUid, targetUid, actionId: attack.id, reasonCode: "TARGET_CANNOT_DIE_AT_NIGHT" });
-        continue;
-      }
-
-      killedTarget = true;
-      successfulAttackTargets.add(targetUid);
-      events.push({ type: "PLAYER_ATTACKED", actorUid: attack.actorUid, targetUid, actionId: attack.id, reasonCode: "KILL_SUCCEEDED" });
-    }
-    if (killedTarget) {
-      appliedEffects.push(attack);
-    }
-  }
-
-  const deaths = [...successfulAttackTargets].sort();
-  const cleaned = new Set<string>();
-  for (const effect of postDeathEffects) {
-    const targetUid = effect.targetUids[0];
-    if (targetUid && successfulAttackTargets.has(targetUid)) {
-      cleaned.add(targetUid);
+    if (effect.effectType === "roleblock") {
+      effect.targetUids.forEach((uid) => blockedActors.add(uid));
       appliedEffects.push(effect);
-      events.push({ type: "BODY_CLEANED", actorUid: effect.actorUid, targetUid, actionId: effect.id, reasonCode: "CLEAN_APPLIED_AFTER_DEATH" });
-    } else {
-      failedActions.add(effect.id);
-      events.push({ type: "CLEAN_FAILED", actorUid: effect.actorUid, targetUid, actionId: effect.id, reasonCode: "TARGET_DID_NOT_DIE" });
+      events.push(...effect.targetUids.map((targetUid) => ({
+        type: "PLAYER_ROLEBLOCKED",
+        actorUid: effect.actorUid,
+        targetUid,
+        actionId: effect.id,
+        reasonCode: "ROLEBLOCK_APPLIED",
+      })));
+      continue;
     }
+
+    if (
+      effect.effectType === "protect"
+      && effect.blockedByTargetStatuses?.some((status) =>
+        effect.targetUids.some((targetUid) =>
+          playersByUid.get(targetUid)?.statuses.includes(status),
+        ),
+      )
+    ) {
+      failedActions.add(effect.id);
+      events.push({
+        type: "PROTECTION_BLOCKED",
+        actorUid: effect.actorUid,
+        targetUid: effect.targetUids[0],
+        actionId: effect.id,
+        reasonCode: "TARGET_STATUS_BLOCKS_PROTECTION",
+      });
+      continue;
+    }
+
+    activeEffects.push(effect);
   }
-  deaths.forEach((targetUid) => events.push({ type: "PLAYER_DIED", targetUid, reasonCode: "NIGHT_KILL_RESOLVED" }));
+
+  for (const effect of activeEffects) {
+    if (effect.effectType === "investigate") {
+      if (!effect.investigationType) {
+        failedActions.add(effect.id);
+        warnings.push(warning(
+          "INVESTIGATION_TYPE_NOT_CONFIGURED",
+          "O tipo de investigação ainda não foi configurado.",
+          effect.id,
+        ));
+        continue;
+      }
+      const target = playersByUid.get(effect.targetUids[0]);
+      const result = target
+        ? getInvestigationResult(
+          target,
+          effect.investigationType,
+          gameState.nightNumber ?? 1,
+          variants,
+        )
+        : null;
+      if (!target || !result) {
+        failedActions.add(effect.id);
+        warnings.push(warning(
+          "INVESTIGATION_MAPPING_NOT_CONFIGURED",
+          "A aparência investigativa do alvo ainda não foi configurada.",
+          effect.id,
+        ));
+        continue;
+      }
+      investigationResults.push({
+        actorUid: effect.actorUid,
+        targetUid: target.uid,
+        investigationType: effect.investigationType,
+        result,
+        sourceActionId: effect.id,
+      });
+      appliedEffects.push(effect);
+      events.push({
+        type: "INVESTIGATION_RESULT",
+        actorUid: effect.actorUid,
+        targetUid: target.uid,
+        actionId: effect.id,
+        reasonCode: "INVESTIGATION_RESOLVED",
+        details: { result },
+      });
+      continue;
+    }
+
+    if (effect.effectType === "status-effect") {
+      if (!effect.statusType) {
+        failedActions.add(effect.id);
+        warnings.push(warning(
+          "STATUS_TYPE_NOT_CONFIGURED",
+          "O status aplicado pela ação não foi configurado.",
+          effect.id,
+        ));
+        continue;
+      }
+      for (const targetUid of effect.targetUids) {
+        const statusType = effect.actionId === "choose-execution-target"
+          ? `execution-target:${effect.actorUid}`
+          : effect.statusType;
+        appliedStatuses.push({ targetUid, statusType, sourceActionId: effect.id });
+        events.push({
+          type: "STATUS_APPLIED",
+          actorUid: effect.actorUid,
+          targetUid,
+          actionId: effect.id,
+          reasonCode: "STATUS_EFFECT_RESOLVED",
+          details: { statusType },
+        });
+      }
+      appliedEffects.push(effect);
+      continue;
+    }
+
+    if (effect.effectType === "redirect") {
+      failedActions.add(effect.id);
+      warnings.push(warning(
+        "UNSUPPORTED_EFFECT",
+        "O redirecionamento ainda não possui regra física confirmada.",
+        effect.id,
+      ));
+      continue;
+    }
+
+    if (effect.effectType === "role-trigger") {
+      appliedEffects.push(effect);
+      continue;
+    }
+
+    appliedEffects.push(effect);
+  }
+
+  const visits = collectVisits(activeEffects);
+  const combat = resolveCombat({
+    gameState,
+    effects: activeEffects,
+    visits,
+    variants,
+    choose,
+  });
+  events.push(...combat.events);
+
+  const triggers = resolveRoleTriggers({
+    gameState,
+    effects: activeEffects,
+    appliedStatuses,
+    deathRecords: combat.deathRecords,
+    events,
+    warnings,
+    choose,
+    variants,
+  });
+  const deaths = [...new Set(combat.deathRecords.map(({ targetUid }) => targetUid))].sort();
+  deaths.forEach((targetUid) => events.push({
+    type: "PLAYER_DIED",
+    targetUid,
+    reasonCode: combat.deathRecords.find((death) => death.targetUid === targetUid)?.cause
+      ?? "NIGHT_KILL_RESOLVED",
+  }));
 
   return {
     nightId: gameState.nightId,
     deaths,
-    survivors: [...survivalSources.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([targetUid, sources]) => ({ targetUid, reasonCode: "TARGET_SURVIVED_ATTACK", sourceActionIds: [...sources].sort() })),
+    deathRecords: combat.deathRecords,
+    survivors: combat.survivors.filter(({ targetUid }) => !deaths.includes(targetUid)),
     investigationResults,
     appliedEffects,
     blockedActions: [...blockedActions].sort(),
     failedActions: [...failedActions].sort(),
     warnings,
     engineEvents: events,
-    cleanedPlayerUids: [...cleaned].sort(),
+    cleanedPlayerUids: combat.cleanedPlayerUids,
     appliedStatuses,
+    removedStatuses: gameState.players
+      .filter(({ statuses }) => statuses.includes("town-blocked-next-night"))
+      .map(({ uid }) => ({
+        targetUid: uid,
+        statusType: "town-blocked-next-night",
+      })),
+    randomDecisions,
+    roleChanges: triggers.roleChanges,
+    consumedResources: combat.consumedResources,
+    individualWinnerUids: triggers.individualWinnerUids,
     partial: warnings.length > 0,
   };
 }

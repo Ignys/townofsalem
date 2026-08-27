@@ -4,6 +4,8 @@ Framework-independent game rules belong here. Keep this layer free of React, Nex
 
 `draw-roles.ts` performs role assignment with Fisher–Yates over copies of the participant and role arrays. It accepts an injectable random source for deterministic tests and does not persist or expose assignments by itself.
 
-Card-game-specific confirmed relationships live in small rule modules. `role-rules.ts` covers forced verdicts, revealed Mayor vote weight, Deputy activation, action schedules, table adjacency, and Godfather tie breaking. Night deaths are binary: an unprotected kill eliminates a role only when `canDieAtNight` is true; protection effects prevent that death without attack or defense levels.
+Card-game-specific relationships live in small rule modules. `combat.ts` resolves independent attacks, Doctor healing, Bodyguard interception/sacrifice, night immunity, Veteran visits and automatic Janitor cleaning. `visits.ts`, `investigation.ts`, `role-triggers.ts`, `day-effects.ts`, `role-resource-limits.ts`, and `win-condition.ts` keep those concerns independent from the orchestration in `resolve-night.ts`.
+
+Random decisions use an injected or seeded source from `random.ts` and are returned with the resolution, so previews are reproducible and the selected result can be persisted. Optional rules are normalized in `variants.ts`; the default Bodyguard sacrifice cannot be healed.
 
 `game-phase-machine.ts` is the single source of truth for structural `GamePhase` transitions. It exposes pure queries, keeps transition lists immutable, and leaves authorization, persistence, timers, and phase automation to later application layers.

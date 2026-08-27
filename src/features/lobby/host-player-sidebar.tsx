@@ -1,6 +1,21 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  closestCenter,
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 
 import { getPlayerEntries } from "@/features/game-state/player-roster";
 import { useHostRoleAssignments } from "@/features/roles/use-host-role-assignments";
@@ -8,6 +23,7 @@ import type { PublicPlayerRecord } from "@/lib/firebase/schema";
 
 import { addBotPlayer } from "./host-bot-actions";
 import { HostAddBotButton } from "./host-add-bot-button";
+import { updatePlayerHouseOrder } from "./host-player-actions";
 import { HostPlayerSidebarRow } from "./host-player-sidebar-row";
 
 interface HostPlayerSidebarProps {
@@ -28,13 +44,36 @@ export function HostPlayerSidebar({
   onComposeAction,
 }: HostPlayerSidebarProps) {
   const playerEntries = useMemo(() => getPlayerEntries(players), [players]);
+  const incomingOrder = useMemo(
+    () => playerEntries.map(([playerUid]) => playerUid),
+    [playerEntries],
+  );
+  const [optimisticOrder, setOptimisticOrder] = useState<string[] | null>(null);
+  const [savingOrder, setSavingOrder] = useState(false);
+  const [orderError, setOrderError] = useState(false);
   const [addingBot, setAddingBot] = useState(false);
   const [botError, setBotError] = useState(false);
   const privateRoles = useHostRoleAssignments(gameId, verifiedHostUid);
   const connectedCount = playerEntries.filter(
     ([, player]) => !player.disconnected,
   ).length;
-  const sidebarError = botError || Boolean(privateRoles.error);
+  const playerByUid = useMemo(() => new Map(playerEntries), [playerEntries]);
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  );
+  const optimisticOrderMatchesPlayers =
+    optimisticOrder?.length === incomingOrder.length &&
+    optimisticOrder.every((playerUid) => playerByUid.has(playerUid));
+  const orderedPlayerUids = optimisticOrderMatchesPlayers
+    ? optimisticOrder
+    : incomingOrder;
+  const reorderEnabled =
+    !gameStarted && playerEntries.length > 1 && !savingOrder;
+  const sidebarError =
+    orderError || botError || Boolean(privateRoles.error);
 
   const handleAddBot = async () => {
     setAddingBot(true);
@@ -47,6 +86,65 @@ export function HostPlayerSidebar({
     } finally {
       setAddingBot(false);
     }
+  };
+
+  const persistOrderChange = async (
+    previousOrder: string[],
+    nextOrder: string[],
+  ) => {
+    setOptimisticOrder(nextOrder);
+    setSavingOrder(true);
+    setOrderError(false);
+
+    try {
+      await updatePlayerHouseOrder(gameId, nextOrder);
+    } catch {
+      setOptimisticOrder(previousOrder);
+      setOrderError(true);
+    } finally {
+      setSavingOrder(false);
+    }
+  };
+
+  const handleDragEnd = async ({ active, over }: DragEndEvent) => {
+    if (!over || active.id === over.id || !reorderEnabled) {
+      return;
+    }
+
+    const oldIndex = orderedPlayerUids.indexOf(String(active.id));
+    const newIndex = orderedPlayerUids.indexOf(String(over.id));
+
+    if (oldIndex < 0 || newIndex < 0) {
+      return;
+    }
+
+    const previousOrder = orderedPlayerUids;
+    const nextOrder = arrayMove(previousOrder, oldIndex, newIndex);
+    await persistOrderChange(previousOrder, nextOrder);
+  };
+
+  const handleMovePlayer = async (
+    playerUid: string,
+    direction: -1 | 1,
+  ) => {
+    if (!reorderEnabled) {
+      return;
+    }
+
+    const oldIndex = orderedPlayerUids.indexOf(playerUid);
+    const newIndex = oldIndex + direction;
+
+    if (
+      oldIndex < 0 ||
+      newIndex < 0 ||
+      newIndex >= orderedPlayerUids.length
+    ) {
+      return;
+    }
+
+    const previousOrder = orderedPlayerUids;
+    const nextOrder = arrayMove(previousOrder, oldIndex, newIndex);
+    await persistOrderChange(previousOrder, nextOrder);
   };
 
   return (
@@ -75,22 +173,47 @@ export function HostPlayerSidebar({
           Nenhum jogador na sala.
         </p>
       ) : (
-        <ul className="mt-4 grid gap-2" aria-live="polite">
-          {playerEntries.map(([playerUid, player], index) => (
-            <HostPlayerSidebarRow
-              key={playerUid}
-              gameId={gameId}
-              playerUid={playerUid}
-              player={player}
-              houseNumber={index + 1}
-              assignment={privateRoles.assignments[playerUid]}
-              rolesLoaded={privateRoles.loaded}
-              gameStarted={gameStarted}
-              statusEditable={statusEditable}
-              onComposeAction={onComposeAction}
-            />
-          ))}
-        </ul>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={(event) => void handleDragEnd(event)}
+        >
+          <SortableContext
+            items={orderedPlayerUids}
+            strategy={verticalListSortingStrategy}
+          >
+            <ul className="mt-4 grid gap-2" aria-live="polite">
+              {orderedPlayerUids.map((playerUid, index) => {
+                const player = playerByUid.get(playerUid);
+
+                if (!player) {
+                  return null;
+                }
+
+                return (
+                  <HostPlayerSidebarRow
+                    key={playerUid}
+                    gameId={gameId}
+                    playerUid={playerUid}
+                    player={player}
+                    houseNumber={index + 1}
+                    assignment={privateRoles.assignments[playerUid]}
+                    rolesLoaded={privateRoles.loaded}
+                    gameStarted={gameStarted}
+                    statusEditable={statusEditable}
+                    reorderEnabled={reorderEnabled}
+                    canMoveUp={index > 0}
+                    canMoveDown={index < orderedPlayerUids.length - 1}
+                    onMove={(direction) =>
+                      void handleMovePlayer(playerUid, direction)
+                    }
+                    onComposeAction={onComposeAction}
+                  />
+                );
+              })}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
 
       <p
@@ -102,9 +225,13 @@ export function HostPlayerSidebar({
           ? "Não foi possível carregar as roles dos jogadores."
           : botError
             ? "Não foi possível adicionar o bot. Tente novamente."
-            : gameStarted && !privateRoles.loaded
-              ? "Carregando roles…"
-              : ""}
+            : orderError
+              ? "Não foi possível salvar a ordem. Tente novamente."
+              : savingOrder
+                ? "Salvando ordem das casas…"
+                : gameStarted && !privateRoles.loaded
+                  ? "Carregando roles…"
+                  : ""}
       </p>
     </aside>
   );

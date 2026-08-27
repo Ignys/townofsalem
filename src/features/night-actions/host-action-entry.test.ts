@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import type { HostNightActionEntry, Player, RoleDefinition } from "@/types";
+import { ROLE_DEFINITIONS } from "@/data/roles";
 
 import { formatHostActionEntry, isBasicHostActionEntry } from "./host-action-entry";
 import { hasBlockingHostActionIssues, validateHostNightAction } from "./validate-host-night-action";
@@ -47,4 +48,41 @@ test("blocks wrong night, self-target and invalid target count", () => {
   const issues = validateHostNightAction({ ...entry, nightId: "other", targetUids: ["actor", "target"] }, context);
   assert.equal(hasBlockingHostActionIssues(issues), true);
   assert.deepEqual(issues.map(({ code }) => code), ["WRONG_NIGHT", "TARGET_COUNT", "SELF_TARGET_FORBIDDEN"]);
+});
+
+test("Bodyguard repeat-target variant checks only the immediately previous night", () => {
+  const currentEntry: HostNightActionEntry = {
+    ...entry,
+    id: "current",
+    nightId: "night-4",
+    nightNumber: 4,
+    roleIdSnapshot: "bodyguard",
+    actionId: "guard",
+  };
+  const previousEntry: HostNightActionEntry = {
+    ...currentEntry,
+    id: "previous",
+    nightId: "night-3",
+    nightNumber: 3,
+  };
+  const bodyguardContext = {
+    players,
+    assignments: { actor: "bodyguard", target: "doctor" },
+    roleDefinitions: ROLE_DEFINITIONS,
+    nightId: "night-4",
+    nightNumber: 4,
+    variants: { bodyguardCannotGuardSameTargetTwice: true },
+  };
+
+  const consecutiveIssues = validateHostNightAction(currentEntry, {
+    ...bodyguardContext,
+    actionEntries: [previousEntry],
+  });
+  assert.ok(consecutiveIssues.some(({ code }) => code === "BODYGUARD_REPEATED_TARGET"));
+
+  const nonConsecutiveIssues = validateHostNightAction(currentEntry, {
+    ...bodyguardContext,
+    actionEntries: [{ ...previousEntry, nightNumber: 2 }],
+  });
+  assert.ok(!nonConsecutiveIssues.some(({ code }) => code === "BODYGUARD_REPEATED_TARGET"));
 });

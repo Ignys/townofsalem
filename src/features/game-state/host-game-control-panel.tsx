@@ -5,7 +5,9 @@ import { useRef, useState } from "react";
 import { HostGameTimer } from "@/features/timer/host-game-timer";
 import type { GamePublicRecord } from "@/lib/firebase/schema";
 
-import { GAME_PHASE_LABELS } from "./game-phase-presentation";
+import { CurrentGamePhase } from "./current-game-phase";
+import { PhaseChangeConfirmationDialog } from "./phase-change-confirmation-dialog";
+import { getNightEndLabel, shouldConfirmNightEnd } from "./phase-end-label";
 import { PHASE_DEFINITIONS } from "./phase-definitions";
 
 interface HostGameControlPanelProps {
@@ -18,6 +20,12 @@ interface PhaseFeedback {
   message: string;
 }
 
+interface PhaseStartInput {
+  phaseId: (typeof PHASE_DEFINITIONS)[number]["id"] | "custom";
+  label: string;
+  durationSeconds: number | null;
+}
+
 export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps) {
   const commandInProgress = useRef(false);
   const [busy, setBusy] = useState(false);
@@ -26,13 +34,10 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
   const [customMinutes, setCustomMinutes] = useState("1");
   const [customSeconds, setCustomSeconds] = useState("0");
   const [feedback, setFeedback] = useState<PhaseFeedback | null>(null);
+  const [pendingPhase, setPendingPhase] = useState<PhaseStartInput | null>(null);
 
-  const startPhase = async (input: {
-    phaseId: (typeof PHASE_DEFINITIONS)[number]["id"] | "custom";
-    label: string;
-    durationSeconds: number | null;
-  }) => {
-    if (commandInProgress.current) return;
+  const startPhase = async (input: PhaseStartInput): Promise<boolean> => {
+    if (commandInProgress.current) return false;
 
     commandInProgress.current = true;
     setBusy(true);
@@ -43,14 +48,34 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
       await startHostPhase(gameId, input);
       setFeedback({ kind: "success", message: `${input.label} iniciada.` });
       setCustomOpen(false);
+      return true;
     } catch {
       setFeedback({
         kind: "error",
         message: "Não foi possível iniciar a fase. Revise a duração e tente novamente.",
       });
+      return false;
     } finally {
       commandInProgress.current = false;
       setBusy(false);
+    }
+  };
+
+  const selectPhase = (input: PhaseStartInput) => {
+    if (shouldConfirmNightEnd(game.phase)) {
+      setFeedback(null);
+      setPendingPhase(input);
+      return;
+    }
+
+    void startPhase(input);
+  };
+
+  const confirmPhaseChange = async () => {
+    if (!pendingPhase) return;
+
+    if (await startPhase(pendingPhase)) {
+      setPendingPhase(null);
     }
   };
 
@@ -86,28 +111,17 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
   };
 
   return (
-    <section className="w-full rounded-3xl border border-white/10 bg-[#1a1c1e] p-5 shadow-[0_24px_70px_rgba(0,0,0,0.34)] sm:p-7">
-      <header className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-xs font-semibold tracking-[0.2em] text-[#d3b88c] uppercase">
-            Controle da partida
-          </p>
-          <h2 className="mt-2 font-serif text-2xl font-semibold text-[#fffaf0]">
-            {game.phaseLabel ?? GAME_PHASE_LABELS[game.phase]}
-            {game.phase === "night" && game.nightNumber ? ` ${game.nightNumber}` : ""}
-          </h2>
-        </div>
-        <span className="rounded-full border border-[#d3b88c]/25 bg-[#d3b88c]/10 px-3 py-1 text-xs font-bold text-[#e6cfa9]">
-          Fase atual
-        </span>
-      </header>
-
+    <section className="items-center rounded-2xl border border-[#d3b88c]/20 bg-black/20 px-5 py-4 sm:min-w-80">
+      <CurrentGamePhase game={game} />
+      {game.phase !== "game-over" && (
+        <HostGameTimer gameId={gameId} game={game} />
+      )}
       <div className="mt-5">
-        <h3 className="text-sm font-semibold text-[#e5ded2]">Iniciar qualquer fase</h3>
         <div
-          className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-7"
+          className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-3"
           aria-label="Fases disponíveis"
         >
+
           {PHASE_DEFINITIONS.map((definition) => {
             const current = game.phase === definition.id;
 
@@ -117,7 +131,7 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
                 type="button"
                 aria-pressed={current}
                 onClick={() =>
-                  void startPhase({
+                  selectPhase({
                     phaseId: definition.id,
                     label: definition.label,
                     durationSeconds: definition.defaultDurationSeconds,
@@ -152,7 +166,7 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
           onSubmit={(event) => {
             event.preventDefault();
             if (customDurationValid) {
-              void startPhase({
+              selectPhase({
                 phaseId: "custom",
                 label: customLabel.trim() || "Fase personalizada",
                 durationSeconds: customDurationSeconds,
@@ -201,21 +215,20 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
         </form>
       )}
 
-      <p
-        role={feedback?.kind === "error" ? "alert" : "status"}
-        className={`mt-3 min-h-5 text-sm ${
-          feedback?.kind === "error" ? "text-[#f0b9bd]" : "text-[#bfe0c5]"
-        }`}
-      >
-        {feedback?.message ?? ""}
-      </p>
-
-      {game.phase !== "game-over" && <HostGameTimer gameId={gameId} game={game} />}
       {game.status === "in-progress" && (
         <button type="button" disabled={busy} onClick={() => void handleEndGame()} className="mt-5 min-h-10 rounded-xl border border-[#a33843]/35 px-3 text-sm font-bold text-[#f0b9bd] disabled:opacity-50">
           Encerrar partida
         </button>
       )}
+
+      <PhaseChangeConfirmationDialog
+        open={pendingPhase !== null}
+        endingPhaseLabel={getNightEndLabel(game)}
+        busy={busy}
+        errorMessage={feedback?.kind === "error" ? feedback.message : undefined}
+        onCancel={() => setPendingPhase(null)}
+        onConfirm={() => void confirmPhaseChange()}
+      />
     </section>
   );
 }

@@ -3,10 +3,12 @@
 import { useMemo, useState } from "react";
 
 import { ROLE_DEFINITIONS } from "@/data/roles";
+import { useGameVariants } from "@/features/game-variants/use-game-variants";
 import { adaptHostActions, createEngineGameState } from "@/game-engine/host-action-adapter";
 import { resolveNight } from "@/game-engine/resolve-night";
 import type { NightResolution } from "@/game-engine/types";
 import type { HostNightActionEntry, NightSession, Player } from "@/types";
+import type { PrivatePlayerRecord } from "@/lib/firebase/schema";
 
 import { applyNightResolution, rollbackNightResolution } from "./apply-night-resolution";
 import { presentNightResolution } from "./night-resolution-presentation";
@@ -26,14 +28,16 @@ interface NightResolutionPreviewProps {
   session: NightSession;
   players: readonly Player[];
   assignments: Readonly<Record<string, string>>;
+  privatePlayers: Readonly<Record<string, PrivatePlayerRecord>>;
   entries: readonly HostNightActionEntry[];
   actionHistory: readonly HostNightActionEntry[];
 }
 
-export function NightResolutionPreview({ gameId, nightId, nightNumber, session, players, assignments, entries, actionHistory }: NightResolutionPreviewProps) {
+export function NightResolutionPreview({ gameId, nightId, nightNumber, session, players, assignments, privatePlayers, entries, actionHistory }: NightResolutionPreviewProps) {
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const gameVariants = useGameVariants(gameId);
   const confirmedEntries = entries.filter(({ status }) => status === "confirmed");
   const validationContext = {
     players,
@@ -42,6 +46,7 @@ export function NightResolutionPreview({ gameId, nightId, nightNumber, session, 
     nightId,
     nightNumber,
     actionEntries: actionHistory,
+    variants: gameVariants.variants,
   };
   const validationIssues = confirmedEntries.flatMap((entry) => validateHostNightAction(entry, validationContext).map((issue) => ({ ...issue, entryId: entry.id })));
   const playerNames = useMemo(() => Object.fromEntries(players.map(({ uid, name }) => [uid, name])), [players]);
@@ -56,7 +61,17 @@ export function NightResolutionPreview({ gameId, nightId, nightNumber, session, 
       return;
     }
     const adapted = adaptHostActions(confirmedEntries, ROLE_DEFINITIONS);
-    const engineState = createEngineGameState({ gameId, nightId, players, assignments, roleDefinitions: ROLE_DEFINITIONS });
+    const engineState = createEngineGameState({
+      gameId,
+      nightId,
+      nightNumber,
+      players,
+      assignments,
+      privatePlayerStates: privatePlayers,
+      roleDefinitions: ROLE_DEFINITIONS,
+      variants: gameVariants.variants,
+      amnesiacRolePool: gameVariants.amnesiacRolePool,
+    });
     const resolution = resolveNight(engineState, adapted.actions);
     setPreview({
       id: crypto.randomUUID(),

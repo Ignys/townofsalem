@@ -3,6 +3,8 @@
 import { useState } from "react";
 
 import { ROLE_DEFINITIONS } from "@/data/roles";
+import { GameVariantsDialog } from "@/features/game-variants/game-variants-dialog";
+import { useGameVariants } from "@/features/game-variants/use-game-variants";
 
 import { generateBalancedRoleComposition } from "./balanced-composition-generator";
 import { getFeasibleFactionCounts } from "./composition-faction-constraints";
@@ -14,20 +16,25 @@ import {
   MAX_SUPPORTED_PLAYER_COUNT,
   MIN_SUPPORTED_PLAYER_COUNT,
 } from "./suggested-faction-counts";
+import { SlidersHorizontal } from "lucide-react";
 
 interface CompositionToolsProps {
+  gameId: string;
   playerCount: number;
   disabled: boolean;
   onApply: (roleIds: readonly string[]) => void;
 }
 
 export function CompositionTools({
+  gameId,
   playerCount,
   disabled,
   onApply,
 }: CompositionToolsProps) {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [variantsOpen, setVariantsOpen] = useState(false);
   const [feedback, setFeedback] = useState("");
+  const gameVariants = useGameVariants(gameId);
 
   const applySuggestedComposition = (
     requestedPlayerCount: number,
@@ -78,10 +85,14 @@ export function CompositionTools({
 
   return (
     <section className="rounded-2xl border border-white/10 bg-black/15 p-4 sm:p-5">
-      <header>
+      <header className="flex justify-between items-center">
         <p className="text-xs font-semibold tracking-[0.18em] text-[#d3b88c] uppercase">
           PRESETS DE ROLES
         </p>
+        <button type="button" disabled={disabled || !gameVariants.loaded} onClick={() => setVariantsOpen(true)} className="flex gap-2 items-center rounded-full bg-[#7d2330] border border-transparent px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#681c27] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:bg-[#766c67]">
+          <SlidersHorizontal size={18}/>
+          VARIANTES
+        </button>
       </header>
 
       <div className="mt-5 grid gap-2">
@@ -169,6 +180,23 @@ export function CompositionTools({
           onConfirm={(requestedPlayerCount, requiredRoleIds) => {
             applySuggestedComposition(requestedPlayerCount, requiredRoleIds);
             setDialogOpen(false);
+          }}
+        />
+      )}
+      {variantsOpen && (
+        <GameVariantsDialog
+          initialVariants={gameVariants.variants}
+          initialAmnesiacRolePool={gameVariants.amnesiacRolePool}
+          roles={ROLE_DEFINITIONS}
+          saving={gameVariants.saving}
+          onCancel={() => setVariantsOpen(false)}
+          onConfirm={(variants, amnesiacRolePool) => {
+            void gameVariants.updateVariants(variants, amnesiacRolePool).then((saved) => {
+              if (saved) {
+                setVariantsOpen(false);
+                setFeedback("Variantes da partida salvas.");
+              }
+            });
           }}
         />
       )}

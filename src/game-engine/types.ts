@@ -1,4 +1,5 @@
 import type { EngineEffectType, Faction } from "@/types";
+import type { GameVariants } from "./variants";
 
 export interface EnginePlayer {
   uid: string;
@@ -8,13 +9,19 @@ export interface EnginePlayer {
   faction: Faction;
   canDieAtNight: boolean;
   statuses: readonly string[];
+  seat?: number;
+  originalRoleId?: string;
   investigativeAppearance?: Readonly<Record<string, string>>;
 }
 
 export interface EngineGameState {
   gameId: string;
   nightId: string;
+  nightNumber?: number;
   players: readonly EnginePlayer[];
+  variants?: Partial<GameVariants>;
+  amnesiacRolePool?: readonly string[];
+  resourceUses?: Readonly<Record<string, number>>;
 }
 
 export interface EngineNightAction {
@@ -28,6 +35,11 @@ export interface EngineNightAction {
   investigationType?: string;
   statusType?: string;
   blockedByTargetStatuses?: readonly string[];
+  protectionType?: "doctor" | "bodyguard";
+  sourceType?: "player" | "faction";
+  sourceFaction?: Faction;
+  participantUids?: readonly string[];
+  countsAsVisit?: boolean;
 }
 
 export interface EngineEffect extends EngineNightAction {
@@ -47,7 +59,7 @@ export interface EngineEvent {
   targetUid?: string;
   actionId?: string;
   reasonCode: string;
-  details?: Readonly<Record<string, string | number | boolean | null>>;
+  details?: Readonly<Record<string, string | number | boolean | null | readonly string[]>>;
 }
 
 export interface InvestigationResult {
@@ -64,9 +76,39 @@ export interface EngineSurvival {
   sourceActionIds: readonly string[];
 }
 
+export type NightDeathCause =
+  | "night-attack"
+  | "mafia-attack"
+  | "veteran-attack"
+  | "bodyguard-counterattack"
+  | "bodyguard-sacrifice"
+  | "witch-curse";
+
+export interface EngineDeath {
+  targetUid: string;
+  cause: NightDeathCause;
+  sourceActionId?: string;
+  attackerUid?: string;
+  unavoidable?: boolean;
+}
+
+export interface EngineRandomDecision {
+  key: string;
+  candidateUids: readonly string[];
+  selectedUid: string;
+}
+
+export interface EngineRoleChange {
+  playerUid: string;
+  fromRoleId: string;
+  toRoleId: string;
+  reasonCode: string;
+}
+
 export interface NightResolution {
   nightId: string;
   deaths: readonly string[];
+  deathRecords?: readonly EngineDeath[];
   survivors: readonly EngineSurvival[];
   investigationResults: readonly InvestigationResult[];
   appliedEffects: readonly EngineEffect[];
@@ -80,5 +122,17 @@ export interface NightResolution {
     statusType: string;
     sourceActionId: string;
   }[];
+  removedStatuses?: readonly {
+    targetUid: string;
+    statusType: string;
+  }[];
+  randomDecisions?: readonly EngineRandomDecision[];
+  roleChanges?: readonly EngineRoleChange[];
+  consumedResources?: readonly {
+    playerUid: string;
+    resource: string;
+    amount: number;
+  }[];
+  individualWinnerUids?: readonly string[];
   partial: boolean;
 }

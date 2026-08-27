@@ -41,6 +41,7 @@ import type {
   StoredGameEvent,
   VerdictVote,
 } from "./schema";
+import type { GameVariants } from "@/game-engine/variants";
 
 export interface RealtimeValueObserver<Value> {
   onData: (value: Value | null) => void;
@@ -64,7 +65,8 @@ export type AtomicUpdateValue =
   | HostNightNote
   | WakeChecklistState
   | NightResolutionRecord
-  | PlayerStatus;
+  | PlayerStatus
+  | GameVariants;
 
 export type AtomicUpdateMap = Partial<Record<FirebasePath, AtomicUpdateValue>>;
 

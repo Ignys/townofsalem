@@ -38,6 +38,7 @@ test("simulated player markers are restricted to host-created bot keys", () => {
 test("phase validation permits free host selection without transition graph checks", () => {
   const validation = gameRules.public.phase[".validate"] as string;
   for (const phase of ["lobby", "day", "discussion", "trial", "defense", "verdict", "night", "custom"]) assert.match(validation, new RegExp(`'${phase}'`));
+  assert.match(validation, /newData\.parent\(\)\.child\('status'\)/);
   assert.doesNotMatch(validation, /data\.val\(\) === 'day'/);
 });
 

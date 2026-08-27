@@ -71,6 +71,14 @@ before(async () => {
       public: { code: "QWERTY", status: "lobby", phase: "lobby", day: 0 },
       settings: { maxPlayers: 15 },
     });
+    await set(ref(context.database(), "games/startGame"), {
+      hostUid: "host",
+      public: { code: "START1", status: "lobby", phase: "lobby", day: 0 },
+      settings: { maxPlayers: 15, roleComposition: { doctor: 1 } },
+      players: {
+        player: { name: "Player", alive: true, disconnected: false, experience: "beginner", seat: 1 },
+      },
+    });
     await set(ref(context.database(), "games/resetGame"), resetGameFixture);
   });
 });
@@ -102,6 +110,39 @@ test("host can operate protected branches while Event History stays append-only"
   await assertFails(update(ref(host, "games/game/events/event"), { timestamp: 2 }));
   const snapshot = await assertSucceeds(get(ref(host, "games/game/privatePlayers")));
   assert.equal(snapshot.child("player/roleId").val(), "doctor");
+});
+
+test("host can atomically start the game in an untimed Night 1", async () => {
+  const host = environment.authenticatedContext("host").database();
+
+  await assertSucceeds(update(ref(host), {
+    "games/startGame/public/status": "in-progress",
+    "games/startGame/public/phase": "night",
+    "games/startGame/public/phaseLabel": "Noite",
+    "games/startGame/public/phaseSessionId": "phase-night-1",
+    "games/startGame/public/currentNightId": "night-1-id",
+    "games/startGame/public/phaseSequenceNumber": 1,
+    "games/startGame/public/nightNumber": 1,
+    "games/startGame/public/phaseEndsAt": null,
+    "games/startGame/public/timerPaused": false,
+    "games/startGame/public/timerRemainingMs": null,
+    "games/startGame/settings/rolesAssignedAt": 1234,
+    "games/startGame/privatePlayers/player": { roleId: "doctor", faction: "town" },
+    "games/startGame/phaseSessions/phase-night-1": {
+      id: "phase-night-1",
+      phaseId: "night",
+      label: "Noite",
+      startedAt: 1234,
+      sequenceNumber: 1,
+      nightId: "night-1-id",
+    },
+    "games/startGame/nightSessions/night-1-id": {
+      id: "night-1-id",
+      phaseSessionId: "phase-night-1",
+      nightNumber: 1,
+      startedAt: 1234,
+    },
+  }));
 });
 
 test("host can end a game without declaring winners", async () => {

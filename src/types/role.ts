@@ -17,6 +17,7 @@ export const ENGINE_EFFECT_TYPES = [
   "clean",
   "redirect",
   "status-effect",
+  "role-trigger",
 ] as const;
 
 export type EngineEffectType = (typeof ENGINE_EFFECT_TYPES)[number];
@@ -50,6 +51,8 @@ export interface RoleActionDefinition {
     investigationType?: string;
     statusType?: string;
     blockedByTargetStatuses?: readonly string[];
+    protectionType?: "doctor" | "bodyguard";
+    countsAsVisit?: boolean;
   };
   verificationStatus: RoleVerificationStatus;
 }

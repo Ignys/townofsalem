@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import type { HostNightActionEntry, HostNightNote, NightSession } from "@/types";
+import type { HostNightActionEntry, HostNightNote, NightResolutionRecord, NightSession } from "@/types";
 
 interface HostNightLogState {
   key: string;
@@ -10,9 +10,12 @@ interface HostNightLogState {
   allActions: Record<string, Record<string, HostNightActionEntry>>;
   notes: Record<string, HostNightNote>;
   session: NightSession | null;
+  resolutions: Record<string, NightResolutionRecord>;
   actionsLoaded: boolean;
   allActionsLoaded: boolean;
   notesLoaded: boolean;
+  sessionLoaded: boolean;
+  resolutionsLoaded: boolean;
   error: Error | null;
 }
 
@@ -24,9 +27,12 @@ export function useHostNightLog(gameId: string, nightId: string, hostUid: string
     allActions: {},
     notes: {},
     session: null,
+    resolutions: {},
     actionsLoaded: false,
     allActionsLoaded: false,
     notesLoaded: false,
+    sessionLoaded: false,
+    resolutionsLoaded: false,
     error: null,
   });
 
@@ -58,7 +64,16 @@ export function useHostNightLog(gameId: string, nightId: string, hostUid: string
           onError,
         }),
         repository.observeHostNightSession(gameId, nightId, hostUid, {
-          onData: (session) => active && setState((current) => ({ ...current, key, session })),
+          onData: (session) => active && setState((current) => ({ ...current, key, session, sessionLoaded: true })),
+          onError,
+        }),
+        repository.observeHostNightResolutions(gameId, hostUid, {
+          onData: (resolutions) => active && setState((current) => ({
+            ...current,
+            key,
+            resolutions: resolutions ?? {},
+            resolutionsLoaded: true,
+          })),
           onError,
         }),
       );
@@ -73,7 +88,7 @@ export function useHostNightLog(gameId: string, nightId: string, hostUid: string
   }, [gameId, hostUid, key, nightId]);
 
   if (state.key !== key) {
-    return { actions: {}, allActions: {}, notes: {}, session: null, loaded: false, error: null };
+    return { actions: {}, allActions: {}, notes: {}, session: null, resolutions: {}, loaded: false, error: null };
   }
 
   return {
@@ -81,7 +96,13 @@ export function useHostNightLog(gameId: string, nightId: string, hostUid: string
     allActions: state.allActions,
     notes: state.notes,
     session: state.session,
-    loaded: state.actionsLoaded && state.allActionsLoaded && state.notesLoaded,
+    resolutions: state.resolutions,
+    loaded:
+      state.actionsLoaded &&
+      state.allActionsLoaded &&
+      state.notesLoaded &&
+      state.sessionLoaded &&
+      state.resolutionsLoaded,
     error: state.error,
   };
 }

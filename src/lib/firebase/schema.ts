@@ -11,6 +11,7 @@ import type {
   HostNightNote,
   NightResolutionRecord,
 } from "@/types";
+import type { GameVariants } from "@/game-engine/variants";
 
 export type FirebaseJsonValue =
   | string
@@ -48,6 +49,8 @@ export interface GameSettingsRecord {
   rolesAssignedAt?: number;
   phaseDurations?: Partial<Record<GamePhase, number>>;
   revealRolesAtGameOver?: boolean;
+  gameVariants?: GameVariants;
+  amnesiacRolePool?: readonly string[];
 }
 
 export interface RoomCodeReservation {
@@ -67,6 +70,8 @@ export type PrivatePlayerRecord = Pick<
   "roleId" | "faction"
 > & {
   statuses?: Record<string, PlayerStatus>;
+  resourceUses?: Record<string, number>;
+  originalRoleId?: string;
 };
 
 export interface NightActionRecord {

@@ -21,6 +21,8 @@ export interface Player {
   disconnected: boolean;
   experience: PlayerExperience;
   statuses?: readonly PlayerStatus[];
+  /** Host-only snapshot of the card drawn before any role transformation. */
+  originalRoleId?: string;
 }
 
 export interface PrivatePlayerState {
@@ -28,4 +30,6 @@ export interface PrivatePlayerState {
   roleId: string;
   faction: Faction;
   statuses: readonly PlayerStatus[];
+  resourceUses?: Readonly<Record<string, number>>;
+  originalRoleId?: string;
 }

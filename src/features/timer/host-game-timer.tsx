@@ -6,6 +6,7 @@ import type { GamePublicRecord } from "@/lib/firebase/schema";
 
 import { getGameTimerControlErrorMessage } from "./control-game-timer";
 import type { TimerCommand } from "./timer-controls";
+import { TimerControlButtons } from "./timer-control-buttons";
 import { TimerReadout } from "./timer-readout";
 import { useSynchronizedTimer } from "./use-synchronized-timer";
 
@@ -25,6 +26,9 @@ export function HostGameTimer({ gameId, game }: HostGameTimerProps) {
   const [durationSeconds, setDurationSeconds] = useState("60");
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<TimerFeedback | null>(null);
+  const [totalMs, setTotalMs] = useState<number | null>(() =>
+    timer.remainingMs > 0 ? timer.remainingMs : null,
+  );
   const parsedDurationSeconds = Number(durationSeconds);
   const durationValid =
     Number.isFinite(parsedDurationSeconds) &&
@@ -43,6 +47,15 @@ export function HostGameTimer({ gameId, game }: HostGameTimerProps) {
     try {
       const { controlGameTimer } = await import("./control-game-timer");
       await controlGameTimer(gameId, command, timer.serverTimeOffsetMs);
+
+      if (command.type === "start") {
+        setTotalMs(command.durationMs);
+      } else if (command.type === "add-thirty-seconds") {
+        setTotalMs((current) => (current ?? timer.remainingMs) + 30_000);
+      } else if (command.type === "end") {
+        setTotalMs(null);
+      }
+
       setFeedback({ kind: "success", message: success });
     } catch (error: unknown) {
       setFeedback({
@@ -55,19 +68,54 @@ export function HostGameTimer({ gameId, game }: HostGameTimerProps) {
     }
   };
 
+  const handleStart = () => {
+    void runCommand(
+      {
+        type: "start",
+        durationMs: parsedDurationSeconds * 1_000,
+      },
+      "Timer iniciado.",
+    );
+  };
+
+  const handleToggle = () => {
+    const command: TimerCommand =
+      timer.status === "running" ? { type: "pause" } : { type: "resume" };
+
+    void runCommand(
+      command,
+      timer.status === "running" ? "Timer pausado." : "Timer retomado.",
+    );
+  };
+
+  const handleStop = () => {
+    void runCommand({ type: "end" }, "Timer encerrado.");
+  };
+
+  const handleAddThirtySeconds = () => {
+    void runCommand(
+      { type: "add-thirty-seconds" },
+      "Foram adicionados 30 segundos.",
+    );
+  };
+
   return (
-    <section className="mt-6 border-t border-white/10 pt-6">
-      <div className="mb-4 flex items-center justify-between gap-4">
-        <h3 className="font-semibold text-[#fffaf0]">Timer da fase</h3>
-        <span className="text-xs text-[#8f8a82]">
-          {timer.serverOffsetAvailable
-            ? "Relógio sincronizado"
-            : "Usando relógio local"}
-        </span>
-      </div>
-
-      <TimerReadout timer={timer} />
-
+    <section className="mt-4 border-t border-white/10 pt-4">
+      <TimerReadout
+        timer={timer}
+        totalMs={totalMs}
+        controls={
+          active ? (
+            <TimerControlButtons
+              status={timer.status}
+              disabled={busy}
+              onToggle={handleToggle}
+              onStop={handleStop}
+              onAddThirtySeconds={handleAddThirtySeconds}
+            />
+          ) : null
+        }
+      />
       {(timer.status === "idle" || timer.status === "expired") && (
         <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
           <label className="grid gap-1.5 text-sm font-semibold text-[#e5ded2]">
@@ -84,15 +132,7 @@ export function HostGameTimer({ gameId, game }: HostGameTimerProps) {
           </label>
           <button
             type="button"
-            onClick={() =>
-              void runCommand(
-                {
-                  type: "start",
-                  durationMs: parsedDurationSeconds * 1_000,
-                },
-                "Timer iniciado.",
-              )
-            }
+            onClick={handleStart}
             disabled={busy || !durationValid || game.phase === "game-over"}
             className="min-h-11 self-end rounded-xl bg-[#7d2330] px-5 py-2 font-bold text-white hover:bg-[#681c27] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:bg-[#5d5552]"
           >
@@ -100,62 +140,6 @@ export function HostGameTimer({ gameId, game }: HostGameTimerProps) {
           </button>
         </div>
       )}
-
-      {active && (
-        <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          <button
-            type="button"
-            onClick={() =>
-              void runCommand(
-                timer.status === "running"
-                  ? { type: "pause" }
-                  : { type: "resume" },
-                timer.status === "running"
-                  ? "Timer pausado."
-                  : "Timer retomado.",
-              )
-            }
-            disabled={busy}
-            className="min-h-11 rounded-xl border border-white/15 bg-white/8 px-3 py-2 font-bold text-[#fffaf0] hover:bg-white/12 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-50"
-          >
-            {timer.status === "running" ? "Pausar" : "Retomar"}
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              void runCommand(
-                { type: "add-thirty-seconds" },
-                "Foram adicionados 30 segundos.",
-              )
-            }
-            disabled={busy}
-            className="min-h-11 rounded-xl border border-white/15 bg-white/8 px-3 py-2 font-bold text-[#fffaf0] hover:bg-white/12 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-50"
-          >
-            +30 segundos
-          </button>
-          <button
-            type="button"
-            onClick={() =>
-              void runCommand({ type: "end" }, "Timer encerrado.")
-            }
-            disabled={busy}
-            className="col-span-2 min-h-11 rounded-xl border border-[#a33843]/35 bg-[#a33843]/10 px-3 py-2 font-bold text-[#f0b9bd] hover:bg-[#a33843]/20 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-50 sm:col-span-1"
-          >
-            Encerrar
-          </button>
-        </div>
-      )}
-
-      <p
-        role={feedback?.kind === "error" ? "alert" : "status"}
-        className={`mt-3 min-h-5 text-sm ${
-          feedback?.kind === "error"
-            ? "text-[#f0b9bd]"
-            : "text-[#bfe0c5]"
-        }`}
-      >
-        {feedback?.message ?? ""}
-      </p>
     </section>
   );
 }

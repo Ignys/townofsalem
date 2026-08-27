@@ -19,7 +19,7 @@ export function GamePhaseBanner({ game }: GamePhaseBannerProps) {
           {game.phase === "night" && game.nightNumber ? ` ${game.nightNumber}` : ""}
         </strong>
       </div>
-      <GameTimerDisplay game={game} />
+      {game.phase !== "night" && <GameTimerDisplay game={game} />}
     </section>
   );
 }
