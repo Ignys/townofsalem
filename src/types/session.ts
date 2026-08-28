@@ -1,5 +1,11 @@
 import type { GamePhase } from "./game";
 
+export interface DeputyPromotionRecord {
+  playerUid: string;
+  candidateUids: readonly string[];
+  promotedAt: number;
+}
+
 export interface PhaseSession {
   id: string;
   phaseId: GamePhase;
@@ -25,4 +31,5 @@ export interface NightSession {
   resolutionApplyingId?: string | null;
   resolutionApplyingAt?: number | null;
   pendingActionWrites?: Record<string, true>;
+  deputyPromotion?: DeputyPromotionRecord;
 }

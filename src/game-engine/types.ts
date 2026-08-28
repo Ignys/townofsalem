@@ -89,6 +89,8 @@ export interface EngineDeath {
   cause: NightDeathCause;
   sourceActionId?: string;
   attackerUid?: string;
+  originalTargetUid?: string;
+  originalAttackCause?: NightDeathCause;
   unavoidable?: boolean;
 }
 
@@ -103,6 +105,14 @@ export interface EngineRoleChange {
   fromRoleId: string;
   toRoleId: string;
   reasonCode: string;
+}
+
+export interface EngineMediumClue {
+  mediumUid: string;
+  victimUid: string;
+  responsiblePlayerUid: string;
+  candidateUids: readonly string[];
+  candidateCount: 2 | 3 | 4;
 }
 
 export interface NightResolution {
@@ -134,5 +144,6 @@ export interface NightResolution {
     amount: number;
   }[];
   individualWinnerUids?: readonly string[];
+  mediumClues?: readonly EngineMediumClue[];
   partial: boolean;
 }

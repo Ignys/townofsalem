@@ -43,18 +43,6 @@ export function executionerBecomesJester(
   return null;
 }
 
-export function deputyHasSheriffAbility(
-  players: ReadonlyArray<Pick<Player, "alive"> & {
-    roleId?: string;
-    originalRoleId?: string;
-  }>,
-): boolean {
-  const sheriffs = players.filter(
-    (player) => (player.originalRoleId ?? player.roleId) === "sheriff",
-  );
-  return sheriffs.length > 0 && sheriffs.every((player) => !player.alive);
-}
-
 export function canUseActionOnNight(
   action: RoleActionDefinition,
   nightNumber: number,

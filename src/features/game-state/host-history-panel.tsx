@@ -1,14 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
-import { ROLE_DEFINITIONS } from "@/data/roles";
-import { formatHostActionEntry } from "@/features/night-actions/host-action-entry";
-import { presentNightResolution } from "@/features/night-actions/night-resolution-presentation";
+import { HostConsoleFrame } from "@/components/host/host-console-frame";
+import { HostPlayerDetailsModal } from "@/features/lobby/host-player-details-modal";
 import { useHostRoleAssignments } from "@/features/roles/use-host-role-assignments";
 import type { PublicPlayerRecord } from "@/lib/firebase/schema";
 import type { Player } from "@/types";
 
+import { HostEventHistory } from "./host-event-history";
+import { HostHistoryNight } from "./host-history-night";
+import { getPlayerDeathDetailsByUid } from "./player-death-details";
 import { useHostHistory } from "./use-host-history";
 
 interface HostHistoryPanelProps {
@@ -18,16 +20,55 @@ interface HostHistoryPanelProps {
 }
 
 export function HostHistoryPanel({ gameId, hostUid, players: playerRecords }: HostHistoryPanelProps) {
+  const [selectedPlayerUid, setSelectedPlayerUid] = useState<string | null>(null);
   const history = useHostHistory(gameId, hostUid);
   const roles = useHostRoleAssignments(gameId, hostUid);
-  const players = useMemo<Player[]>(() => Object.entries(playerRecords).map(([uid, player]) => ({ id: uid, uid, ...player })), [playerRecords]);
-  const assignments = useMemo(() => Object.fromEntries(Object.entries(roles.assignments).map(([uid, value]) => [uid, value.roleId])), [roles.assignments]);
-  const names = Object.fromEntries(players.map(({ uid, name }) => [uid, name]));
-  const sessions = Object.values(history.sessions).sort((a, b) => b.nightNumber - a.nightNumber);
-  const events = Object.entries(history.events).sort(([, a], [, b]) => b.timestamp - a.timestamp).slice(0, 30);
+  const players = useMemo<Player[]>(
+    () => Object.entries(playerRecords).map(([uid, player]) => ({
+      id: uid,
+      uid,
+      ...player,
+      statuses: Object.values(roles.assignments[uid]?.statuses ?? {}),
+      originalRoleId: roles.assignments[uid]?.originalRoleId,
+    })),
+    [playerRecords, roles.assignments],
+  );
+  const assignments = useMemo(
+    () => Object.fromEntries(Object.entries(roles.assignments).map(([uid, value]) => [uid, value.roleId])),
+    [roles.assignments],
+  );
+  const playerNames = useMemo(
+    () => Object.fromEntries(players.map(({ uid, name }) => [uid, name])),
+    [players],
+  );
+  const actionHistory = useMemo(
+    () => Object.values(history.actions).flatMap((entries) => Object.values(entries)),
+    [history.actions],
+  );
+  const nightNumberById = useMemo(
+    () => Object.fromEntries(Object.values(history.sessions).map((session) => [session.id, session.nightNumber])),
+    [history.sessions],
+  );
+  const deathDetailsByPlayer = useMemo(() => getPlayerDeathDetailsByUid({
+    events: history.events,
+    playerNames,
+    resolutions: history.resolutions,
+  }), [history.events, history.resolutions, playerNames]);
+  const sessions = Object.values(history.sessions).sort((left, right) => right.nightNumber - left.nightNumber);
+  const events = Object.entries(history.events)
+    .sort(([, left], [, right]) => right.timestamp - left.timestamp)
+    .slice(0, 30);
+  const loaded = history.loaded && roles.loaded;
+  const error = history.error ?? roles.error;
 
   const exportHistory = () => {
-    const payload = JSON.stringify({ gameId, nightSessions: history.sessions, actionLog: history.actions, nightResolutions: history.resolutions, eventHistory: history.events }, null, 2);
+    const payload = JSON.stringify({
+      gameId,
+      nightSessions: history.sessions,
+      actionLog: history.actions,
+      nightResolutions: history.resolutions,
+      eventHistory: history.events,
+    }, null, 2);
     const url = URL.createObjectURL(new Blob([payload], { type: "application/json" }));
     const anchor = document.createElement("a");
     anchor.href = url;
@@ -37,34 +78,70 @@ export function HostHistoryPanel({ gameId, hostUid, players: playerRecords }: Ho
   };
 
   return (
-    <section className="rounded-xl border border-white/10 bg-[#1a1c1e] p-4 sm:p-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><p className="text-xs font-semibold tracking-[0.2em] text-[#d3b88c] uppercase">Auditoria</p><h2 className="mt-2 font-serif text-2xl font-semibold">Histórico da partida</h2></div>
-        <button type="button" disabled={!history.loaded} onClick={exportHistory} className="min-h-10 rounded-xl border border-white/15 px-3 text-sm font-bold disabled:opacity-50">Exportar JSON</button>
-      </div>
-      {history.error ? <p role="alert" className="mt-4 text-sm text-[#f0b9bd]">Histórico indisponível.</p> : (
-        <div className="mt-4 grid gap-3">
-          {sessions.map((session) => {
-            const entries = Object.values(history.actions[session.id] ?? {}).sort((a, b) => a.createdAt - b.createdAt);
-            const record = history.resolutions[session.id];
-            const presentation = record ? presentNightResolution(record.resolution, names) : null;
-            return (
-              <details key={session.id} className="rounded-xl border border-white/10 p-3">
-                <summary className="cursor-pointer font-semibold">Noite {session.nightNumber}{record?.rolledBackAt ? " · corrigida/rollback" : record?.appliedAt ? " · confirmada" : " · em andamento"}</summary>
-                <div className="mt-3 grid gap-3 text-sm">
-                  <ol>{entries.map((entry, index) => <li key={entry.id}>{index + 1}. {formatHostActionEntry(entry, { players, assignments, roleDefinitions: ROLE_DEFINITIONS })}</li>)}</ol>
-                  {presentation && <ul className="rounded-lg bg-black/20 p-2">{presentation.summary.map((line) => <li key={line}>{line}</li>)}</ul>}
-                  {presentation?.warnings.map((line) => <p key={line} className="text-xs text-[#f0b9bd]">{line}</p>)}
-                </div>
-              </details>
-            );
-          })}
-          <details className="rounded-xl border border-white/10 p-3">
-            <summary className="cursor-pointer font-semibold">Event History técnico</summary>
-            <ol className="mt-3 grid gap-2 text-xs text-[#bdb7ad]">{events.map(([id, event]) => <li key={id}><time>{new Date(event.timestamp).toLocaleString("pt-BR")}</time> · {event.type}</li>)}</ol>
-          </details>
-        </div>
-      )}
-    </section>
+    <>
+      <HostConsoleFrame
+        title="Histórico da partida"
+        actions={(
+          <button
+            type="button"
+            disabled={!history.loaded}
+            onClick={exportHistory}
+            className="min-h-9 rounded-lg border border-zinc-700 px-3 text-xs font-semibold text-zinc-300 hover:bg-white/[0.04] disabled:opacity-50"
+          >
+            Exportar JSON
+          </button>
+        )}
+      >
+        {!loaded && !error && (
+          <p role="status" className="py-5 text-center text-sm text-zinc-500">
+            Carregando histórico…
+          </p>
+        )}
+
+        {error && (
+          <p role="alert" className="rounded-lg border border-red-300/20 bg-red-400/10 p-3 text-sm text-red-200">
+            Histórico indisponível.
+          </p>
+        )}
+
+        {loaded && !error && (
+          <div className="grid gap-3">
+            {sessions.length === 0 ? (
+              <p className="rounded-lg border border-dashed border-zinc-700 p-4 text-center text-sm text-zinc-500">
+                Nenhuma noite registrada.
+              </p>
+            ) : (
+              <ol className="grid gap-2">
+                {sessions.map((session) => (
+                  <HostHistoryNight
+                    key={session.id}
+                    session={session}
+                    entries={Object.values(history.actions[session.id] ?? {})}
+                    record={history.resolutions[session.id]}
+                    players={players}
+                    assignments={assignments}
+                    playerNames={playerNames}
+                    onPlayerClick={setSelectedPlayerUid}
+                  />
+                ))}
+              </ol>
+            )}
+            <HostEventHistory events={events} />
+          </div>
+        )}
+      </HostConsoleFrame>
+      <HostPlayerDetailsModal
+        gameId={gameId}
+        playerUid={selectedPlayerUid}
+        players={players}
+        privatePlayers={roles.assignments}
+        actionHistory={actionHistory}
+        actionHistoryLoaded={history.loaded}
+        nightNumberById={nightNumberById}
+        playerNames={playerNames}
+        deathDetailsByPlayer={deathDetailsByPlayer}
+        onClose={() => setSelectedPlayerUid(null)}
+      />
+    </>
   );
 }

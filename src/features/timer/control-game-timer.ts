@@ -75,8 +75,7 @@ export async function controlGameTimer(
 
   if (
     game.status !== "in-progress" ||
-    game.phase === "game-over" ||
-    game.phase === "night"
+    game.phase === "game-over"
   ) {
     throw new GameTimerControlError("game-not-in-progress");
   }

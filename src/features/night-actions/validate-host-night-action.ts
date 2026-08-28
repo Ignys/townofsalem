@@ -2,7 +2,6 @@ import { getRoleResourceLimit } from "@/game-engine/role-resource-limits";
 import {
   arePlayersAdjacent,
   canUseActionOnNight,
-  deputyHasSheriffAbility,
 } from "@/game-engine/role-rules";
 import { withDefaultVariants, type GameVariants } from "@/game-engine/variants";
 import type { HostNightActionEntry, RoleDefinition } from "@/types";
@@ -177,31 +176,10 @@ export function validateHostNightAction(
   }
 
   if (entry.roleIdSnapshot === "deputy") {
-    const playersWithRoles = context.players.map((player) => ({
-      ...player,
-      roleId: context.assignments[player.uid],
-    }));
-    if (!deputyHasSheriffAbility(playersWithRoles)) {
-      issues.push(error(
-        "SHERIFF_NOT_DEAD",
-        "O Deputy só investiga se havia um Sheriff na composição e ele morreu.",
-      ));
-    }
-  }
-
-  if (entry.roleIdSnapshot === "medium") {
-    const clue = entry.mediumClue;
-    const validClue = clue
-      && clue.victimUid === entry.targetUids[0]
-      && clue.candidateUids.length === clue.candidateCount
-      && new Set(clue.candidateUids).size === clue.candidateUids.length
-      && clue.candidateUids.includes(clue.responsiblePlayerUid);
-    if (!validClue) {
-      issues.push(error(
-        "MEDIUM_CLUE_REQUIRED",
-        "Escolha 2, 3 ou 4 candidatos e registre uma pista com exatamente um responsável.",
-      ));
-    }
+    issues.push(error(
+      "DEPUTY_NOT_PROMOTED",
+      "O Deputy só investiga depois de ser promovido automaticamente a Sheriff.",
+    ));
   }
 
   if (

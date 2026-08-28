@@ -20,8 +20,8 @@ export const TOWN_SUPPORT_ROLES = [
     faction: "town",
     alignment: "Town Support",
     description:
-      "Durante o dia, você pode revelar publicamente sua role. Depois disso, o peso do seu voto aumenta conforme o tamanho da partida.",
-    beginnerDescription:
+      "Durante o dia, você pode revelar sua carta à cidade. Depois disso, o peso do seu voto depende do número de jogadores da partida.",
+    playTip:
       "Revele-se quando o voto extra fizer diferença, lembrando que você perderá a possibilidade de cura do Doctor.",
     goal: TOWN_GOAL,
     virtueValue: 8,
@@ -40,8 +40,8 @@ export const TOWN_SUPPORT_ROLES = [
     faction: "town",
     alignment: "Town Support",
     description:
-      "Durante a noite, escolha um jogador morto para realizar uma séance e obter pistas sobre quem o matou.",
-    beginnerDescription:
+      "À noite, escolha uma pessoa morta. O moderador mostrará uma quantidade de suspeitos calculada pelo tamanho da partida; um deles foi responsável pela morte. Essa habilidade também ajuda a recuperar informações sobre a role da vítima.",
+    playTip:
       "Use os mortos para recuperar informações, especialmente quando um Janitor escondeu a role de uma vítima.",
     goal: TOWN_GOAL,
     virtueValue: 3,
@@ -64,8 +64,8 @@ export const TOWN_SUPPORT_ROLES = [
     faction: "town",
     alignment: "Town Support",
     description:
-      "Você participa normalmente das discussões e acusações, mas em todo julgamento é obrigado a votar Innocent.",
-    beginnerDescription:
+      "Você participa normalmente das discussões e acusações, mas em todo julgamento é obrigado a votar Innocent (inocente).",
+    playTip:
       "Você nunca pode votar Guilty no veredito, mesmo quando acredita que o acusado é culpado.",
     goal: TOWN_GOAL,
     virtueValue: -1,
@@ -84,8 +84,8 @@ export const TOWN_SUPPORT_ROLES = [
     faction: "town",
     alignment: "Town Support",
     description:
-      "Você pertence à Town e não possui habilidade ativa, mas aparece como Evil quando investigado pelo Sheriff.",
-    beginnerDescription:
+      "Você pertence à Town e não possui habilidade ativa, mas aparece como Evil (má) quando é investigado pelo Sheriff.",
+    playTip:
       "Prepare-se para explicar por que o Sheriff recebeu um resultado Evil mesmo você sendo da Town.",
     goal: TOWN_GOAL,
     virtueValue: -2,
@@ -104,8 +104,8 @@ export const TOWN_SUPPORT_ROLES = [
     faction: "town",
     alignment: "Town Support",
     description:
-      "Você participa normalmente das discussões e acusações, mas em todo julgamento é obrigado a votar Guilty.",
-    beginnerDescription:
+      "Você participa normalmente das discussões e acusações, mas em todo julgamento é obrigado a votar Guilty (culpado).",
+    playTip:
       "Você nunca pode votar Innocent; isso é especialmente arriscado quando o acusado pode ser Jester.",
     goal: TOWN_GOAL,
     virtueValue: -1,
@@ -124,8 +124,8 @@ export const TOWN_SUPPORT_ROLES = [
     faction: "town",
     alignment: "Town Support",
     description:
-      "Nesta edição do card game, você pertence à Town e não pode ser morto durante a noite. Ainda pode morrer por efeitos fora da noite.",
-    beginnerDescription:
+      "Você pertence à Town e deve ajudar a eliminar as ameaças da cidade. Não pode ser morto durante a noite, mas ainda pode ser enforcado durante o dia.",
+    playTip:
       "Ataques noturnos não matam você, mas um julgamento ainda pode.",
     goal: TOWN_GOAL,
     virtueValue: 4,
@@ -145,7 +145,7 @@ export const TOWN_SUPPORT_ROLES = [
     alignment: "Town Support",
     description:
       "Você não possui habilidade especial. Converse, analise comportamentos, compartilhe informações, acuse e vote para ajudar a Town.",
-    beginnerDescription:
+    playTip:
       "Sua principal ferramenta é a discussão. Escute as alegações e use seu voto com cuidado.",
     goal: TOWN_GOAL,
     virtueValue: 1,

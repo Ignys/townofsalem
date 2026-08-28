@@ -77,14 +77,23 @@ export function adaptHostActions(
       roleId: entry.roleIdSnapshot,
       actionId: entry.actionId,
       targetUids: [...entry.targetUids],
-      effectType: definition?.engineEffectType,
-      priority: definition?.priority,
-      investigationType: definition?.engineEffectConfig?.investigationType,
-      statusType: definition?.engineEffectConfig?.statusType,
-      blockedByTargetStatuses:
-        definition?.engineEffectConfig?.blockedByTargetStatuses,
-      protectionType: definition?.engineEffectConfig?.protectionType,
-      countsAsVisit: definition?.engineEffectConfig?.countsAsVisit,
+      ...(definition?.engineEffectType ? { effectType: definition.engineEffectType } : {}),
+      ...(definition?.priority !== undefined ? { priority: definition.priority } : {}),
+      ...(definition?.engineEffectConfig?.investigationType
+        ? { investigationType: definition.engineEffectConfig.investigationType }
+        : {}),
+      ...(definition?.engineEffectConfig?.statusType
+        ? { statusType: definition.engineEffectConfig.statusType }
+        : {}),
+      ...(definition?.engineEffectConfig?.blockedByTargetStatuses
+        ? { blockedByTargetStatuses: definition.engineEffectConfig.blockedByTargetStatuses }
+        : {}),
+      ...(definition?.engineEffectConfig?.protectionType
+        ? { protectionType: definition.engineEffectConfig.protectionType }
+        : {}),
+      ...(definition?.engineEffectConfig?.countsAsVisit !== undefined
+        ? { countsAsVisit: definition.engineEffectConfig.countsAsVisit }
+        : {}),
     };
   });
 

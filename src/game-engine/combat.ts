@@ -19,6 +19,7 @@ interface AttackAttempt {
   id: string;
   sourceActionId: string;
   attackerUid?: string;
+  originalTargetUid?: string;
   targetUid: string;
   kind: AttackKind;
   participantUids: readonly string[];
@@ -210,36 +211,6 @@ export function resolveCombat({
       details: { interceptedActionId: intercepted.sourceActionId },
     });
 
-    const sacrificeCanBeHealed = !variants.doctorCannotSaveBodyguardSacrifice
-      && (doctorSourcesByTarget.get(guard.actorUid)?.length ?? 0) > 0;
-    if (sacrificeCanBeHealed) {
-      addSurvivalSources(
-        guard.actorUid,
-        doctorSourcesByTarget.get(guard.actorUid) ?? [],
-      );
-      events.push({
-        type: "DOCTOR_PREVENTED_DEATH",
-        targetUid: guard.actorUid,
-        actionId: guard.id,
-        reasonCode: "BODYGUARD_SACRIFICE_HEALED_BY_VARIANT",
-      });
-    } else {
-      deathRecords.push({
-        targetUid: guard.actorUid,
-        cause: "bodyguard-sacrifice",
-        sourceActionId: guard.id,
-        attackerUid: intercepted.attackerUid,
-        unavoidable: variants.doctorCannotSaveBodyguardSacrifice,
-      });
-      events.push({
-        type: "BODYGUARD_SACRIFICED",
-        actorUid: guard.actorUid,
-        targetUid: protectedUid,
-        actionId: guard.id,
-        reasonCode: "BODYGUARD_SACRIFICE_IS_SPECIAL_DEATH",
-      });
-    }
-
     let counterTargetUid = intercepted.attackerUid;
     if (intercepted.kind === "mafia") {
       const eligible = intercepted.participantUids.filter(
@@ -259,11 +230,47 @@ export function resolveCombat({
         });
       }
     }
+
+    const sacrificeCanBeHealed = !variants.doctorCannotSaveBodyguardSacrifice
+      && (doctorSourcesByTarget.get(guard.actorUid)?.length ?? 0) > 0;
+    if (sacrificeCanBeHealed) {
+      addSurvivalSources(
+        guard.actorUid,
+        doctorSourcesByTarget.get(guard.actorUid) ?? [],
+      );
+      events.push({
+        type: "DOCTOR_PREVENTED_DEATH",
+        targetUid: guard.actorUid,
+        actionId: guard.id,
+        reasonCode: "BODYGUARD_SACRIFICE_HEALED_BY_VARIANT",
+      });
+    } else {
+      deathRecords.push({
+        targetUid: guard.actorUid,
+        cause: "bodyguard-sacrifice",
+        sourceActionId: guard.id,
+        originalTargetUid: protectedUid,
+        originalAttackCause: toDeathCause(intercepted.kind),
+        ...(counterTargetUid
+          ? { attackerUid: counterTargetUid }
+          : {}),
+        unavoidable: variants.doctorCannotSaveBodyguardSacrifice,
+      });
+      events.push({
+        type: "BODYGUARD_SACRIFICED",
+        actorUid: guard.actorUid,
+        targetUid: protectedUid,
+        actionId: guard.id,
+        reasonCode: "BODYGUARD_SACRIFICE_IS_SPECIAL_DEATH",
+      });
+    }
+
     if (counterTargetUid) {
       attempts.push({
         id: `bodyguard-counter:${guard.id}:${counterTargetUid}`,
         sourceActionId: guard.id,
         attackerUid: guard.actorUid,
+        originalTargetUid: protectedUid,
         targetUid: counterTargetUid,
         kind: "bodyguard-counterattack",
         participantUids: [guard.actorUid],
@@ -302,7 +309,7 @@ export function resolveCombat({
       for (const attempt of targetAttempts) {
         events.push({
           type: "NIGHT_IMMUNITY_PREVENTED_DEATH",
-          actorUid: attempt.attackerUid,
+          ...(attempt.attackerUid ? { actorUid: attempt.attackerUid } : {}),
           targetUid,
           actionId: attempt.sourceActionId,
           reasonCode: alertVeterans.has(targetUid)
@@ -333,16 +340,39 @@ export function resolveCombat({
     if (targetAttempts.some(({ kind }) => kind === "mafia")) {
       successfulMafiaVictims.push(targetUid);
     }
+    let attackerUid = first.attackerUid;
+    if (!attackerUid && first.kind === "mafia") {
+      const eligible = first.participantUids.filter(
+        (uid) => playersByUid.get(uid)?.alive,
+      );
+      attackerUid = eligible.length > 0
+        ? choose(`mafia-attack-representative:${first.id}`, eligible)
+        : undefined;
+      if (attackerUid) {
+        first.attackerUid = attackerUid;
+        events.push({
+          type: "MAFIA_MEMBER_RANDOMLY_SELECTED",
+          actorUid: attackerUid,
+          targetUid,
+          actionId: first.sourceActionId,
+          reasonCode: "MAFIA_ATTACK_REPRESENTATIVE_SELECTED",
+          details: { participantUids: eligible },
+        });
+      }
+    }
     deathRecords.push({
       targetUid,
       cause: toDeathCause(first.kind),
       sourceActionId: first.sourceActionId,
-      ...(first.attackerUid ? { attackerUid: first.attackerUid } : {}),
+      ...(attackerUid ? { attackerUid } : {}),
+      ...(first.originalTargetUid
+        ? { originalTargetUid: first.originalTargetUid }
+        : {}),
     });
     for (const attempt of targetAttempts) {
       events.push({
         type: "PLAYER_ATTACKED",
-        actorUid: attempt.attackerUid,
+        ...(attempt.attackerUid ? { actorUid: attempt.attackerUid } : {}),
         targetUid,
         actionId: attempt.sourceActionId,
         reasonCode: "KILL_SUCCEEDED",

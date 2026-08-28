@@ -28,9 +28,15 @@ export function HostNightWorkspace({ gameId, nightId, nightNumber, hostUid, play
     originalRoleId: privateRoles.assignments[uid]?.originalRoleId,
   })), [playerRecords, privateRoles.assignments]);
   const assignments = useMemo(() => Object.fromEntries(Object.entries(privateRoles.assignments).map(([uid, assignment]) => [uid, assignment.roleId])), [privateRoles.assignments]);
-  const entries = Object.values(nightLog.actions);
-  const allActionEntries = Object.values(nightLog.allActions).flatMap((actions) =>
-    Object.values(actions),
+  const entries = useMemo(
+    () => Object.values(nightLog.actions),
+    [nightLog.actions],
+  );
+  const allActionEntries = useMemo(
+    () => Object.values(nightLog.allActions).flatMap((actions) =>
+      Object.values(actions),
+    ),
+    [nightLog.allActions],
   );
 
   if (!privateRoles.loaded || !nightLog.loaded) {
@@ -54,6 +60,8 @@ export function HostNightWorkspace({ gameId, nightId, nightNumber, hostUid, play
           privatePlayers={privateRoles.assignments}
           entries={entries}
           actionHistory={allActionEntries}
+          resolutionRecord={nightLog.resolutions[nightId]}
+          resolutions={nightLog.resolutions}
         />
       )}
     </section>

@@ -3,8 +3,11 @@ import test from "node:test";
 
 import { resolveJesterRevenge } from "./day-effects";
 import { engineAction, engineGame, enginePlayer } from "./engine-test-fixtures";
-import { getRoleResourceLimit } from "./role-resource-limits";
-import { arePlayersAdjacent, canUseActionOnNight, deputyHasSheriffAbility } from "./role-rules";
+import {
+  getMediumClueCandidateCount,
+  getRoleResourceLimit,
+} from "./role-resource-limits";
+import { arePlayersAdjacent, canUseActionOnNight } from "./role-rules";
 import { resolveNight } from "./resolve-night";
 import { getRoleById } from "@/data/roles";
 
@@ -20,22 +23,6 @@ test("Werewolf acts only on even nights and ignores dead seats for adjacency", (
     { uid: "maria", seat: 3, alive: true },
   ];
   assert.equal(arePlayersAdjacent(players[0], players[2], players), true);
-});
-
-test("Deputy activates only when a Sheriff existed and died, even if cleaned", () => {
-  assert.equal(deputyHasSheriffAbility([{ alive: true, roleId: "deputy" }]), false);
-  assert.equal(deputyHasSheriffAbility([
-    { alive: true, roleId: "deputy" },
-    { alive: false, roleId: "sheriff" },
-  ]), true);
-  assert.equal(deputyHasSheriffAbility([
-    { alive: true, roleId: "deputy" },
-    { alive: false, roleId: "sheriff", statuses: [{ type: "cleaned" }] } as never,
-  ]), true);
-  assert.equal(deputyHasSheriffAbility([
-    { alive: true, roleId: "deputy", originalRoleId: "deputy" },
-    { alive: false, roleId: "sheriff", originalRoleId: "amnesiac" },
-  ]), false);
 });
 
 test("Jester revenge accepts only a Guilty voter and is unavoidable", () => {
@@ -90,6 +77,10 @@ test("all player-count resources use the centralized 1–9 / 10–14 / 15+ tiers
   assert.deepEqual(
     [getRoleResourceLimit("vigilante", 9), getRoleResourceLimit("vigilante", 10), getRoleResourceLimit("vigilante", 15)],
     [1, 2, 3],
+  );
+  assert.deepEqual(
+    [getMediumClueCandidateCount(9), getMediumClueCandidateCount(10), getMediumClueCandidateCount(15)],
+    [2, 3, 4],
   );
 });
 

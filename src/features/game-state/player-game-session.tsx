@@ -126,6 +126,15 @@ export function PlayerGameSession({ roomCode }: PlayerGameSessionProps) {
       return <LobbySessionNotice message="Não foi possível acompanhar o lobby." />;
     }
 
+    if (lobby.isLoading) {
+      return (
+        <LobbySessionNotice
+          loading
+          message="Carregando os participantes e as regras da partida…"
+        />
+      );
+    }
+
     const game = lobby.game ?? sessionState.session.game;
     const player = lobby.player ?? sessionState.session.player;
 
@@ -134,9 +143,9 @@ export function PlayerGameSession({ roomCode }: PlayerGameSessionProps) {
         <PlayerRoleView
           gameId={sessionState.session.gameId}
           code={sessionState.session.code}
-          experience={player.experience}
           game={game}
           alive={player.alive}
+          playerCount={Object.keys(lobby.players).length}
         />
       );
     }

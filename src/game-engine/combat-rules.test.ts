@@ -46,7 +46,17 @@ test("Mafia kills an unprotected target and Doctor prevents that death", () => {
     enginePlayer("doctor", "doctor"),
     enginePlayer("target", "townie"),
   ];
-  assert.deepEqual(resolveNight(engineGame(players), [mafiaAttack("target")]).deaths, ["target"]);
+  const killed = resolveNight(
+    engineGame(players),
+    [mafiaAttack("target")],
+    { randomSource: firstChoice },
+  );
+  assert.deepEqual(killed.deaths, ["target"]);
+  assert.equal(killed.deathRecords?.[0].attackerUid, "godfather");
+  assert.equal(
+    killed.randomDecisions?.[0].key,
+    "mafia-attack-representative:mafia:target",
+  );
   const healed = resolveNight(engineGame(players), [mafiaAttack("target"), doctor("target")]);
   assert.deepEqual(healed.deaths, []);
   assert.ok(healed.engineEvents.some(({ type }) => type === "DOCTOR_PREVENTED_DEATH"));
@@ -83,7 +93,22 @@ test("Bodyguard intercepts one attack, sacrifices itself and counterattacks a ra
   ];
   const result = resolveNight(engineGame(players), [mafiaAttack("target"), bodyguard("target")], { randomSource: firstChoice });
   assert.deepEqual(result.deaths, ["bodyguard", "godfather"]);
-  assert.equal(result.deathRecords?.find(({ targetUid }) => targetUid === "bodyguard")?.cause, "bodyguard-sacrifice");
+  const bodyguardDeath = result.deathRecords?.find(
+    ({ targetUid }) => targetUid === "bodyguard",
+  );
+  assert.equal(bodyguardDeath?.cause, "bodyguard-sacrifice");
+  assert.equal(bodyguardDeath?.attackerUid, "godfather");
+  assert.equal(bodyguardDeath?.originalTargetUid, "target");
+  assert.equal(bodyguardDeath?.originalAttackCause, "mafia-attack");
+  const mafiaDeath = result.deathRecords?.find(
+    ({ targetUid }) => targetUid === "godfather",
+  );
+  assert.equal(mafiaDeath?.attackerUid, "bodyguard");
+  assert.equal(mafiaDeath?.originalTargetUid, "target");
+  assert.equal(
+    result.engineEvents.some((event) => Object.values(event).includes(undefined)),
+    false,
+  );
   assert.ok(result.engineEvents.some(({ type }) => type === "MAFIA_MEMBER_RANDOMLY_SELECTED"));
 });
 

@@ -6,7 +6,6 @@ import {
   arePlayersAdjacent,
   canReceiveDoctorProtection,
   canUseActionOnNight,
-  deputyHasSheriffAbility,
   executionerBecomesJester,
   getForcedVerdict,
   getJesterRevengeTargets,
@@ -36,23 +35,6 @@ test("models Doctor, Jester and Executioner day interactions", () => {
   assert.equal(executionerBecomesJester("night"), true);
   assert.equal(executionerBecomesJester("hanging"), false);
   assert.equal(executionerBecomesJester("other-day"), null);
-});
-
-test("activates Deputy only after no living Sheriff remains", () => {
-  assert.equal(
-    deputyHasSheriffAbility([
-      { alive: true, roleId: "deputy" },
-      { alive: true, roleId: "sheriff" },
-    ]),
-    false,
-  );
-  assert.equal(
-    deputyHasSheriffAbility([
-      { alive: true, roleId: "deputy" },
-      { alive: false, roleId: "sheriff" },
-    ]),
-    true,
-  );
 });
 
 test("enforces Night 1, Night 3 and full-moon action schedules", () => {

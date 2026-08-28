@@ -4,6 +4,38 @@ import { requireAuthenticatedGameHost } from "@/features/game-state/require-auth
 import { readPublicPlayer } from "@/lib/firebase/game-access-repository";
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
+import {
+  isValidPlayerName,
+  normalizePlayerName,
+} from "@/lib/utils/player-name";
+
+export async function renamePlayer(
+  gameId: string,
+  playerUid: string,
+  nameInput: string,
+): Promise<void> {
+  await requireAuthenticatedGameHost(gameId);
+
+  const name = normalizePlayerName(nameInput);
+
+  if (!isValidPlayerName(name)) {
+    throw new Error("The player name is invalid.");
+  }
+
+  const player = await readPublicPlayer(gameId, playerUid);
+
+  if (!player) {
+    throw new Error("The player no longer exists.");
+  }
+
+  if (player.name === name) {
+    return;
+  }
+
+  await applyAtomicUpdate({
+    [firebasePaths.gamePlayerField(gameId, playerUid, "name")]: name,
+  });
+}
 
 export async function updatePlayerHouseOrder(
   gameId: string,

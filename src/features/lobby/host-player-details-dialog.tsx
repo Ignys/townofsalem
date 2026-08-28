@@ -2,32 +2,45 @@
 
 import { useEffect, useId } from "react";
 import { createPortal } from "react-dom";
-import { Ban, Bot, House, UserRound, X } from "lucide-react";
+import { Ban, House, Skull, UserRound, X } from "lucide-react";
 
 import { HostPlayerAliveControl } from "@/features/game-state/host-player-alive-control";
 import { HostPlayerStatusControl } from "@/features/game-state/host-player-status-control";
+import {
+  getUnrecordedPlayerDeathDetails,
+  type PlayerDeathDetails,
+} from "@/features/game-state/player-death-details";
+import { RoleInteractionLimitNotice } from "@/features/roles/role-interaction-limit-notice";
+import { getRoleResourceUsage } from "@/features/roles/role-resource-usage";
 import { FACTION_LABELS } from "@/features/roles/role-presentation";
 import type {
   PrivatePlayerRecord,
   PublicPlayerRecord,
 } from "@/lib/firebase/schema";
-import type { RoleDefinition } from "@/types";
+import type { HostNightActionEntry, RoleDefinition } from "@/types";
 
-import { HostBotNameEditor } from "./host-bot-name-editor";
+import { HostPlayerInteractionHistory } from "./host-player-interaction-history";
+import { HostPlayerNameEditor } from "./host-player-name-editor";
 
 interface HostPlayerDetailsDialogProps {
   gameId: string;
   playerUid: string;
   player: PublicPlayerRecord;
+  playerCount: number;
   houseNumber: number;
   assignment?: PrivatePlayerRecord;
+  actionHistory: readonly HostNightActionEntry[];
+  actionHistoryLoaded: boolean;
+  nightNumberById: Readonly<Record<string, number>>;
+  playerNames: Readonly<Record<string, string>>;
+  deathDetails?: PlayerDeathDetails;
   role?: RoleDefinition;
   roleLabel: string;
   gameStarted: boolean;
   statusEditable: boolean;
   open: boolean;
   onClose: () => void;
-  onRequestKick: () => void;
+  onRequestKick?: () => void;
   onComposeAction?: (playerUid: string) => void;
 }
 
@@ -35,8 +48,14 @@ export function HostPlayerDetailsDialog({
   gameId,
   playerUid,
   player,
+  playerCount,
   houseNumber,
   assignment,
+  actionHistory,
+  actionHistoryLoaded,
+  nightNumberById,
+  playerNames,
+  deathDetails,
   role,
   roleLabel,
   gameStarted,
@@ -69,6 +88,18 @@ export function HostPlayerDetailsDialog({
 
   const canComposeAction =
     Boolean(onComposeAction) && Boolean(role?.actionDefinitions?.length);
+  const resourceUsage = role && (role.id === "janitor" || actionHistoryLoaded)
+    ? getRoleResourceUsage({
+        actionEntries: actionHistory,
+        assignment,
+        playerCount,
+        playerUid,
+        roleId: role.id,
+      })
+    : null;
+  const displayedDeathDetails = player.alive
+    ? null
+    : deathDetails ?? getUnrecordedPlayerDeathDetails();
 
   return createPortal(
     <div
@@ -91,16 +122,13 @@ export function HostPlayerDetailsDialog({
             <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#d3b88c]/10 font-mono text-sm font-bold text-[#e6cfa9]">
               {houseNumber}
             </span>
-            <div className="min-w-0">
-              <p className="text-xs font-semibold tracking-[0.14em] text-[#9f9990] uppercase">
-                Casa {houseNumber}
-              </p>
-              <h2
-                id={titleId}
-                className="truncate font-serif text-xl font-semibold text-[#fffaf0]"
-              >
-                {player.name}
-              </h2>
+            <div className="w-fit">
+              <HostPlayerNameEditor
+                gameId={gameId}
+                playerUid={playerUid}
+                name={player.name}
+                titleId={titleId}
+              />
             </div>
           </div>
           <button
@@ -114,7 +142,34 @@ export function HostPlayerDetailsDialog({
           </button>
         </header>
 
-        <div className="max-h-[min(75vh,42rem)] space-y-5 overflow-y-auto p-5">
+        <div className="max-h-[min(75vh,42rem)] space-y-2 overflow-y-auto p-5">
+          <section className="rounded-xl border border-white/8 bg-black/15 p-4">
+            <p className="text-xs font-semibold tracking-[0.14em] text-[#9f9990] uppercase">
+              Role
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <p className="font-serif text-lg font-semibold text-[#fffaf0]">
+                {roleLabel}
+              </p>
+              {role && (
+                <span className="rounded-full border border-[#d3b88c]/20 px-2 py-0.5 text-xs font-semibold text-[#e6cfa9]">
+                  {FACTION_LABELS[role.faction]}
+                </span>
+              )}
+            </div>
+            {role?.description && (
+              <>
+                <p className="mt-2 text-sm leading-6 text-[#bdb7ad]">
+                  {role.description}
+                </p>
+                <RoleInteractionLimitNotice
+                  roleId={role.id}
+                  playerCount={playerCount}
+                  resourceUsage={resourceUsage}
+                />
+              </>
+            )}
+          </section>
           <section className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-white/8 bg-black/15 p-3">
               <p className="flex items-center gap-2 text-xs text-[#9f9990]">
@@ -144,40 +199,25 @@ export function HostPlayerDetailsDialog({
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/8 bg-black/15 p-4">
-            <p className="text-xs font-semibold tracking-[0.14em] text-[#9f9990] uppercase">
-              Role
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <p className="font-serif text-lg font-semibold text-[#fffaf0]">
-                {roleLabel}
+          {displayedDeathDetails && (
+            <section className="rounded-xl border border-red-300/15 bg-red-400/[0.06] p-4">
+              <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-[#f0b9bd] uppercase">
+                <Skull aria-hidden="true" size={15} />
+                Como morreu
               </p>
-              {role && (
-                <span className="rounded-full border border-[#d3b88c]/20 px-2 py-0.5 text-xs font-semibold text-[#e6cfa9]">
-                  {FACTION_LABELS[role.faction]}
-                </span>
-              )}
-            </div>
-            {role?.description && (
-              <p className="mt-2 text-sm leading-6 text-[#bdb7ad]">
-                {role.description}
+              <p className="mt-2 text-sm leading-6 text-[#d8d2c8]">
+                {displayedDeathDetails.description}
               </p>
-            )}
-          </section>
-
-          {player.isBot && (
-            <section className="rounded-xl border border-white/8 bg-black/15 p-4">
-              <p className="mb-3 flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-[#9f9990] uppercase">
-                <Bot aria-hidden="true" size={14} />
-                Nome do bot
-              </p>
-              <HostBotNameEditor
-                gameId={gameId}
-                playerUid={playerUid}
-                name={player.name}
-              />
             </section>
           )}
+
+          <HostPlayerInteractionHistory
+            actionEntries={actionHistory}
+            loaded={actionHistoryLoaded}
+            nightNumberById={nightNumberById}
+            playerNames={playerNames}
+            playerUid={playerUid}
+          />
 
           <section className="rounded-xl border border-white/8 bg-black/15 p-4">
             <p className="text-xs font-semibold tracking-[0.14em] text-[#9f9990] uppercase">
@@ -222,14 +262,16 @@ export function HostPlayerDetailsDialog({
             )}
           </section>
 
-          <button
-            type="button"
-            onClick={onRequestKick}
-            className="flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#a33843]/35 text-sm font-bold text-[#f0b9bd] hover:bg-[#a33843]/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c]"
-          >
-            <Ban aria-hidden="true" size={17} />
-            {player.isBot ? "Remover bot" : "Expulsar jogador"}
-          </button>
+          {onRequestKick && (
+            <button
+              type="button"
+              onClick={onRequestKick}
+              className="mt-5 flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-[#a33843]/35 text-sm font-bold text-[#f0b9bd] hover:bg-[#a33843]/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c]"
+            >
+              <Ban aria-hidden="true" size={17} />
+              {player.isBot ? "Remover bot" : "Expulsar jogador"}
+            </button>
+          )}
         </div>
       </section>
     </div>,

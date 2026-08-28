@@ -29,9 +29,9 @@ export const TOWN_KILLING_ROLES = [
     faction: "town",
     alignment: "Town Killing",
     description:
-      "Durante a noite, você pode entrar em Alert. Enquanto estiver alerta, não pode ser morto e ataca cada pessoa que o visitar. O limite varia com o tamanho da partida.",
-    beginnerDescription:
-      "O Alert protege você, mas também mata visitantes aliados. Escolha as duas noites com cuidado.",
+      "À noite, você pode entrar em Alert (alerta). Enquanto estiver alerta, não pode ser morto e ataca todas as pessoas que o visitarem. A quantidade total de alertas depende do número de jogadores da partida.",
+    playTip:
+      "O alerta protege você, mas também pode matar visitantes aliados. Escolha suas noites com cuidado.",
     goal: TOWN_GOAL,
     virtueValue: 3,
     cardCount: 1,
@@ -54,9 +54,9 @@ export const TOWN_KILLING_ROLES = [
     faction: "town",
     alignment: "Town Killing",
     description:
-      "A partir da segunda noite, escolha uma pessoa para atirar e matar. Você possui apenas um tiro durante toda a partida.",
-    beginnerDescription:
-      "Seus tiros variam com o tamanho da mesa e não há punição do jogo digital por atingir um Townie.",
+      "A partir da segunda noite, escolha uma pessoa para atirar e matar. A quantidade total de tiros depende do número de jogadores da partida.",
+    playTip:
+      "Use seus tiros com cuidado. Nesta edição, você não se mata automaticamente se atingir alguém da Town.",
     goal: TOWN_GOAL,
     virtueValue: 5,
     cardCount: 1,

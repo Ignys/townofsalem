@@ -4,13 +4,6 @@ export const NIGHT_WAKE_STATUSES = ["pending", "completed", "skipped"] as const;
 export type HostNightActionStatus = (typeof HOST_NIGHT_ACTION_STATUSES)[number];
 export type NightWakeStatus = (typeof NIGHT_WAKE_STATUSES)[number];
 
-export interface RecordedMediumClue {
-  victimUid: string;
-  responsiblePlayerUid: string;
-  candidateUids: readonly string[];
-  candidateCount: 2 | 3 | 4;
-}
-
 export interface HostNightActionEntry {
   id: string;
   nightId: string;
@@ -23,7 +16,6 @@ export interface HostNightActionEntry {
   updatedAt: number;
   status: HostNightActionStatus;
   optionalNotes?: string;
-  mediumClue?: RecordedMediumClue;
 }
 
 export interface HostNightNote {

@@ -14,6 +14,7 @@ import { saveGameVariants } from "./game-variants-repository";
 export function useGameVariants(gameId: string | null) {
   const [variants, setVariants] = useState<GameVariants>({ ...DEFAULT_GAME_VARIANTS });
   const [amnesiacRolePool, setAmnesiacRolePool] = useState<readonly string[]>([]);
+  const [roleCount, setRoleCount] = useState<number | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<Error | null>(null);
@@ -29,6 +30,12 @@ export function useGameVariants(gameId: string | null) {
           if (!active) return;
           setVariants(withDefaultVariants(settings?.gameVariants));
           setAmnesiacRolePool(settings?.amnesiacRolePool ?? []);
+          setRoleCount(settings?.roleComposition
+            ? Object.values(settings.roleComposition).reduce(
+                (total, count) => total + count,
+                0,
+              )
+            : null);
           setLoaded(true);
           setError(null);
         },
@@ -73,5 +80,13 @@ export function useGameVariants(gameId: string | null) {
     }
   }, [amnesiacRolePool, gameId, saving, variants]);
 
-  return { variants, amnesiacRolePool, loaded, saving, error, updateVariants };
+  return {
+    variants,
+    amnesiacRolePool,
+    roleCount,
+    loaded,
+    saving,
+    error,
+    updateVariants,
+  };
 }

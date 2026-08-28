@@ -17,6 +17,34 @@ test("starts with one absolute end timestamp", () => {
   );
 });
 
+test("restarts an expired or manually ended timer", () => {
+  assert.deepEqual(
+    calculateTimerFieldUpdate(
+      { phaseEndsAt: 4_000 },
+      { type: "start", durationMs: 30_000 },
+      5_000,
+    ),
+    {
+      phaseEndsAt: 35_000,
+      timerPaused: false,
+      timerRemainingMs: null,
+    },
+  );
+
+  assert.deepEqual(
+    calculateTimerFieldUpdate(
+      { timerRemainingMs: 0 },
+      { type: "start", durationMs: 60_000 },
+      5_000,
+    ),
+    {
+      phaseEndsAt: 65_000,
+      timerPaused: false,
+      timerRemainingMs: null,
+    },
+  );
+});
+
 test("pauses by persisting remaining duration", () => {
   assert.deepEqual(
     calculateTimerFieldUpdate(

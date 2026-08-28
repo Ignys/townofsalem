@@ -4,14 +4,9 @@ import { requireAuthenticatedGameHost } from "@/features/game-state/require-auth
 import {
   readGamePlayers,
   readPublicGame,
-  readPublicPlayer,
 } from "@/lib/firebase/game-access-repository";
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
-import {
-  isValidPlayerName,
-  normalizePlayerName,
-} from "@/lib/utils/player-name";
 
 import {
   createBotPlayerUid,
@@ -47,33 +42,5 @@ export async function addBotPlayer(gameId: string): Promise<void> {
       experience: "experienced",
       seat: nextSeat,
     },
-  });
-}
-
-export async function renameBotPlayer(
-  gameId: string,
-  playerUid: string,
-  nameInput: string,
-): Promise<void> {
-  await requireAuthenticatedGameHost(gameId);
-
-  const name = normalizePlayerName(nameInput);
-
-  if (!isValidPlayerName(name)) {
-    throw new Error("The bot name is invalid.");
-  }
-
-  const player = await readPublicPlayer(gameId, playerUid);
-
-  if (!player?.isBot) {
-    throw new Error("Only bot players can be renamed by this action.");
-  }
-
-  if (player.name === name) {
-    return;
-  }
-
-  await applyAtomicUpdate({
-    [firebasePaths.gamePlayerField(gameId, playerUid, "name")]: name,
   });
 }

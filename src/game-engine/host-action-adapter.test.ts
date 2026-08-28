@@ -50,3 +50,22 @@ test("uses the Godfather vote to break an internal tie", () => {
 
   assert.deepEqual(result.actions[0].targetUids, ["first"]);
 });
+
+test("omits undefined optional fields from effects persisted in a resolution", () => {
+  const result = adaptHostActions([{
+    id: "investigation",
+    nightId: "night-1",
+    actorUid: "sheriff",
+    roleIdSnapshot: "sheriff",
+    actionId: "investigate",
+    targetUids: ["target"],
+    createdAt: 1,
+    updatedAt: 1,
+    status: "confirmed",
+  }], ROLE_DEFINITIONS);
+
+  assert.equal(result.actions[0].investigationType, "sheriff");
+  assert.equal(Object.hasOwn(result.actions[0], "statusType"), false);
+  assert.equal(Object.hasOwn(result.actions[0], "protectionType"), false);
+  assert.equal(Object.values(result.actions[0]).includes(undefined), false);
+});

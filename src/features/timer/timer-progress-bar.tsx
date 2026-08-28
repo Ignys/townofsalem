@@ -33,7 +33,7 @@ export function TimerProgressBar({
         initial={false}
         animate={{ scaleX: progress }}
         transition={{ type: "tween", duration, ease: "linear" }}
-        className="relative h-full w-full origin-left rounded-full bg-gradient-to-r from-[#d3b88c] to-[#f0d9b5] will-change-transform"
+        className="relative h-full w-full origin-center rounded-full bg-gradient-to-r from-[#d3b88c] to-[#f0d9b5] will-change-transform"
       >
         <motion.span
           aria-hidden="true"

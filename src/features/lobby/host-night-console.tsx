@@ -2,6 +2,7 @@
 
 import type { PublicPlayerRecord } from "@/lib/firebase/schema";
 import { useMemo } from "react";
+import { HostConsoleFrame } from "@/components/host/host-console-frame";
 import { useHostRoleAssignments } from "../roles/use-host-role-assignments";
 import type { Player } from "@/types/player";
 import { ROLE_DEFINITIONS } from "@/data/roles";
@@ -9,6 +10,7 @@ import { useHostNightLog } from "@/features/night-actions/use-host-night-log";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
 
 import { HostNightConsoleRow } from "./host-night-console-row";
+import { HostDeputyPromotionNotice } from "./host-deputy-promotion-notice";
 import { getLatestNightConsoleEntry, getNightConsoleInteractions } from "./night-console-interactions";
 
 export interface HostNightConsoleProps {
@@ -32,9 +34,9 @@ export function HostNightConsole({ gameId, nightId, nightNumber, hostUid, player
             externalSelectedActorUid={externalSelectedActorUid}
         />
     ) : (
-        <ConsoleFrame>
+        <HostConsoleFrame title="Console do Mestre" id="host-night-console" className="pb-2" contentClassName="mt-2 flex flex-col gap-1">
             <p className="py-6 text-center text-sm text-zinc-500">O console estará disponível durante a noite.</p>
-        </ConsoleFrame>
+        </HostConsoleFrame>
     );
 }
 
@@ -72,22 +74,26 @@ function ActiveHostNightConsole({ gameId, nightId, nightNumber, hostUid, players
 
     if (!privateRoles.loaded || !nightLog.loaded) {
         return (
-            <ConsoleFrame>
+            <HostConsoleFrame title="Console do Mestre" id="host-night-console" className="pb-2" contentClassName="mt-2 flex flex-col gap-1">
                 <p role="status" className="py-6 text-center text-sm text-zinc-400">Carregando interações…</p>
-            </ConsoleFrame>
+            </HostConsoleFrame>
         );
     }
 
     if (privateRoles.error || nightLog.error) {
         return (
-            <ConsoleFrame>
+            <HostConsoleFrame title="Console do Mestre" id="host-night-console" className="pb-2" contentClassName="mt-2 flex flex-col gap-1">
                 <p role="alert" className="py-6 text-center text-sm text-red-300">Não foi possível carregar as roles.</p>
-            </ConsoleFrame>
+            </HostConsoleFrame>
         );
     }
 
     return (
-        <ConsoleFrame>
+        <HostConsoleFrame title="Console do Mestre" id="host-night-console" className="pb-2" contentClassName="mt-2 flex flex-col gap-1">
+            <HostDeputyPromotionNotice
+                promotion={nightLog.session?.deputyPromotion}
+                players={playerRecords}
+            />
             {interactions.length === 0 ? (
                 <p className="py-6 text-center text-sm text-zinc-500">Nenhuma role possui interação nesta noite.</p>
             ) : interactions.map((interaction) => {
@@ -106,21 +112,9 @@ function ActiveHostNightConsole({ gameId, nightId, nightNumber, hostUid, players
                         actionHistory={actionHistory}
                         locked={locked}
                         variants={gameVariants.variants}
-                        resolutions={nightLog.resolutions}
                     />
                 );
             })}
-        </ConsoleFrame>
-    );
-}
-
-function ConsoleFrame({ children }: Readonly<{ children: React.ReactNode }>) {
-    return (
-        <section id="host-night-console" className="min-w-0 w-full scroll-mt-4 rounded-xl border border-zinc-800 bg-zinc-950 p-4 pb-2">
-            <header className="border-b border-zinc-800 pb-2">
-                <h2 className="text-sm font-semibold tracking-[0.18em] text-zinc-50/60 uppercase">Console do Mestre</h2>
-            </header>
-            <div className="flex flex-col gap-1 mt-2">{children}</div>
-        </section>
+        </HostConsoleFrame>
     );
 }

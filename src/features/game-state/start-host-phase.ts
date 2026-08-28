@@ -1,11 +1,16 @@
 "use client";
 
-import { readHostPrivatePlayers, readPublicGame } from "@/lib/firebase/game-access-repository";
+import {
+  readGamePlayers,
+  readHostPrivatePlayers,
+  readPublicGame,
+} from "@/lib/firebase/game-access-repository";
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 import type { PlayablePhase } from "@/types";
 
 import { createPhaseSession } from "./create-phase-session";
+import { selectDeputyPromotion } from "./deputy-promotion";
 import { requireAuthenticatedGameHost } from "./require-authenticated-game-host";
 
 export interface StartHostPhaseInput {
@@ -19,10 +24,12 @@ export async function startHostPhase(
   input: StartHostPhaseInput,
   now: () => number = Date.now,
   createId: () => string = () => crypto.randomUUID(),
+  random: () => number = Math.random,
 ): Promise<void> {
   const hostUid = await requireAuthenticatedGameHost(gameId);
-  const [game, privatePlayers] = await Promise.all([
+  const [game, players, privatePlayers] = await Promise.all([
     readPublicGame(gameId),
+    input.phaseId === "night" ? readGamePlayers(gameId) : null,
     input.phaseId === "night" ? readHostPrivatePlayers(gameId) : null,
   ]);
 
@@ -40,6 +47,19 @@ export async function startHostPhase(
     phaseSessionId,
     nightId,
   });
+  const deputyPromotion = input.phaseId === "night" && players && privatePlayers
+    ? selectDeputyPromotion(players, privatePlayers, random)
+    : null;
+  const nightSession = created.nightSession && deputyPromotion
+    ? {
+        ...created.nightSession,
+        deputyPromotion: {
+          ...deputyPromotion,
+          promotedAt: startedAt,
+        },
+      }
+    : created.nightSession;
+  const deputyPromotionEventId = deputyPromotion ? createId() : null;
 
   await applyAtomicUpdate({
     [firebasePaths.gamePublicField(gameId, "phase")]: created.phase,
@@ -52,8 +72,8 @@ export async function startHostPhase(
     [firebasePaths.gamePublicField(gameId, "timerPaused")]: false,
     [firebasePaths.gamePublicField(gameId, "timerRemainingMs")]: null,
     [firebasePaths.gamePhaseSession(gameId, phaseSessionId)]: created.phaseSession,
-    ...(created.nightSession
-      ? { [firebasePaths.gameNightSession(gameId, created.nightSession.id)]: created.nightSession }
+    ...(nightSession
+      ? { [firebasePaths.gameNightSession(gameId, nightSession.id)]: nightSession }
       : {}),
     [firebasePaths.gameEvent(gameId, eventId)]: {
       type: "PHASE_STARTED",
@@ -67,6 +87,31 @@ export async function startHostPhase(
         durationSeconds: input.durationSeconds,
       },
     },
+    ...(deputyPromotion && deputyPromotionEventId && nightId
+      ? {
+          [firebasePaths.gamePrivatePlayerField(
+            gameId,
+            deputyPromotion.playerUid,
+            "roleId",
+          )]: "sheriff",
+          [firebasePaths.gamePrivatePlayerField(
+            gameId,
+            deputyPromotion.playerUid,
+            "faction",
+          )]: "town",
+          [firebasePaths.gameEvent(gameId, deputyPromotionEventId)]: {
+            type: "DEPUTY_PROMOTED_TO_SHERIFF",
+            timestamp: startedAt,
+            actorUid: hostUid,
+            visibility: "host-only",
+            payload: {
+              nightId,
+              playerUid: deputyPromotion.playerUid,
+              candidateUids: [...deputyPromotion.candidateUids],
+            },
+          },
+        }
+      : {}),
     ...Object.fromEntries(
       Object.entries(privatePlayers ?? {})
         .filter(([, player]) => player.statuses?.blackmailed)

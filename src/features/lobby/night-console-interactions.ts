@@ -1,4 +1,4 @@
-import { canUseActionOnNight, deputyHasSheriffAbility } from "@/game-engine/role-rules";
+import { canUseActionOnNight } from "@/game-engine/role-rules";
 import { withDefaultVariants, type GameVariants } from "@/game-engine/variants";
 import type {
   HostNightActionEntry,
@@ -26,15 +26,13 @@ export function getNightConsoleInteractions(
     ...player,
     roleId: assignments[player.uid],
   }));
-  const deputyActive = deputyHasSheriffAbility(playersWithRoles);
-
   return players.flatMap((actor) => {
     const role = rolesById.get(assignments[actor.uid] ?? "");
 
     if (
       !actor.alive ||
       !role?.wakesAtNight ||
-      (role.id === "deputy" && !deputyActive)
+      role.id === "deputy"
     ) {
       return [];
     }

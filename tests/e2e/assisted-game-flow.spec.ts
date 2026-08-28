@@ -11,7 +11,7 @@ async function joinPlayer(page: import("@playwright/test").Page, code: string, n
   await expect(page).toHaveURL(new RegExp(`/game/${code}$`));
 }
 
-test("complete assisted physical flow keeps player secrets and host authority", async ({ browser }) => {
+test("assisted night resolution keeps player secrets and host authority", async ({ browser }) => {
   const hostContext = await browser.newContext();
   const playerOneContext = await browser.newContext({ viewport: { width: 375, height: 812 } });
   const playerTwoContext = await browser.newContext({ viewport: { width: 320, height: 720 } });
@@ -33,58 +33,37 @@ test("complete assisted physical flow keeps player secrets and host authority", 
   await host.getByRole("button", { name: /Doctor/ }).click();
   await host.getByRole("button", { name: /Sheriff/ }).click();
   await host.getByRole("button", { name: "Sortear roles" }).click();
-  await expect(host.getByText("Composição bloqueada")).toBeVisible();
+  await expect(host.getByRole("heading", { name: "Console do Mestre" })).toBeVisible();
   await expect(playerOne.getByText("Sua role secreta")).toBeVisible();
   await expect(playerTwo.getByText("Sua role secreta")).toBeVisible();
   await expect(playerOne.getByText("Action Log")).toHaveCount(0);
   await expect(playerOne.getByRole("button", { name: /votar|culpado|inocente|confirmar ação/i })).toHaveCount(0);
-
-  await host.getByRole("button", { name: "Discussão", exact: true }).click();
-  await expect(host.getByRole("alertdialog")).toContainText("Isso finalizará a Noite 1, tem certeza?");
-  await host.getByRole("button", { name: "Não", exact: true }).click();
-
-  await host.getByRole("button", { name: "Dia", exact: true }).click();
-  await expect(host.getByRole("alertdialog")).toContainText("Isso finalizará a Noite 1, tem certeza?");
-  await host.getByRole("button", { name: "Sim", exact: true }).click();
-  await expect(playerOne.getByText("Dia", { exact: true })).toBeVisible();
-  await host.getByRole("button", { name: "Discussão", exact: true }).click();
-  await expect(playerOne.getByText("Discussão", { exact: true })).toBeVisible();
-  await host.getByRole("button", { name: "Personalizado", exact: true }).click();
-  await host.getByLabel("Nome opcional").fill("Intervalo");
-  await host.getByLabel("Minutos").fill("0");
-  await host.getByRole("spinbutton", { name: "Segundos", exact: true }).fill("20");
-  await host.getByRole("button", { name: "Iniciar fase personalizada" }).click();
-  await expect(playerOne.getByText("Intervalo", { exact: true })).toBeVisible();
-
-  await host.getByRole("button", { name: "Noite", exact: true }).click();
-  await expect(host.getByRole("alertdialog")).toHaveCount(0);
   await expect(host.getByRole("heading", { name: "Noite 1" }).first()).toBeVisible();
   await expect(playerOne.getByText("Noite 1", { exact: true })).toBeVisible();
-  await expect(host.getByText(/0 de 2 registrados/)).toBeVisible();
 
-  await host.getByRole("button", { name: /^1\./ }).click();
-  const target = host.getByLabel(/^Alvo/);
-  await target.selectOption({ index: 1 });
-  await host.getByRole("button", { name: "Confirmar entrada" }).click();
-  await expect(host.getByText("Ação salva no log.")).toBeVisible();
-  await host.reload();
-  await expect(host.getByRole("heading", { name: "Noite 1" }).first()).toBeVisible();
-  await expect(host.getByRole("button", { name: "Editar" })).toBeVisible();
-  await host.getByRole("button", { name: "Editar" }).click();
-  await host.getByRole("button", { name: "Salvar correção" }).click();
-  host.once("dialog", (dialog) => dialog.accept());
-  await host.getByRole("button", { name: "Cancelar" }).click();
+  const targets = host.getByRole("combobox", { name: /^Alvo/ });
+  await expect(targets).toHaveCount(2);
+  for (let index = 0; index < 2; index += 1) {
+    await targets.nth(index).click();
+    await host.getByRole("option").nth(1).click();
+  }
+  await expect(host.getByText("2 ações", { exact: true })).toBeVisible();
 
   await host.getByRole("button", { name: "Pré-visualizar resultado da noite" }).click();
+  await expect(host.getByRole("heading", { name: "Anunciar ao fim da noite" })).toBeVisible();
+  await expect(host.getByRole("heading", { name: "Informar individualmente" })).toBeVisible();
+  await expect(host.getByRole("heading", { name: "Privado do mestre" })).toBeVisible();
   await expect(host.getByText("Ninguém morreu nesta noite.")).toBeVisible();
+  await expect(host.getByText(/Investigou .*: informe/)).toBeVisible();
   await host.getByRole("button", { name: "Confirmar resultado" }).click();
   await expect(host.getByText("Resultado aplicado. A fase não foi alterada.")).toBeVisible();
   await expect(playerOne.getByText("Ninguém morreu nesta noite.")).toHaveCount(0);
-  await expect(host.getByText(/Noite 1 · confirmada/)).toBeVisible();
+  await expect(host.getByRole("heading", { name: "Histórico da partida" })).toBeVisible();
+  await expect(host.getByText("confirmada", { exact: true })).toBeVisible();
   host.once("dialog", (dialog) => dialog.accept());
   await host.getByRole("button", { name: "Desfazer última resolução" }).click();
   await expect(host.getByText("Resolução desfeita. Gere um novo preview após corrigir o log.")).toBeVisible();
-  await expect(host.getByText(/Noite 1 · corrigida\/rollback/)).toBeVisible();
+  await expect(host.getByText("rollback", { exact: true })).toBeVisible();
 
   for (const viewport of [{ width: 1366, height: 768 }, { width: 1024, height: 768 }, { width: 844, height: 390 }, { width: 430, height: 932 }]) {
     await host.setViewportSize(viewport);

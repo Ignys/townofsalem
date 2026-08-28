@@ -63,7 +63,7 @@ export interface RoleDefinition {
   faction: Faction;
   alignment: string;
   description: string;
-  beginnerDescription?: string;
+  playTip?: string;
   goal: string;
   /** Virtue Value printed on the physical card. */
   virtueValue: number;

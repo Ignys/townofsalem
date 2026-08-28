@@ -40,9 +40,9 @@ export const MAFIA_ROLES = [
     id: "blackmailer",
     name: "Blackmailer",
     description:
-      "Antes da votação de ataque, escolha uma pessoa para impedir de falar no dia seguinte; depois participe da decisão coletiva da Mafia.",
-    beginnerDescription:
-      "Silencie alguém por um dia. A pessoa continua viva e ainda pode votar.",
+      "Toda noite, antes da votação de ataque da Mafia, escolha uma pessoa para impedir de falar no dia seguinte. Você não pode escolher a mesma pessoa em duas noites seguidas.",
+    playTip:
+      "Use o silêncio para dificultar que alguém compartilhe informações ou se defenda.",
     virtueValue: -9,
     cardCount: 1,
     importantInteractions: [
@@ -58,14 +58,13 @@ export const MAFIA_ROLES = [
     id: "consigliere",
     name: "Consigliere",
     description:
-      "Em um número limitado de noites, investigue alguém para descobrir sua role exata e também participe da decisão coletiva da Mafia.",
-    beginnerDescription:
+      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa para revelar a role exata dela a todos os membros da Mafia. A quantidade total de investigações depende do número de jogadores da partida.",
+    playTip:
       "Use suas investigações exatas limitadas para ajudar a Mafia a escolher alvos importantes.",
     virtueValue: -10,
     cardCount: 1,
     importantInteractions: [
       "Descobre Politician e Godfather por suas roles exatas.",
-      "A habilidade de investigação pode ser usada duas vezes.",
     ],
     actionDefinitions: [consigliereInvestigation, mafiaAttackOrderAction],
     investigativeAppearance: investigativeAppearance("Consigliere", "mafia"),
@@ -76,8 +75,8 @@ export const MAFIA_ROLES = [
     id: "godfather",
     name: "Godfather",
     description:
-      "A partir da segunda noite, vote com a Mafia no alvo do ataque coletivo e desfaça empates com seu voto.",
-    beginnerDescription:
+      "Vote com a Mafia para escolher o alvo do ataque coletivo, que só pode matar a partir da segunda noite. Se a votação empatar, seu voto decide. Para o Sheriff, você aparece como Good (bom).",
+    playTip:
       "Coordene a Mafia, mande atacar um alvo e lembre que você aparece como Good para o Sheriff.",
     virtueValue: -8,
     cardCount: 1,
@@ -96,9 +95,9 @@ export const MAFIA_ROLES = [
     id: "janitor",
     name: "Janitor",
     description:
-      "Esconda automaticamente as primeiras roles mortas pelo ataque coletivo da Mafia, respeitando o limite da mesa.",
-    beginnerDescription:
-      "Nas primeiras mortes da Mafia, o engine registra a limpeza para que a role da vítima não seja revelada.",
+      "Você participa do ataque coletivo da Mafia e esconde a role das primeiras vítimas mortas por esse ataque. A quantidade total de limpezas depende do número de jogadores da partida.",
+    playTip:
+      "A role de uma vítima limpa não é revelada aos jogadores, o que permite à Mafia blefar usando essa informação.",
     virtueValue: -8,
     cardCount: 1,
     importantInteractions: [
@@ -116,7 +115,7 @@ export const MAFIA_ROLES = [
     name: "Mafioso",
     description:
       "Ajude a Mafia durante o dia e vote com a facção no alvo do ataque coletivo durante a noite.",
-    beginnerDescription:
+    playTip:
       "Você não possui habilidade particular, mas participa da votação do ataque coletivo.",
     virtueValue: -6,
     cardCount: 5,

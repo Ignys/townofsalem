@@ -13,6 +13,7 @@ import {
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate, type AtomicUpdateMap } from "@/lib/firebase/realtime-database-repository";
 import { getDatabaseReference } from "@/lib/firebase/references";
+import { omitUndefinedValues } from "@/lib/firebase/omit-undefined-values";
 import type { NightResolutionRecord, NightSession, PlayerStatus } from "@/types";
 import { getRoleById } from "@/data/roles";
 
@@ -56,6 +57,7 @@ export async function applyNightResolution(
   now: number = Date.now(),
 ): Promise<void> {
   const hostUid = await requireAuthenticatedGameHost(gameId);
+  const resolution = omitUndefinedValues(draft.resolution);
   const [game, players, privatePlayers] = await Promise.all([
     readPublicGame(gameId),
     readGamePlayers(gameId),
@@ -64,17 +66,18 @@ export async function applyNightResolution(
   if (!game || !players || game.currentNightId !== draft.nightId || game.status !== "in-progress") throw new Error("night-unavailable");
 
   const statusChanges = [
-    ...(draft.resolution.appliedStatuses ?? []).map(({ targetUid, statusType }) => ({
+    ...(resolution.appliedStatuses ?? []).map(({ targetUid, statusType }) => ({
       targetUid,
       statusType,
     })),
-    ...(draft.resolution.removedStatuses ?? []),
+    ...(resolution.removedStatuses ?? []),
   ];
 
   const record: NightResolutionRecord = {
     ...draft,
-    playerAliveBefore: captureAliveBefore(players, draft.resolution.deaths),
-    cleanStatusBefore: Object.fromEntries(draft.resolution.cleanedPlayerUids.map((uid) => [uid, privatePlayers?.[uid]?.statuses?.cleaned ?? null])),
+    resolution,
+    playerAliveBefore: captureAliveBefore(players, resolution.deaths),
+    cleanStatusBefore: Object.fromEntries(resolution.cleanedPlayerUids.map((uid) => [uid, privatePlayers?.[uid]?.statuses?.cleaned ?? null])),
     appliedStatusBefore: Object.fromEntries(
       [...new Set(statusChanges.map(({ targetUid }) => targetUid))].map((targetUid) => [
         targetUid,
@@ -89,7 +92,7 @@ export async function applyNightResolution(
       ]),
     ),
     roleStateBefore: Object.fromEntries(
-      (draft.resolution.roleChanges ?? []).flatMap(({ playerUid }) => {
+      (resolution.roleChanges ?? []).flatMap(({ playerUid }) => {
         const current = privatePlayers?.[playerUid];
         return current
           ? [[playerUid, { roleId: current.roleId, faction: current.faction }]]
@@ -97,7 +100,7 @@ export async function applyNightResolution(
       }),
     ),
     resourceUsesBefore: Object.fromEntries(
-      (draft.resolution.consumedResources ?? []).flatMap(({ playerUid }) => {
+      (resolution.consumedResources ?? []).flatMap(({ playerUid }) => {
         const current = privatePlayers?.[playerUid];
         return current ? [[playerUid, current.resourceUses ?? {}]] : [];
       }),

@@ -1,13 +1,12 @@
 "use client";
 
-import type { HostNightActionEntry, NightResolutionRecord, Player } from "@/types";
+import type { HostNightActionEntry, Player } from "@/types";
 
 import { getAvailableNightTargets, type NightConsoleInteraction } from "./night-console-interactions";
 import { FACTION_STYLES } from "../roles/role-selection-options";
 import { NightTargetCombobox } from "./night-target-combobox";
 import { useHostNightConsoleAction } from "./use-host-night-console-action";
 import type { GameVariants } from "@/game-engine/variants";
-import { MediumClueControl } from "./medium-clue-control";
 
 interface HostNightConsoleRowProps {
     gameId: string;
@@ -20,10 +19,9 @@ interface HostNightConsoleRowProps {
     actionHistory: readonly HostNightActionEntry[];
     locked: boolean;
     variants: GameVariants;
-    resolutions: Readonly<Record<string, NightResolutionRecord>>;
 }
 
-export function HostNightConsoleRow({ gameId, nightId, nightNumber, interaction, players, assignments, existingEntry, actionHistory, locked, variants, resolutions }: HostNightConsoleRowProps) {
+export function HostNightConsoleRow({ gameId, nightId, nightNumber, interaction, players, assignments, existingEntry, actionHistory, locked, variants }: HostNightConsoleRowProps) {
     const { actor, role, action } = interaction;
     const availableTargets = getAvailableNightTargets(interaction, players, variants);
     const style = role ? FACTION_STYLES[role.faction] : FACTION_STYLES.neutral;
@@ -64,20 +62,6 @@ export function HostNightConsoleRow({ gameId, nightId, nightNumber, interaction,
                           disabled={locked}
                       />
                   ))}
-            {role.id === "medium" && consoleAction.selectedTargetUids[0] && (
-                <MediumClueControl
-                    key={consoleAction.selectedTargetUids[0]}
-                    gameId={gameId}
-                    nightId={nightId}
-                    victimUid={consoleAction.selectedTargetUids[0]}
-                    players={players}
-                    assignments={assignments}
-                    resolutions={resolutions}
-                    existingClue={existingEntry?.mediumClue}
-                    disabled={locked}
-                    onRecord={consoleAction.recordMediumClue}
-                />
-            )}
         </div>
     );
 }

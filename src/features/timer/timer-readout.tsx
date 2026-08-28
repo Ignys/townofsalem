@@ -10,6 +10,7 @@ interface TimerReadoutProps {
   timer: SynchronizedTimerState;
   totalMs?: number | null;
   controls?: ReactNode;
+  inactiveReadout?: ReactNode;
 }
 
 const TIMER_STATUS_LABELS: Record<SynchronizedTimerState["status"], string> = {
@@ -25,6 +26,7 @@ export function TimerReadout({
   timer,
   totalMs = null,
   controls,
+  inactiveReadout,
 }: TimerReadoutProps) {
   const progress =
     totalMs && totalMs > 0
@@ -33,6 +35,7 @@ export function TimerReadout({
   const isCritical =
     timer.status === "running" &&
     timer.remainingMs <= CRITICAL_THRESHOLD_MS;
+  const inactive = timer.status === "idle" || timer.status === "expired";
 
   return (
     <div>
@@ -42,8 +45,7 @@ export function TimerReadout({
             {TIMER_STATUS_LABELS[timer.status]}
           </p>
 
-          <p
-            aria-label={`${Math.ceil(timer.remainingMs / 1_000)} segundos restantes`}
+          <div
             className={`mt-1 font-mono text-5xl font-bold tabular-nums transition-colors duration-300 ${
               timer.status === "expired"
                 ? "text-[#f0b9bd]"
@@ -52,10 +54,18 @@ export function TimerReadout({
                   : "text-[#fffaf0]"
             }`}
           >
-            {timer.status === "idle"
-              ? "--:--"
-              : formatTimerRemaining(timer.remainingMs)}
-          </p>
+            {inactive && inactiveReadout ? (
+              inactiveReadout
+            ) : (
+              <span
+                aria-label={`${Math.ceil(timer.remainingMs / 1_000)} segundos restantes`}
+              >
+                {timer.status === "idle"
+                  ? "--:--"
+                  : formatTimerRemaining(timer.remainingMs)}
+              </span>
+            )}
+          </div>
         </div>
 
         {controls}

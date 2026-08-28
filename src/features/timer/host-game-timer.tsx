@@ -7,6 +7,9 @@ import type { GamePublicRecord } from "@/lib/firebase/schema";
 import { getGameTimerControlErrorMessage } from "./control-game-timer";
 import type { TimerCommand } from "./timer-controls";
 import { TimerControlButtons } from "./timer-control-buttons";
+import { parseTimerDurationSeconds } from "./timer-duration-mask";
+import { TimerDurationInput } from "./timer-duration-input";
+import { TimerPresetButtons } from "./timer-preset-buttons";
 import { TimerReadout } from "./timer-readout";
 import { useSynchronizedTimer } from "./use-synchronized-timer";
 
@@ -23,17 +26,16 @@ interface TimerFeedback {
 export function HostGameTimer({ gameId, game }: HostGameTimerProps) {
   const timer = useSynchronizedTimer(game);
   const commandInProgress = useRef(false);
-  const [durationSeconds, setDurationSeconds] = useState("60");
+  const [durationDigits, setDurationDigits] = useState("");
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<TimerFeedback | null>(null);
   const [totalMs, setTotalMs] = useState<number | null>(() =>
     timer.remainingMs > 0 ? timer.remainingMs : null,
   );
-  const parsedDurationSeconds = Number(durationSeconds);
-  const durationValid =
-    Number.isFinite(parsedDurationSeconds) &&
-    parsedDurationSeconds >= 1;
+  const parsedDurationSeconds = parseTimerDurationSeconds(durationDigits);
+  const durationValid = parsedDurationSeconds !== null;
   const active = timer.status === "running" || timer.status === "paused";
+  const controlsDisabled =
+    busy || game.status !== "in-progress" || game.phase === "game-over";
 
   const runCommand = async (command: TimerCommand, success: string) => {
     if (commandInProgress.current) {
@@ -42,7 +44,6 @@ export function HostGameTimer({ gameId, game }: HostGameTimerProps) {
 
     commandInProgress.current = true;
     setBusy(true);
-    setFeedback(null);
 
     try {
       const { controlGameTimer } = await import("./control-game-timer");
@@ -50,32 +51,36 @@ export function HostGameTimer({ gameId, game }: HostGameTimerProps) {
 
       if (command.type === "start") {
         setTotalMs(command.durationMs);
+        setDurationDigits("");
       } else if (command.type === "add-thirty-seconds") {
         setTotalMs((current) => (current ?? timer.remainingMs) + 30_000);
       } else if (command.type === "end") {
         setTotalMs(null);
       }
-
-      setFeedback({ kind: "success", message: success });
-    } catch (error: unknown) {
-      setFeedback({
-        kind: "error",
-        message: getGameTimerControlErrorMessage(error),
-      });
     } finally {
       commandInProgress.current = false;
       setBusy(false);
     }
   };
 
-  const handleStart = () => {
+  const startTimer = (seconds: number) => {
     void runCommand(
       {
         type: "start",
-        durationMs: parsedDurationSeconds * 1_000,
+        durationMs: seconds * 1_000,
       },
       "Timer iniciado.",
     );
+  };
+
+  const handleCustomStart = () => {
+    if (parsedDurationSeconds !== null) {
+      startTimer(parsedDurationSeconds);
+    }
+  };
+
+  const handleDurationChange = (value: string) => {
+    setDurationDigits(value);
   };
 
   const handleToggle = () => {
@@ -104,6 +109,15 @@ export function HostGameTimer({ gameId, game }: HostGameTimerProps) {
       <TimerReadout
         timer={timer}
         totalMs={totalMs}
+        inactiveReadout={
+          <TimerDurationInput
+            value={durationDigits}
+            valid={durationValid}
+            disabled={controlsDisabled}
+            onChange={handleDurationChange}
+            onSubmit={handleCustomStart}
+          />
+        }
         controls={
           active ? (
             <TimerControlButtons
@@ -113,33 +127,14 @@ export function HostGameTimer({ gameId, game }: HostGameTimerProps) {
               onStop={handleStop}
               onAddThirtySeconds={handleAddThirtySeconds}
             />
-          ) : null
+          ) : (
+            <TimerPresetButtons
+              disabled={controlsDisabled}
+              onSelect={startTimer}
+            />
+          )
         }
       />
-      {(timer.status === "idle" || timer.status === "expired") && (
-        <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
-          <label className="grid gap-1.5 text-sm font-semibold text-[#e5ded2]">
-            Duração em segundos
-            <input
-              type="number"
-              min={1}
-              step={1}
-              value={durationSeconds}
-              onChange={(event) => setDurationSeconds(event.target.value)}
-              disabled={busy}
-              className="min-h-11 rounded-xl border border-white/15 bg-black/20 px-3 text-[#fffaf0] outline-none focus:border-[#d3b88c] focus:ring-3 focus:ring-[#d3b88c]/15 disabled:opacity-50"
-            />
-          </label>
-          <button
-            type="button"
-            onClick={handleStart}
-            disabled={busy || !durationValid || game.phase === "game-over"}
-            className="min-h-11 self-end rounded-xl bg-[#7d2330] px-5 py-2 font-bold text-white hover:bg-[#681c27] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:bg-[#5d5552]"
-          >
-            Iniciar timer
-          </button>
-        </div>
-      )}
     </section>
   );
 }

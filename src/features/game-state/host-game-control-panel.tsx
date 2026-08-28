@@ -6,6 +6,7 @@ import { HostGameTimer } from "@/features/timer/host-game-timer";
 import type { GamePublicRecord } from "@/lib/firebase/schema";
 
 import { CurrentGamePhase } from "./current-game-phase";
+import { EndGameButton } from "./end-game-button";
 import { PhaseChangeConfirmationDialog } from "./phase-change-confirmation-dialog";
 import { getNightEndLabel, shouldConfirmNightEnd } from "./phase-end-label";
 import { PHASE_DEFINITIONS } from "./phase-definitions";
@@ -148,77 +149,11 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
               </button>
             );
           })}
-          <button
-            type="button"
-            aria-expanded={customOpen}
-            onClick={() => setCustomOpen((open) => !open)}
-            disabled={busy || game.status !== "in-progress"}
-            className="min-h-11 rounded-xl border border-white/15 bg-white/8 px-3 py-2 text-sm font-bold text-[#e5ded2] hover:bg-white/12 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-50"
-          >
-            Personalizado
-          </button>
         </div>
       </div>
 
-      {customOpen && (
-        <form
-          className="mt-4 grid gap-3 rounded-2xl border border-white/10 bg-black/15 p-4 sm:grid-cols-4"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (customDurationValid) {
-              selectPhase({
-                phaseId: "custom",
-                label: customLabel.trim() || "Fase personalizada",
-                durationSeconds: customDurationSeconds,
-              });
-            }
-          }}
-        >
-          <label className="grid gap-1 text-sm font-semibold sm:col-span-2">
-            Nome opcional
-            <input
-              value={customLabel}
-              maxLength={40}
-              onChange={(event) => setCustomLabel(event.target.value)}
-              className="min-h-11 rounded-xl border border-white/15 bg-black/20 px-3 text-[#fffaf0] focus:border-[#d3b88c] focus:outline-none"
-            />
-          </label>
-          <label className="grid gap-1 text-sm font-semibold">
-            Minutos
-            <input
-              type="number"
-              min={0}
-              max={1440}
-              value={customMinutes}
-              onChange={(event) => setCustomMinutes(event.target.value)}
-              className="min-h-11 rounded-xl border border-white/15 bg-black/20 px-3 text-[#fffaf0] focus:border-[#d3b88c] focus:outline-none"
-            />
-          </label>
-          <label className="grid gap-1 text-sm font-semibold">
-            Segundos
-            <input
-              type="number"
-              min={0}
-              max={59}
-              value={customSeconds}
-              onChange={(event) => setCustomSeconds(event.target.value)}
-              className="min-h-11 rounded-xl border border-white/15 bg-black/20 px-3 text-[#fffaf0] focus:border-[#d3b88c] focus:outline-none"
-            />
-          </label>
-          <button
-            type="submit"
-            disabled={busy || !customDurationValid}
-            className="min-h-11 rounded-xl bg-[#7d2330] px-4 font-bold text-white disabled:cursor-not-allowed disabled:bg-[#5d5552] sm:col-span-4"
-          >
-            Iniciar fase personalizada
-          </button>
-        </form>
-      )}
-
       {game.status === "in-progress" && (
-        <button type="button" disabled={busy} onClick={() => void handleEndGame()} className="mt-5 min-h-10 rounded-xl border border-[#a33843]/35 px-3 text-sm font-bold text-[#f0b9bd] disabled:opacity-50">
-          Encerrar partida
-        </button>
+        <EndGameButton busy={busy} onClick={() => void handleEndGame()} />
       )}
 
       <PhaseChangeConfirmationDialog

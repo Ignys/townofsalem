@@ -6,7 +6,9 @@ import { CSS } from "@dnd-kit/utilities";
 import { Bot, ChevronDown, ChevronRight, ChevronUp, GripVertical, Heart, Skull } from "lucide-react";
 
 import { getRoleById } from "@/data/roles";
+import type { PlayerDeathDetails } from "@/features/game-state/player-death-details";
 import type { PrivatePlayerRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
+import type { HostNightActionEntry } from "@/types";
 
 import { FACTION_STYLES } from "../roles/role-selection-options";
 import { HostPlayerDetailsDialog } from "./host-player-details-dialog";
@@ -17,8 +19,15 @@ interface HostPlayerSidebarRowProps {
     gameId: string;
     playerUid: string;
     player: PublicPlayerRecord;
+    playerCount: number;
     houseNumber: number;
     assignment?: PrivatePlayerRecord;
+    actionHistory: readonly HostNightActionEntry[];
+    actionHistoryLoaded: boolean;
+    nightNumberById: Readonly<Record<string, number>>;
+    playerNames: Readonly<Record<string, string>>;
+    deathDetails?: PlayerDeathDetails;
+    witchInGame: boolean;
     rolesLoaded: boolean;
     gameStarted: boolean;
     statusEditable: boolean;
@@ -36,8 +45,15 @@ export function HostPlayerSidebarRow({
     gameId,
     playerUid,
     player,
+    playerCount,
     houseNumber,
     assignment,
+    actionHistory,
+    actionHistoryLoaded,
+    nightNumberById,
+    playerNames,
+    deathDetails,
+    witchInGame,
     rolesLoaded,
     gameStarted,
     statusEditable,
@@ -55,6 +71,7 @@ export function HostPlayerSidebarRow({
     const role = assignment ? getRoleById(assignment.roleId) : undefined;
     const roleLabel = assignment ? (role?.name ?? "Role não reconhecida") : rolesLoaded ? "Role não atribuída" : "Carregando role…";
     const style = role ? FACTION_STYLES[role.faction] : FACTION_STYLES.neutral;
+    const cursedByWitch = witchInGame && Boolean(assignment?.statuses?.cursed);
     const transform = CSS.Transform.toString(sortableTransform);
 
     const requestKick = () => {
@@ -142,8 +159,12 @@ export function HostPlayerSidebarRow({
 
                 <span className="flex shrink-0 items-center gap-1">
                     {gameStarted && (
-                        <span className={`rounded-full text-[0.6875rem] font-bold ${player.alive ? "text-[#bfe0c5]" : "text-[#f0b9bd]"}`}>
-                            {player.alive ? <Heart aria-label="Vivo" size={18} /> : <Skull aria-label="Morto" size={18} />}
+                        <span className={`rounded-full text-[0.6875rem] font-bold ${player.alive ? (cursedByWitch ? "text-[#8000ff]" : "text-[#bfe0c5]") : "text-[#f0b9bd]"}`}>
+                            {player.alive ? (
+                                <Heart fill={`${cursedByWitch && "#8000ff"}`} aria-label={cursedByWitch ? "Vivo e amaldiçoado pela Witch" : "Vivo"} size={18} />
+                            ) : (
+                                <Skull aria-label="Morto" size={18} />
+                            )}
                         </span>
                     )}
                     <ChevronRight aria-hidden="true" size={16} className="text-[#756f68] transition group-hover:translate-x-0.5 group-hover:text-[#d3b88c]" />
@@ -154,8 +175,14 @@ export function HostPlayerSidebarRow({
                 gameId={gameId}
                 playerUid={playerUid}
                 player={player}
+                playerCount={playerCount}
                 houseNumber={houseNumber}
                 assignment={assignment}
+                actionHistory={actionHistory}
+                actionHistoryLoaded={actionHistoryLoaded}
+                nightNumberById={nightNumberById}
+                playerNames={playerNames}
+                deathDetails={deathDetails}
                 role={role}
                 roleLabel={roleLabel}
                 gameStarted={gameStarted}

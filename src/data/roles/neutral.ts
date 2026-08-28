@@ -65,16 +65,16 @@ export const NEUTRAL_ROLES = [
     faction: "neutral",
     alignment: "Neutral Benign",
     description:
-      "Até a terceira noite, aja como um Townie. Na Night 3, torne-se aleatoriamente uma das roles que o moderador separou antes da partida.",
-    beginnerDescription:
-      "Se a partida acabar antes da Night 3, você ainda vence. Depois de lembrar, adota a habilidade, facção e objetivo da nova role.",
+      "Até a terceira noite, você ainda não tem uma facção definitiva. Na noite 3, recebe aleatoriamente uma das roles separadas pelo moderador antes da partida.",
+    playTip:
+      "Se a partida terminar antes da noite 3, você vence com a facção vencedora. Depois de lembrar, siga a habilidade, a facção e o objetivo da nova role.",
     goal:
-      "Vença se a partida terminar antes da Night 3; depois da transformação, siga a condição de vitória da role lembrada.",
+      "Vença se a partida terminar antes da noite 3; depois da transformação, siga a condição de vitória da role lembrada.",
     virtueValue: 0,
     cardCount: 1,
     importantInteractions: [
       "O conjunto de roles possíveis precisa ser registrado antes da partida.",
-      "A transformação ocorre na Night 3 e altera alinhamento, habilidades e condição de vitória.",
+      "A transformação ocorre na noite 3 e altera alinhamento, habilidades e condição de vitória.",
     ],
     canDieAtNight: true,
     wakesAtNight: true,
@@ -90,8 +90,8 @@ export const NEUTRAL_ROLES = [
     faction: "neutral",
     alignment: "Neutral Evil",
     description:
-      "Na primeira noite, escolha um alvo. Você vence se ele for enforcado; se ele morrer à noite antes disso, você se transforma em Jester.",
-    beginnerDescription:
+      "Na primeira noite, escolha um alvo. Você vence se essa pessoa for enforcada. Se ela morrer durante a noite antes disso, você se transforma em Jester.",
+    playTip:
       "Convença a Town a enforcar seu alvo. Uma simples morte noturna não cumpre seu objetivo.",
     goal: "Faça seu alvo ser enforcado em um julgamento.",
     virtueValue: -4,
@@ -117,8 +117,8 @@ export const NEUTRAL_ROLES = [
     faction: "neutral",
     alignment: "Neutral Evil",
     description:
-      "Seu objetivo é ser enforcado. Imediatamente depois, escolha uma das pessoas que votaram Guilty em você para morrer.",
-    beginnerDescription:
+      "Seu objetivo é ser enforcado. Quando isso acontecer, escolha imediatamente uma das pessoas que votaram Guilty (culpado) em você para morrer; essa morte não pode ser impedida.",
+    playTip:
       "Pareça suspeito o bastante para ser condenado; sua vingança só pode atingir alguém que votou Guilty.",
     goal: "Seja enforcado em um julgamento.",
     virtueValue: -1,
@@ -137,9 +137,9 @@ export const NEUTRAL_ROLES = [
     faction: "neutral",
     alignment: "Neutral Killing",
     description:
-      "A partir da segunda noite, escolha uma pessoa por noite para matar. Você possui imunidade a mortes noturnas.",
-    beginnerDescription:
-      "Você joga sozinho, ataca toda noite a partir da Night 2 e não morre durante a noite.",
+      "A partir da segunda noite, escolha uma pessoa por noite para matar. Você não pode ser morto durante a noite.",
+    playTip:
+      "Você joga sozinho e precisa eliminar a Town, a Mafia, o Werewolf e a Witch.",
     goal:
       "Permaneça como a ameaça independente vencedora depois de eliminar os demais lados, conforme a regra configurada pelo grupo.",
     virtueValue: -8,
@@ -165,15 +165,15 @@ export const NEUTRAL_ROLES = [
     faction: "neutral",
     alignment: "Neutral Killing",
     description:
-      "A partir da Night 2, nas noites pares de lua cheia, escolha dois jogadores adjacentes na mesa para matar.",
-    beginnerDescription:
+      "Nas noites de lua cheia, que começam na noite 2 e acontecem em todas as noites pares, escolha dois jogadores adjacentes para matar. Eles são adjacentes quando não há outra pessoa viva entre eles.",
+    playTip:
       "A ordem dos assentos importa: em cada noite par, selecione exatamente dois jogadores vizinhos.",
     goal:
       "Permaneça como a ameaça independente vencedora depois de eliminar os demais lados, conforme a regra configurada pelo grupo.",
     virtueValue: -9,
     cardCount: 1,
     importantInteractions: [
-      "Ataca somente nas noites pares, começando na Night 2.",
+      "Ataca somente nas noites pares, começando na noite 2.",
       "Os dois alvos precisam ocupar assentos adjacentes.",
     ],
     canDieAtNight: true,
@@ -193,8 +193,8 @@ export const NEUTRAL_ROLES = [
     faction: "neutral",
     alignment: "Neutral Evil",
     description:
-      "Toda noite, escolha uma pessoa para amaldiçoar. Quando todos os demais jogadores vivos estiverem cursed, eles morrem e você vence.",
-    beginnerDescription:
+      "Toda noite, escolha uma pessoa para amaldiçoar. As maldições permanecem. Quando todas as outras pessoas vivas estiverem amaldiçoadas, elas morrem e você vence.",
+    playTip:
       "Espalhe sua maldição sem ser descoberta. As maldições permanecem acumuladas.",
     goal:
       "Amaldiçoe todos os demais jogadores vivos; quando isso acontecer, eles morrem e você vence.",

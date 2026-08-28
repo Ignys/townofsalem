@@ -9,7 +9,7 @@ import {
   validateHostNightAction,
 } from "@/features/night-actions/validate-host-night-action";
 import { currentTimestamp } from "@/lib/utils/timestamp";
-import type { HostNightActionEntry, Player, RecordedMediumClue } from "@/types";
+import type { HostNightActionEntry, Player } from "@/types";
 import type { GameVariants } from "@/game-engine/variants";
 
 import type { NightConsoleInteraction } from "./night-console-interactions";
@@ -49,10 +49,7 @@ export function useHostNightConsoleAction({
   const createdAtRef = useRef(existingEntry?.createdAt);
   const saveQueueRef = useRef(Promise.resolve());
 
-  const persist = (
-    targetUids: readonly string[],
-    mediumClue?: RecordedMediumClue | null,
-  ) => {
+  const persist = (targetUids: readonly string[]) => {
     if (locked) return;
 
     const timestamp = currentTimestamp();
@@ -69,11 +66,6 @@ export function useHostNightConsoleAction({
       createdAt,
       updatedAt: timestamp,
       status: "confirmed",
-      ...(mediumClue
-        ? { mediumClue }
-        : mediumClue === undefined && existingEntry?.mediumClue
-          ? { mediumClue: existingEntry.mediumClue }
-          : {}),
     };
     const issues = validateHostNightAction(candidate, {
       players,
@@ -114,7 +106,7 @@ export function useHostNightConsoleAction({
     );
 
     setSelectedTargetUids(nextTargets);
-    persist(nextTargets, null);
+    persist(nextTargets);
   };
 
   return {
@@ -122,7 +114,5 @@ export function useHostNightConsoleAction({
     setTarget,
     noTargetActionRecorded,
     recordNoTargetAction: () => persist([]),
-    recordMediumClue: (clue: RecordedMediumClue) =>
-      persist(selectedTargetUids, clue),
   };
 }

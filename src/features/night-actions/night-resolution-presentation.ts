@@ -1,74 +1,198 @@
+import { getRoleById } from "@/data/roles";
 import type { NightResolution } from "@/game-engine/types";
 
-export interface NightResolutionPresentation {
-  summary: readonly string[];
-  details: readonly string[];
-  warnings: readonly string[];
+import {
+  presentFallbackPublicDeath,
+  presentPrivateNightDeath,
+  presentPublicNightDeath,
+} from "./night-death-presentation";
+import { presentNightResolutionEvent } from "./night-resolution-event-presentation";
+import { getNightStatusLabel } from "./night-resolution-labels";
+import {
+  getResolutionPlayerName,
+  resolutionPlayerPart,
+  resolutionTextMessage,
+  resolutionTextPart,
+} from "./night-resolution-message-builders";
+import type {
+  NightResolutionMessageLine,
+  NightResolutionMessagePart,
+} from "./night-resolution-message-types";
+
+export type IndividualNightMessageLine = NightResolutionMessageLine;
+export type IndividualNightMessagePart = NightResolutionMessagePart;
+
+export interface IndividualNightMessage {
+  playerUid: string;
+  playerName: string;
+  messages: readonly IndividualNightMessageLine[];
 }
 
-const DEATH_REASONS: Readonly<Record<string, string>> = {
-  "night-attack": "ataque noturno",
-  "mafia-attack": "ataque coletivo da Mafia",
-  "veteran-attack": "ataque do Veteran em Alert",
-  "bodyguard-counterattack": "contra-ataque do Bodyguard",
-  "bodyguard-sacrifice": "sacrifício do Bodyguard",
-  "witch-curse": "efeito inevitável da Curse",
-};
+export interface NightResolutionPresentation {
+  announcements: readonly NightResolutionMessageLine[];
+  individualMessages: readonly IndividualNightMessage[];
+  hostPrivateInformation: readonly NightResolutionMessageLine[];
+  resolutionDetails: readonly NightResolutionMessageLine[];
+  warnings: readonly string[];
+}
 
 export function presentNightResolution(
   resolution: NightResolution,
   playerNames: Readonly<Record<string, string>>,
+  assignments: Readonly<Record<string, string>> = {},
 ): NightResolutionPresentation {
-  const name = (uid?: string) =>
-    uid ? playerNames[uid] ?? `Jogador ${uid}` : "Jogador desconhecido";
   const deaths = resolution.deaths ?? [];
-  const survivors = resolution.survivors ?? [];
-  const investigations = resolution.investigationResults ?? [];
-  const statuses = resolution.appliedStatuses ?? [];
   const deathRecords = resolution.deathRecords ?? [];
-  const summary = deaths.length === 0
-    ? ["Ninguém morreu nesta noite."]
-    : deaths.map((uid) => {
-      const record = deathRecords.find(({ targetUid }) => targetUid === uid);
-      return record
-        ? `${name(uid)} morreu por ${DEATH_REASONS[record.cause] ?? record.cause}.`
-        : `${name(uid)} morreu.`;
+  const cleanedPlayerUids = new Set(resolution.cleanedPlayerUids ?? []);
+  const announcements = deaths.length === 0
+    ? [resolutionTextMessage("Ninguém morreu nesta noite.")]
+    : deaths.map((playerUid) => {
+      const death = deathRecords.find(({ targetUid }) => targetUid === playerUid);
+      const cleaned = cleanedPlayerUids.has(playerUid);
+
+      return death
+        ? presentPublicNightDeath({
+          death,
+          playerNames,
+          roleId: assignments[playerUid],
+          resolution,
+          cleaned,
+        })
+        : presentFallbackPublicDeath(
+          playerUid,
+          playerNames,
+          assignments[playerUid],
+          cleaned,
+        );
     });
 
-  summary.push(...survivors.map((survival) =>
-    `${name(survival.targetUid)} foi atacado, mas sobreviveu.`,
-  ));
-  summary.push(...investigations.map((result) =>
-    `${name(result.actorUid)} investigou ${name(result.targetUid)}: informe ${result.result}.`,
-  ));
-  summary.push(...statuses.map((status) =>
-    `${name(status.targetUid)} recebeu o status ${status.statusType}.`,
-  ));
+  const messagesByPlayer = new Map<string, IndividualNightMessageLine[]>();
+  const addIndividualMessage = (
+    playerUid: string,
+    message: IndividualNightMessageLine,
+  ) => {
+    messagesByPlayer.set(playerUid, [
+      ...(messagesByPlayer.get(playerUid) ?? []),
+      message,
+    ]);
+  };
 
-  const details = (resolution.engineEvents ?? []).map((event) => {
-    const actor = event.actorUid ? name(event.actorUid) : null;
-    const target = event.targetUid ? name(event.targetUid) : null;
-    return [actor, event.type, target, `(${event.reasonCode})`]
-      .filter(Boolean)
-      .join(" — ");
+  (resolution.survivors ?? []).forEach(({ targetUid }) => {
+    addIndividualMessage(
+      targetUid,
+      resolutionTextMessage("Foi atacado nesta noite, mas sobreviveu."),
+    );
   });
-  details.push(...(resolution.randomDecisions ?? []).map((decision) => {
-    if (decision.key.startsWith("bodyguard-intercept:")) {
-      return `Sorteio do Bodyguard: ataque ${decision.selectedUid} interceptado entre ${decision.candidateUids.join(", ")}.`;
-    }
+  (resolution.investigationResults ?? []).forEach((result) => {
+    addIndividualMessage(result.actorUid, {
+      parts: [
+        resolutionTextPart("Investigou "),
+        resolutionPlayerPart(result.targetUid, playerNames),
+        resolutionTextPart(`: informe ${result.result}.`),
+      ],
+    });
+  });
+  (resolution.roleChanges ?? []).forEach((change) => {
+    const roleName = getRoleById(change.toRoleId)?.name ?? change.toRoleId;
+    addIndividualMessage(
+      change.playerUid,
+      resolutionTextMessage(`Sua nova role é ${roleName}.`),
+    );
+  });
+  (resolution.individualWinnerUids ?? []).forEach((playerUid) => {
+    addIndividualMessage(
+      playerUid,
+      resolutionTextMessage("Cumpriu sua condição individual de vitória."),
+    );
+  });
+  (resolution.mediumClues ?? []).forEach((clue) => {
+    const candidateParts = clue.candidateUids.flatMap((candidateUid, index) => [
+      ...(index > 0 ? [resolutionTextPart(", ")] : []),
+      resolutionPlayerPart(
+        candidateUid,
+        playerNames,
+        candidateUid === clue.responsiblePlayerUid ? "danger" : undefined,
+      ),
+    ]);
+    addIndividualMessage(clue.mediumUid, {
+      parts: [
+        resolutionTextPart("Consultou "),
+        resolutionPlayerPart(clue.victimUid, playerNames),
+        resolutionTextPart(": os suspeitos são "),
+        ...candidateParts,
+        resolutionTextPart(". Um deles foi responsável pela morte."),
+      ],
+    });
+  });
 
-    if (decision.key.startsWith("amnesiac-role:")) {
-      return `Sorteio do Amnesiac: role ${decision.selectedUid} entre ${decision.candidateUids.join(", ")}.`;
-    }
-
-    return `Sorteio ${decision.key}: ${name(decision.selectedUid)} entre ${decision.candidateUids.map((uid) => name(uid)).join(", ")}.`;
+  const individualMessages = [...messagesByPlayer].map(([playerUid, messages]) => ({
+    playerUid,
+    playerName: getResolutionPlayerName(playerUid, playerNames),
+    messages,
   }));
 
+  const hostPrivateInformation: NightResolutionMessageLine[] = deathRecords.map((death) =>
+    presentPrivateNightDeath({
+      death,
+      playerNames,
+      roleId: assignments[death.targetUid],
+      resolution,
+      cleaned: cleanedPlayerUids.has(death.targetUid),
+    }),
+  );
+
+  (resolution.appliedStatuses ?? []).forEach((status) => {
+    hostPrivateInformation.push({
+      parts: [
+        resolutionPlayerPart(status.targetUid, playerNames),
+        resolutionTextPart(` ficou ${getNightStatusLabel(status.statusType)}.`),
+      ],
+    });
+  });
+  (resolution.removedStatuses ?? []).forEach((status) => {
+    hostPrivateInformation.push({
+      parts: [
+        resolutionPlayerPart(status.targetUid, playerNames),
+        resolutionTextPart(` perdeu o status ${getNightStatusLabel(status.statusType)}.`),
+      ],
+    });
+  });
+  (resolution.consumedResources ?? []).forEach((consumption) => {
+    hostPrivateInformation.push({
+      parts: [
+        resolutionPlayerPart(consumption.playerUid, playerNames),
+        resolutionTextPart(` consumiu ${consumption.amount} uso de ${consumption.resource}.`),
+      ],
+    });
+  });
+  (resolution.randomDecisions ?? []).forEach((decision) => {
+    if (decision.key.startsWith("amnesiac-role:")) {
+      const selectedRole = getRoleById(decision.selectedUid)?.name ?? decision.selectedUid;
+      const candidates = decision.candidateUids
+        .map((roleId) => getRoleById(roleId)?.name ?? roleId)
+        .join(", ");
+      hostPrivateInformation.push(resolutionTextMessage(
+        `Sorteio do Amnesiac: ${selectedRole} foi selecionado entre ${candidates}.`,
+      ));
+      return;
+    }
+
+    if (decision.key.startsWith("bodyguard-intercept:")) {
+      hostPrivateInformation.push(resolutionTextMessage(
+        "Havia mais de um ataque possível para o Bodyguard interceptar; o motor sorteou um deles.",
+      ));
+    }
+  });
+
+  const resolutionDetails = (resolution.engineEvents ?? [])
+    .map((event) => presentNightResolutionEvent(event, playerNames))
+    .filter((line): line is NightResolutionMessageLine => line !== null);
+
   return {
-    summary,
-    details,
-    warnings: (resolution.warnings ?? []).map(({ code, message }) =>
-      `${code}: ${message}`,
-    ),
+    announcements,
+    individualMessages,
+    hostPrivateInformation,
+    resolutionDetails,
+    warnings: (resolution.warnings ?? []).map(({ message }) => message),
   };
 }

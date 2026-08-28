@@ -58,13 +58,13 @@ export function RoleDetails({ role }: RoleDetailsProps) {
           </h2>
           <p className="mt-2 leading-7 text-[#e5ded2]">{role.description}</p>
         </section>
-        {role.beginnerDescription && (
+        {role.playTip && (
           <section className="rounded-2xl border border-[#d3b88c]/20 bg-[#d3b88c]/8 p-5">
             <h2 className="text-sm font-bold tracking-wide text-[#e6cfa9] uppercase">
-              Para quem está começando
+              Dica prática
             </h2>
             <p className="mt-2 leading-7 text-[#e5ded2]">
-              {role.beginnerDescription}
+              {role.playTip}
             </p>
           </section>
         )}

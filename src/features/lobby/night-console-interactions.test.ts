@@ -115,3 +115,27 @@ test("last Godfather receives two targets only when its variant is enabled", () 
   const mafiaAttack = interactions.find(({ action }) => action.id === "mafia-kill-vote");
   assert.equal(mafiaAttack?.action.targetCount, 2);
 });
+
+test("only a Deputy persisted as Sheriff receives Sheriff investigations", () => {
+  const inactiveDeputy = getNightConsoleInteractions(
+    players.slice(0, 2),
+    { daniel: "deputy", maria: "sheriff" },
+    ROLE_DEFINITIONS,
+    2,
+  );
+
+  assert.equal(
+    inactiveDeputy.some(({ actor }) => actor.uid === "daniel"),
+    false,
+  );
+
+  const promotedDeputy = getNightConsoleInteractions(
+    players.slice(0, 2),
+    { daniel: "sheriff", maria: "sheriff" },
+    ROLE_DEFINITIONS,
+    2,
+  ).find(({ actor }) => actor.uid === "daniel");
+
+  assert.equal(promotedDeputy?.role.id, "sheriff");
+  assert.equal(promotedDeputy?.action.id, "investigate");
+});
