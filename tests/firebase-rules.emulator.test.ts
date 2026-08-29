@@ -265,3 +265,21 @@ test("role composition rejects unknown roles and counts above the deck limit", a
     1,
   ));
 });
+
+test("the graveyard reveals dead roles to every player while only the host buries", async () => {
+  const host = environment.authenticatedContext("host").database();
+  const player = environment.authenticatedContext("player").database();
+
+  await assertSucceeds(set(ref(host, "games/game/graveyard/other"), { roleId: "mafioso", cleaned: false, diedAt: 10 }));
+  // A body cleaned by the Janitor is buried without its role.
+  await assertSucceeds(set(ref(host, "games/game/graveyard/newRole"), { cleaned: true, diedAt: 20 }));
+
+  const grave = await assertSucceeds(get(ref(player, "games/game/graveyard")));
+  assert.equal(grave.child("other/roleId").val(), "mafioso");
+  assert.equal(grave.child("newRole/roleId").val(), null);
+
+  await assertFails(set(ref(player, "games/game/graveyard/player"), { roleId: "doctor", cleaned: false, diedAt: 30 }));
+  await assertFails(set(ref(host, "games/game/graveyard/other"), { roleId: "not-a-role", cleaned: false, diedAt: 10 }));
+  await assertFails(set(ref(host, "games/game/graveyard/other"), { roleId: "mafioso", cleaned: false }));
+  await assertFails(set(ref(host, "games/game/graveyard/ghost"), { cleaned: true, diedAt: 10 }));
+});
