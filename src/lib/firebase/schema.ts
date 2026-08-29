@@ -74,6 +74,19 @@ export type PrivatePlayerRecord = Pick<
   originalRoleId?: string;
 };
 
+/**
+ * Public tombstone for a dead player.
+ *
+ * The role is only written when the corpse was *not* cleaned by the Janitor —
+ * a cleaned body must stay anonymous, so `roleId` is simply absent and the
+ * role remains in the "still out there" list every player can see.
+ */
+export type GraveyardEntryRecord = {
+  roleId?: string;
+  cleaned: boolean;
+  diedAt: number;
+};
+
 export interface NightActionRecord {
   actionType: string;
   targetUid?: string;
@@ -104,6 +117,7 @@ export interface GameRecord {
   settings?: GameSettingsRecord;
   players?: Record<string, PublicPlayerRecord>;
   privatePlayers?: Record<string, PrivatePlayerRecord>;
+  graveyard?: Record<string, GraveyardEntryRecord>;
   phaseSessions?: Record<string, PhaseSession>;
   nightSessions?: Record<string, NightSession>;
   hostNightActions?: Record<string, Record<string, HostNightActionEntry>>;

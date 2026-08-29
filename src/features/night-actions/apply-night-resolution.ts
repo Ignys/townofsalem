@@ -14,6 +14,7 @@ import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate, type AtomicUpdateMap } from "@/lib/firebase/realtime-database-repository";
 import { getDatabaseReference } from "@/lib/firebase/references";
 import { omitUndefinedValues } from "@/lib/firebase/omit-undefined-values";
+import { buildGraveyardEntry } from "@/features/game-state/graveyard-entry";
 import type { NightResolutionRecord, NightSession, PlayerStatus } from "@/types";
 import { getRoleById } from "@/data/roles";
 
@@ -132,9 +133,15 @@ export async function applyNightResolution(
       payload: { nightId: draft.nightId, resolutionId: record.id },
     },
   };
+  const cleanedUids = new Set(record.resolution.cleanedPlayerUids);
   for (const uid of record.resolution.deaths) {
     if (!players[uid]) continue;
     updates[firebasePaths.gamePlayerField(gameId, uid, "alive")] = false;
+    updates[firebasePaths.gameGraveyardEntry(gameId, uid)] = buildGraveyardEntry(
+      privatePlayers?.[uid]?.roleId,
+      cleanedUids.has(uid),
+      now,
+    );
     updates[firebasePaths.gameEvent(gameId, crypto.randomUUID())] = {
       type: "PLAYER_DIED", timestamp: now, actorUid: hostUid, visibility: "host-only", payload: { playerUid: uid, nightId: draft.nightId },
     };
@@ -195,6 +202,9 @@ export async function rollbackNightResolution(gameId: string, nightId: string, n
   };
   for (const [uid, alive] of Object.entries(record.playerAliveBefore ?? {})) {
     updates[firebasePaths.gamePlayerField(gameId, uid, "alive")] = alive;
+    if (alive) {
+      updates[firebasePaths.gameGraveyardEntry(gameId, uid)] = null;
+    }
   }
   for (const [uid, status] of Object.entries(record.cleanStatusBefore ?? {})) {
     updates[firebasePaths.gamePrivatePlayerStatus(gameId, uid, "cleaned")] = status;

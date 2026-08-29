@@ -168,6 +168,25 @@
             }
           }
         },
+        "graveyard": {
+          ".read": "auth !== null",
+          ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          "$uid": {
+            ".validate": "newData.hasChildren(['cleaned', 'diedAt']) && root.child('games').child($gameId).child('players').child($uid).exists()",
+            "roleId": {
+              ".validate": "newData.isString() && (newData.val() === 'bodyguard' || newData.val() === 'deputy' || newData.val() === 'doctor' || newData.val() === 'investigator' || newData.val() === 'mayor' || newData.val() === 'medium' || newData.val() === 'peaceful-townie' || newData.val() === 'politician' || newData.val() === 'sheriff' || newData.val() === 'spiteful-townie' || newData.val() === 'survivor' || newData.val() === 'townie' || newData.val() === 'veteran' || newData.val() === 'vigilante' || newData.val() === 'blackmailer' || newData.val() === 'consigliere' || newData.val() === 'godfather' || newData.val() === 'janitor' || newData.val() === 'mafioso' || newData.val() === 'amnesiac' || newData.val() === 'executioner' || newData.val() === 'jester' || newData.val() === 'serial-killer' || newData.val() === 'werewolf' || newData.val() === 'witch')"
+            },
+            "cleaned": {
+              ".validate": "newData.isBoolean()"
+            },
+            "diedAt": {
+              ".validate": "newData.isNumber() && newData.val() > 0"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
         "privatePlayers": {
           ".read": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
           ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",

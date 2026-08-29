@@ -53,6 +53,10 @@ export const firebasePaths = {
     statusId: string,
   ) => `${gamePath(gameId)}/privatePlayers/${uid}/statuses/${statusId}` as const,
 
+  gameGraveyard: (gameId: string) => `${gamePath(gameId)}/graveyard` as const,
+  gameGraveyardEntry: (gameId: string, uid: string) =>
+    `${gamePath(gameId)}/graveyard/${uid}` as const,
+
   gamePhaseSessions: (gameId: string) =>
     `${gamePath(gameId)}/phaseSessions` as const,
   gamePhaseSession: (gameId: string, phaseSessionId: string) =>

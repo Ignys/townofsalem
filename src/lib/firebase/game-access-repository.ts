@@ -12,6 +12,7 @@ import type {
   DayVotesRecord,
   GamePublicRecord,
   GameSettingsRecord,
+  GraveyardEntryRecord,
   PrivatePlayerRecord,
   PublicPlayerRecord,
   RoomCodeRecord,
@@ -99,6 +100,20 @@ export function readNightResolution(
   nightId: string,
 ): Promise<NightResolutionRecord | null> {
   return readValue("read-night-resolution", firebasePaths.gameNightResolution(gameId, nightId));
+}
+
+export function readHostPrivatePlayer(
+  gameId: string,
+  uid: string,
+): Promise<PrivatePlayerRecord | null> {
+  return readValue("read-host-private-player", firebasePaths.gamePrivatePlayer(gameId, uid));
+}
+
+export function readGraveyardEntry(
+  gameId: string,
+  uid: string,
+): Promise<GraveyardEntryRecord | null> {
+  return readValue("read-graveyard-entry", firebasePaths.gameGraveyardEntry(gameId, uid));
 }
 
 export function readHostPrivatePlayers(

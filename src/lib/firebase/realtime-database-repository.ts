@@ -34,6 +34,7 @@ import type {
   GameRecord,
   GamePublicRecord,
   GameSettingsRecord,
+  GraveyardEntryRecord,
   NightActionRecord,
   PrivatePlayerRecord,
   PublicPlayerRecord,
@@ -119,6 +120,13 @@ export function observeGamePlayers(
   const path = firebasePaths.gamePlayers(gameId);
 
   return observePath("observe-players", path, observer);
+}
+
+export function observeGameGraveyard(
+  gameId: string,
+  observer: RealtimeValueObserver<Record<string, GraveyardEntryRecord>>,
+): Unsubscribe {
+  return observePath("observe-graveyard", firebasePaths.gameGraveyard(gameId), observer);
 }
 
 export function observePublicPlayer(

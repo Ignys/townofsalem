@@ -75,3 +75,12 @@ test("role rules include the complete physical catalog and copy limits", () => {
   assert.match(compositionValidation, /mafioso.*<= 5/);
   assert.match(compositionValidation, /politician.*<= 2/);
 });
+
+test("the graveyard is readable by every player but only the host can bury", () => {
+  assert.equal(gameRules.graveyard[".read"], "auth !== null");
+  assert.match(gameRules.graveyard[".write"], /hostUid/);
+  assert.match(gameRules.graveyard.$uid[".validate"], /'cleaned', 'diedAt'/);
+  assert.equal(gameRules.graveyard.$uid.$other[".validate"], false);
+  // A cleaned grave must be able to omit the role entirely.
+  assert.doesNotMatch(gameRules.graveyard.$uid[".validate"], /'roleId'/);
+});

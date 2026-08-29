@@ -9,6 +9,8 @@ import { GAME_PHASE_LABELS } from "./game-phase-presentation";
 import { PlayerRoleHoldButton } from "./player-role-hold-button";
 import { PlayerRoleNotice } from "./player-role-notice";
 import { PlayerStatusBoard } from "./player-status-board";
+import { RemainingRolesBoard } from "./remaining-roles-board";
+import { useGraveyard } from "./use-graveyard";
 import { usePrivatePlayerRole } from "./use-private-player-role";
 
 interface PlayerGameViewProps {
@@ -41,6 +43,7 @@ export function PlayerGameView({
 }: PlayerGameViewProps) {
   const privateRole = usePrivatePlayerRole(gameId);
   const gameVariants = useGameVariants(gameId);
+  const { graveyard } = useGraveyard(gameId);
 
   if (!privateRole.loaded || !gameVariants.loaded) {
     return <PlayerRoleNotice loading message="Carregando sua informação privada…" />;
@@ -132,7 +135,14 @@ export function PlayerGameView({
       )}
 
       <div className="mt-4">
-        <PlayerStatusBoard players={players} viewerUid={viewerUid} />
+        <PlayerStatusBoard players={players} viewerUid={viewerUid} graveyard={graveyard} />
+      </div>
+
+      <div className="mt-4">
+        <RemainingRolesBoard
+          roleComposition={gameVariants.roleComposition}
+          graveyard={graveyard}
+        />
       </div>
 
       <PlayerRoleHoldButton

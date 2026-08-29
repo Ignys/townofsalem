@@ -2,11 +2,13 @@
 
 import { useMemo } from "react";
 
-import type { PublicPlayerRecord } from "@/lib/firebase/schema";
+import { PlayerRoleTag } from "@/features/roles/player-role-tag";
+import type { GraveyardEntryRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
 
 interface PlayerStatusBoardProps {
   players: Readonly<Record<string, PublicPlayerRecord>>;
   viewerUid: string;
+  graveyard?: Readonly<Record<string, GraveyardEntryRecord>>;
 }
 
 function bySeat(
@@ -17,10 +19,12 @@ function bySeat(
 }
 
 /**
- * Public table state only: who is still in, who is out, and where they sit.
- * Deliberately never shows roles or factions — that stays with the host.
+ * Public table state: who is still in, who is out, and where they sit.
+ *
+ * Living players never show a role — that stays with the host. Dead players do,
+ * unless the Janitor cleaned the body, in which case the grave stays anonymous.
  */
-export function PlayerStatusBoard({ players, viewerUid }: PlayerStatusBoardProps) {
+export function PlayerStatusBoard({ players, viewerUid, graveyard }: PlayerStatusBoardProps) {
   const { alive, dead } = useMemo(() => {
     const entries = Object.entries(players).sort(bySeat);
     return {
@@ -66,6 +70,15 @@ export function PlayerStatusBoard({ players, viewerUid }: PlayerStatusBoardProps
             </span>
             {player.disconnected && player.alive && (
               <span className="text-xs text-[#c18b2f]">desconectado</span>
+            )}
+            {!player.alive && graveyard?.[uid] && (
+              graveyard[uid].cleaned || !graveyard[uid].roleId ? (
+                <span className="shrink-0 rounded-md border border-white/15 bg-white/5 px-2 py-0.5 text-[0.6875rem] font-medium text-[#9f9990] uppercase">
+                  corpo limpo
+                </span>
+              ) : (
+                <PlayerRoleTag roleId={graveyard[uid].roleId} />
+              )
             )}
           </li>
         ))}

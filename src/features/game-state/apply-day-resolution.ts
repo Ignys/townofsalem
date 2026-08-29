@@ -19,6 +19,7 @@ import {
 } from "@/lib/firebase/realtime-database-repository";
 import type { Player } from "@/types";
 
+import { buildGraveyardEntry } from "./graveyard-entry";
 import { requireAuthenticatedGameHost } from "./require-authenticated-game-host";
 
 /**
@@ -100,6 +101,11 @@ export async function applyDayResolution(
   for (const death of resolution.deaths) {
     if (!playerRecords?.[death.targetUid]?.alive) continue;
     updates[firebasePaths.gamePlayerField(gameId, death.targetUid, "alive")] = false;
+    updates[firebasePaths.gameGraveyardEntry(gameId, death.targetUid)] = buildGraveyardEntry(
+      privatePlayers?.[death.targetUid]?.roleId,
+      Boolean(privatePlayers?.[death.targetUid]?.statuses?.cleaned),
+      now,
+    );
   }
   for (const status of resolution.appliedStatuses) {
     updates[firebasePaths.gamePrivatePlayerStatus(gameId, status.targetUid, status.statusType)] = {

@@ -1,12 +1,14 @@
 "use client";
 
 import {
+  readHostPrivatePlayer,
   readPublicGame,
   readPublicPlayer,
 } from "@/lib/firebase/game-access-repository";
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 
+import { buildGraveyardEntry } from "./graveyard-entry";
 import { requireAuthenticatedGameHost } from "./require-authenticated-game-host";
 
 export async function updatePlayerAliveStatus(
@@ -32,8 +34,18 @@ export async function updatePlayerAliveStatus(
     return;
   }
 
+  const privatePlayer = alive ? null : await readHostPrivatePlayer(gameId, playerUid);
+
   await applyAtomicUpdate({
     [firebasePaths.gamePlayerField(gameId, playerUid, "alive")]: alive,
+    // The tombstone mirrors `alive`: a revived player leaves the graveyard.
+    [firebasePaths.gameGraveyardEntry(gameId, playerUid)]: alive
+      ? null
+      : buildGraveyardEntry(
+          privatePlayer?.roleId,
+          Boolean(privatePlayer?.statuses?.cleaned),
+          Date.now(),
+        ),
     [firebasePaths.gameEvent(gameId, crypto.randomUUID())]: {
       type: alive ? "PLAYER_REVIVED_BY_HOST" : "PLAYER_DIED",
       timestamp: Date.now(),
