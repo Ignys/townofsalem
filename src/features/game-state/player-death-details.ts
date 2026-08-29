@@ -14,6 +14,7 @@ export type PlayerDeathCause =
   | NightDeathCause
   | "hanging"
   | "jester-revenge"
+  | "day-death"
   | "administrative-override"
   | "unrecorded";
 
@@ -69,7 +70,9 @@ function describeDeath(
     case "night-attack":
       return "A causa da morte noturna não possui detalhes suficientes.";
     case "hanging":
-      return "Morreu por enforcamento após um veredito de culpado.";
+      return "Morreu por enforcamento: foi linchado pela cidade.";
+    case "day-death":
+      return "Morreu durante o dia sem ser linchado.";
     case "jester-revenge":
       return attackerName
         ? `Morreu para ${attackerName} pela vingança do Jester.`
@@ -125,7 +128,12 @@ export function getPlayerDeathDetailsByUid({
         const death = objectValue(value);
         const playerUid = stringValue(death?.targetUid);
         const cause = stringValue(death?.cause);
-        if (!playerUid || (cause !== "hanging" && cause !== "jester-revenge")) continue;
+        if (
+          !playerUid
+          || (cause !== "hanging" && cause !== "jester-revenge" && cause !== "day-death")
+        ) {
+          continue;
+        }
         const attackerUid = cause === "jester-revenge"
           ? stringValue(payload.accusedPlayerUid)
           : undefined;

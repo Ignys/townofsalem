@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { getConnectedPlayerEntries } from "@/features/game-state/player-roster";
 import { HostGameControlPanel } from "@/features/game-state/host-game-control-panel";
+import { HostDayWorkspace } from "@/features/game-state/host-day-workspace";
 import { HostHistoryPanel } from "@/features/game-state/host-history-panel";
 import { HostInvestigationCalculator } from "@/features/game-state/host-investigation-calculator";
 import { HostDiagnostics } from "@/features/game-state/host-diagnostics";
@@ -113,6 +114,13 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                                     players={lobby.players}
                                     externalSelectedActorUid={composeActorUid}
                                 />
+                                {game.phase !== "night" && (
+                                    <HostDayWorkspace
+                                        gameId={sessionState.session.gameId}
+                                        hostUid={sessionState.session.uid}
+                                        players={lobby.players}
+                                    />
+                                )}
                                 {game.phase === "night" && game.currentNightId && (
                                     <HostNightWorkspace
                                         gameId={sessionState.session.gameId}

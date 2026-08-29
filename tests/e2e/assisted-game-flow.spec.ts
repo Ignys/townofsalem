@@ -34,8 +34,16 @@ test("assisted night resolution keeps player secrets and host authority", async 
   await host.getByRole("button", { name: /Sheriff/ }).click();
   await host.getByRole("button", { name: "Sortear roles" }).click();
   await expect(host.getByRole("heading", { name: "Console do Mestre" })).toBeVisible();
+  const holdButton = playerOne.getByRole("button", { name: "Segure para ver sua role" });
+  await expect(holdButton).toBeVisible();
+  await expect(playerTwo.getByRole("button", { name: "Segure para ver sua role" })).toBeVisible();
+  // The role sheet stays hidden until the player physically holds the control.
+  await expect(playerOne.getByText("Sua role secreta")).toHaveCount(0);
+  await holdButton.hover();
+  await playerOne.mouse.down();
   await expect(playerOne.getByText("Sua role secreta")).toBeVisible();
-  await expect(playerTwo.getByText("Sua role secreta")).toBeVisible();
+  await playerOne.mouse.up();
+  await expect(playerOne.getByText("Sua role secreta")).toHaveCount(0);
   await expect(playerOne.getByText("Action Log")).toHaveCount(0);
   await expect(playerOne.getByRole("button", { name: /votar|culpado|inocente|confirmar ação/i })).toHaveCount(0);
   await expect(host.getByRole("heading", { name: "Noite 1" }).first()).toBeVisible();
@@ -49,20 +57,19 @@ test("assisted night resolution keeps player secrets and host authority", async 
   }
   await expect(host.getByText("2 ações", { exact: true })).toBeVisible();
 
-  await host.getByRole("button", { name: "Pré-visualizar resultado da noite" }).click();
   await expect(host.getByRole("heading", { name: "Anunciar ao fim da noite" })).toBeVisible();
   await expect(host.getByRole("heading", { name: "Informar individualmente" })).toBeVisible();
   await expect(host.getByRole("heading", { name: "Privado do mestre" })).toBeVisible();
   await expect(host.getByText("Ninguém morreu nesta noite.")).toBeVisible();
   await expect(host.getByText(/Investigou .*: informe/)).toBeVisible();
-  await host.getByRole("button", { name: "Confirmar resultado" }).click();
+  await host.getByRole("button", { name: "Aplicar resultado" }).click();
   await expect(host.getByText("Resultado aplicado. A fase não foi alterada.")).toBeVisible();
   await expect(playerOne.getByText("Ninguém morreu nesta noite.")).toHaveCount(0);
   await expect(host.getByRole("heading", { name: "Histórico da partida" })).toBeVisible();
   await expect(host.getByText("confirmada", { exact: true })).toBeVisible();
   host.once("dialog", (dialog) => dialog.accept());
   await host.getByRole("button", { name: "Desfazer última resolução" }).click();
-  await expect(host.getByText("Resolução desfeita. Gere um novo preview após corrigir o log.")).toBeVisible();
+  await expect(host.getByText("Resolução desfeita. O preview foi recalculado automaticamente.")).toBeVisible();
   await expect(host.getByText("rollback", { exact: true })).toBeVisible();
 
   for (const viewport of [{ width: 1366, height: 768 }, { width: 1024, height: 768 }, { width: 844, height: 390 }, { width: 430, height: 932 }]) {
@@ -85,7 +92,7 @@ test("assisted night resolution keeps player secrets and host authority", async 
   }
   for (const viewport of [{ width: 320, height: 720 }, { width: 375, height: 812 }, { width: 430, height: 932 }]) {
     await playerOne.setViewportSize(viewport);
-    await expect(playerOne.getByText("Sua role secreta")).toBeVisible();
+    await expect(playerOne.getByRole("button", { name: "Segure para ver sua role" })).toBeVisible();
     expect(await playerOne.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
   }
 

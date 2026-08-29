@@ -12,7 +12,7 @@ import {
   RestorePlayerSessionError,
 } from "./restore-player-session-error";
 import type { RestoredPlayerSession } from "./restore-player-session";
-import { PlayerRoleView } from "./player-role-view";
+import { PlayerGameView } from "./player-game-view";
 
 interface PlayerGameSessionProps {
   roomCode: string;
@@ -140,12 +140,13 @@ export function PlayerGameSession({ roomCode }: PlayerGameSessionProps) {
 
     if (game.status !== "lobby") {
       return (
-        <PlayerRoleView
+        <PlayerGameView
           gameId={sessionState.session.gameId}
           code={sessionState.session.code}
           game={game}
           alive={player.alive}
-          playerCount={Object.keys(lobby.players).length}
+          players={lobby.players}
+          viewerUid={sessionState.session.uid}
         />
       );
     }
