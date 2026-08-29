@@ -18,15 +18,15 @@ interface PlayerRoleCardProps {
 /** The private role sheet. Only ever rendered while the player holds the reveal button. */
 export function PlayerRoleCard({ role, variants, playerCount }: PlayerRoleCardProps) {
   return (
-    <article className="w-full max-w-2xl">
+    <article className="mx-auto w-full max-w-xl">
       <header className="text-center">
         <p className="text-xs font-semibold tracking-[0.2em] text-[#d3b88c] uppercase">
           Sua role secreta
         </p>
-        <h1 className="mt-3 font-serif text-4xl font-semibold tracking-tight text-[#fffaf0] sm:text-5xl">
+        <h1 className="mt-2 font-serif text-3xl leading-tight font-semibold tracking-tight text-[#fffaf0]">
           {role.name}
         </h1>
-        <div className="mt-4 flex flex-wrap justify-center gap-2 text-sm">
+        <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs">
           <span className="rounded-full border border-[#d3b88c]/30 bg-[#d3b88c]/10 px-3 py-1 font-bold text-[#e6cfa9]">
             {FACTION_LABELS[role.faction]}
           </span>
@@ -36,11 +36,11 @@ export function PlayerRoleCard({ role, variants, playerCount }: PlayerRoleCardPr
         </div>
       </header>
 
-      <section className="mt-6 rounded-2xl border border-white/10 bg-black/25 p-5">
+      <section className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4">
         <h2 className="text-sm font-bold tracking-wide text-[#e6cfa9] uppercase">
           Seu objetivo
         </h2>
-        <p className="mt-2 leading-7 text-[#e5ded2]">{role.goal}</p>
+        <p className="mt-1.5 text-sm leading-6 text-[#e5ded2]">{role.goal}</p>
       </section>
 
       <PlayerRoleGuide

@@ -44,7 +44,7 @@ export function PlayerStatusBoard({ players, viewerUid }: PlayerStatusBoardProps
       </div>
 
       <ul className="mt-3 grid gap-1.5">
-        {[...alive, ...dead].map(([uid, player]) => (
+        {[...alive, ...dead].map(([uid, player], index) => (
           <li
             key={uid}
             className={`flex items-center gap-3 rounded-xl border px-3 py-2 text-sm ${
@@ -53,8 +53,10 @@ export function PlayerStatusBoard({ players, viewerUid }: PlayerStatusBoardProps
                 : "border-[#a33843]/25 bg-[#a33843]/10 text-[#c9a3a7]"
             }`}
           >
+            {/* Only the host can assign seats, so fall back to the listed
+                position the same way the host console does. */}
             <span className="min-w-6 font-mono text-xs text-[#8f8a82] tabular-nums">
-              {player.seat ?? "–"}
+              {player.seat ?? index + 1}
             </span>
             <span className="min-w-0 flex-1 truncate font-semibold">
               <span className={player.alive ? undefined : "line-through"}>{player.name}</span>

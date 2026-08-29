@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { GameVariants } from "@/game-engine/variants";
 import type { RoleDefinition } from "@/types";
 
+import { FitToBox } from "./fit-to-box";
 import { PlayerRoleCard } from "./player-role-card";
 
 interface PlayerRoleHoldButtonProps {
@@ -98,14 +99,16 @@ export function PlayerRoleHoldButton({
           onPointerUp={hide}
           onPointerCancel={hide}
           onContextMenu={(event) => event.preventDefault()}
-          className="fixed inset-0 z-50 grid touch-none place-items-center overflow-y-auto bg-[#111315] p-5 select-none"
+          className="fixed inset-0 z-50 flex touch-none flex-col overflow-hidden bg-[#111315] px-4 py-3 select-none"
         >
-          <PlayerRoleCard
-            role={role}
-            variants={variants}
-            playerCount={playerCount}
-          />
-          <p className="mt-6 text-center text-xs leading-5 text-[#8f8a82]">
+          <FitToBox>
+            <PlayerRoleCard
+              role={role}
+              variants={variants}
+              playerCount={playerCount}
+            />
+          </FitToBox>
+          <p className="shrink-0 pt-2 text-center text-xs leading-5 text-[#8f8a82]">
             Solte para esconder. Não mostre sua tela aos outros jogadores.
           </p>
         </div>
