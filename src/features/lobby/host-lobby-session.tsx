@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 
-import { getConnectedPlayerEntries } from "@/features/game-state/player-roster";
+import { getPlayerEntries } from "@/features/game-state/player-roster";
 import { HostGameControlPanel } from "@/features/game-state/host-game-control-panel";
 import { HostDayWorkspace } from "@/features/game-state/host-day-workspace";
 import { HostHistoryPanel } from "@/features/game-state/host-history-panel";
@@ -78,7 +78,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
     }
 
     const game = lobby.game ?? sessionState.session.game;
-    const playerCount = getConnectedPlayerEntries(lobby.players).length;
+    const playerCount = getPlayerEntries(lobby.players).length;
     const compositionEditable = game.status === "lobby" && game.phase === "lobby";
     const handleComposeAction =
         game.phase === "night"

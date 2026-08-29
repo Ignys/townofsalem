@@ -73,7 +73,7 @@ export function validateRoleComposition({
   if (roleIds.length !== playerCount) {
     errors.push({
       code: "player-count-mismatch",
-      message: `Selecione ${playerCount} role${playerCount === 1 ? "" : "s"} para os ${playerCount} jogador${playerCount === 1 ? "" : "es"} conectado${playerCount === 1 ? "" : "s"}.`,
+      message: `Selecione ${playerCount} role${playerCount === 1 ? "" : "s"} para os ${playerCount} jogador${playerCount === 1 ? "" : "es"} na sala.`,
       expectedPlayerCount: playerCount,
       actualRoleCount: roleIds.length,
     });

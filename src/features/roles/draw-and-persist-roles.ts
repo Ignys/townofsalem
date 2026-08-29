@@ -58,9 +58,10 @@ export async function drawAndPersistRoles(
     throw new RoleAssignmentError("roles-already-assigned");
   }
 
-  const participantUids = Object.entries(players ?? {})
-    .filter(([, player]) => !player.disconnected)
-    .map(([playerUid]) => playerUid);
+  // Everyone in the lobby is a participant: a locked phone or a backgrounded
+  // tab drops the realtime socket and flips `disconnected`, but the person is
+  // still sitting at the table waiting for a role.
+  const participantUids = Object.keys(players ?? {});
   const roleIds = compositionRecordToRoleIds(settings?.roleComposition);
   const validation = validateRoleComposition({
     roleIds,
