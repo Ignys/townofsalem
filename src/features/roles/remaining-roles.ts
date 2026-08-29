@@ -7,12 +7,6 @@ export interface RemainingRoleEntry {
   count: number;
 }
 
-export interface RevealedDeadRole {
-  uid: string;
-  roleId: string | null;
-  diedAt: number;
-}
-
 /**
  * Roles from the composition that are still unaccounted for.
  *
@@ -39,17 +33,4 @@ export function getRemainingRoleEntries(
     const count = remaining.get(role.id) ?? 0;
     return count > 0 ? [{ role, count }] : [];
   });
-}
-
-/** Dead players ordered by time of death, oldest grave first. */
-export function getGraveyardEntriesInDeathOrder(
-  graveyard: Readonly<Record<string, GraveyardEntryRecord>> | null | undefined,
-): RevealedDeadRole[] {
-  return Object.entries(graveyard ?? {})
-    .map(([uid, entry]) => ({
-      uid,
-      roleId: entry.cleaned ? null : (entry.roleId ?? null),
-      diedAt: entry.diedAt,
-    }))
-    .sort((left, right) => left.diedAt - right.diedAt);
 }

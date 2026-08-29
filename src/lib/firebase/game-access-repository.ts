@@ -109,6 +109,12 @@ export function readHostPrivatePlayer(
   return readValue("read-host-private-player", firebasePaths.gamePrivatePlayer(gameId, uid));
 }
 
+export function readGameGraveyard(
+  gameId: string,
+): Promise<Record<string, GraveyardEntryRecord> | null> {
+  return readValue("read-graveyard", firebasePaths.gameGraveyard(gameId));
+}
+
 export function readGraveyardEntry(
   gameId: string,
   uid: string,

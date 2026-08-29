@@ -27,6 +27,7 @@ export type RealtimeDatabaseOperation =
   | "read-host-private-players"
   | "read-host-private-player"
   | "read-graveyard-entry"
+  | "read-graveyard"
   | "observe-graveyard"
   | "observe-public-player"
   | "write-public-player"

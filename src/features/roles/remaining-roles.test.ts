@@ -3,10 +3,7 @@ import { test } from "node:test";
 
 import type { GraveyardEntryRecord } from "@/lib/firebase/schema";
 
-import {
-  getGraveyardEntriesInDeathOrder,
-  getRemainingRoleEntries,
-} from "./remaining-roles";
+import { getRemainingRoleEntries } from "./remaining-roles";
 
 const composition = { doctor: 1, townie: 2, mafioso: 1, janitor: 1 };
 
@@ -44,17 +41,4 @@ test("decrements duplicated roles one corpse at a time", () => {
 
 test("never goes negative when a role change reveals a role outside the composition", () => {
   assert.deepEqual(counts({ a: { roleId: "jester", cleaned: false, diedAt: 1 } }), composition);
-});
-
-test("orders graves by time of death and hides cleaned roles", () => {
-  assert.deepEqual(
-    getGraveyardEntriesInDeathOrder({
-      later: { roleId: "mafioso", cleaned: false, diedAt: 20 },
-      earlier: { cleaned: true, diedAt: 10 },
-    }),
-    [
-      { uid: "earlier", roleId: null, diedAt: 10 },
-      { uid: "later", roleId: "mafioso", diedAt: 20 },
-    ],
-  );
 });

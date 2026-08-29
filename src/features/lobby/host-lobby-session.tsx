@@ -36,6 +36,17 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
     const session = sessionState.status === "ready" ? sessionState.session : null;
     const lobby = useRealtimeLobby({ gameId: session?.gameId ?? null });
     const connectionStatus = useFirebaseConnection(Boolean(session));
+    const gameStarted = lobby.game?.status === "in-progress";
+
+    // Deaths recorded before the graveyard shipped left no tombstone, so the
+    // host buries them once the console is open and can read every role.
+    useEffect(() => {
+        if (!session?.gameId || !gameStarted) return;
+
+        void import("@/features/game-state/backfill-graveyard")
+            .then(({ backfillGraveyard }) => backfillGraveyard(session.gameId))
+            .catch(() => undefined);
+    }, [gameStarted, session?.gameId]);
 
     useEffect(() => {
         let active = true;
