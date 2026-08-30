@@ -21,6 +21,11 @@ interface HostDayResolutionPanelProps {
   players: readonly Player[];
   assignments: Readonly<Record<string, string>>;
   privatePlayers: Readonly<Record<string, PrivatePlayerRecord>>;
+  /** Pré-seleciona o alvo — usado pelo veredito digital com resultado "culpado". */
+  initialTargetUid?: string;
+  initialKind?: AssistedDayDeathKind;
+  /** Impede trocar o alvo quando ele veio de um veredito digital. */
+  lockedTarget?: boolean;
 }
 
 const DEATH_KIND_OPTIONS: readonly { id: AssistedDayDeathKind; label: string; hint: string }[] = [
@@ -41,9 +46,12 @@ export function HostDayResolutionPanel({
   players,
   assignments,
   privatePlayers,
+  initialTargetUid,
+  initialKind,
+  lockedTarget = false,
 }: HostDayResolutionPanelProps) {
-  const [targetUid, setTargetUid] = useState("");
-  const [kind, setKind] = useState<AssistedDayDeathKind>("lynch");
+  const [targetUid, setTargetUid] = useState(initialTargetUid ?? "");
+  const [kind, setKind] = useState<AssistedDayDeathKind>(initialKind ?? "lynch");
   const [revengeTargetUid, setRevengeTargetUid] = useState("");
   const [executionerBecomesJester, setExecutionerBecomesJester] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
@@ -118,7 +126,7 @@ export function HostDayResolutionPanel({
           : { executionerBecomesJester }),
       });
       setFeedback("Resultado do dia aplicado. A fase não foi alterada.");
-      setTargetUid("");
+      if (!lockedTarget) setTargetUid("");
       setRevengeTargetUid("");
       setExecutionerBecomesJester(null);
     } catch (error: unknown) {
@@ -140,21 +148,28 @@ export function HostDayResolutionPanel({
         <span className="text-xs font-semibold tracking-wide text-[#aaa49b] uppercase">
           Quem morreu
         </span>
-        <NightTargetCombobox
-          ariaLabel="Jogador que morreu durante o dia"
-          players={alivePlayers}
-          assignments={assignments}
-          value={targetUid}
-          onChange={(uid) => {
-            setTargetUid(uid);
-            setRevengeTargetUid("");
-            setExecutionerBecomesJester(null);
-          }}
-          disabled={busy}
-        />
+        {lockedTarget ? (
+          <p className="rounded-xl border border-[#d3b88c]/30 bg-[#d3b88c]/10 px-3 py-2 text-sm text-[#fffaf0]">
+            <strong>{playerNames[targetUid] ?? "indisponível"}</strong> — condenado pelo veredito
+            da mesa.
+          </p>
+        ) : (
+          <NightTargetCombobox
+            ariaLabel="Jogador que morreu durante o dia"
+            players={alivePlayers}
+            assignments={assignments}
+            value={targetUid}
+            onChange={(uid) => {
+              setTargetUid(uid);
+              setRevengeTargetUid("");
+              setExecutionerBecomesJester(null);
+            }}
+            disabled={busy}
+          />
+        )}
       </div>
 
-      <fieldset className="grid gap-2" disabled={busy || !targetUid}>
+      <fieldset className="grid gap-2" disabled={busy || !targetUid || lockedTarget}>
         <legend className="text-xs font-semibold tracking-wide text-[#aaa49b] uppercase">
           Como morreu
         </legend>

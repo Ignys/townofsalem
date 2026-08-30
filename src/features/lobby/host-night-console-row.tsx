@@ -48,6 +48,16 @@ export function HostNightConsoleRow({ gameId, nightId, nightNumber, interaction,
             <span className="font-medium text-zinc-100">{actor.name}</span>
             <span className={`w-fit uppercase max-w-full truncate rounded-md border px-2 py-0.5 text-[0.6875rem] font-medium text-[#e6cfa9] ${style.tag}`}>{role.id}</span>
             <span className="text-sm text-zinc-300">{action.verb}</span>
+            {existingEntry?.source === "player" && (
+                <span className="w-fit shrink-0 rounded-md border border-sky-400/30 bg-sky-400/10 px-2 py-0.5 text-[0.6875rem] font-semibold text-sky-100">
+                    Enviado pelo jogador
+                </span>
+            )}
+            {existingEntry?.source === "player" && existingEntry.status === "draft" && (
+                <span className="w-fit shrink-0 rounded-md border border-amber-400/30 bg-amber-400/10 px-2 py-0.5 text-[0.6875rem] font-semibold text-amber-100">
+                    Rascunho: revisar
+                </span>
+            )}
 
             {action.targetCount === 0
                 ? <button type="button" disabled={locked || consoleAction.noTargetActionRecorded} onClick={consoleAction.recordNoTargetAction} className="min-h-9 rounded-lg border border-amber-300/25 px-3 text-xs font-semibold text-amber-100 disabled:opacity-50">{consoleAction.noTargetActionRecorded ? "Registrada" : "Registrar"}</button>

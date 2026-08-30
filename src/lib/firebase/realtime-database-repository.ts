@@ -43,6 +43,7 @@ import type {
   VerdictVote,
 } from "./schema";
 import type { GameVariants } from "@/game-engine/variants";
+import type { PlayerNightActionSubmission } from "@/types";
 
 export interface RealtimeValueObserver<Value> {
   onData: (value: Value | null) => void;
@@ -63,6 +64,7 @@ export type AtomicUpdateValue =
   | PhaseSession
   | NightSession
   | HostNightActionEntry
+  | PlayerNightActionSubmission
   | HostNightNote
   | WakeChecklistState
   | NightResolutionRecord
@@ -295,6 +297,58 @@ export function observeHostNightResolutions(gameId: string, verifiedHostUid: str
 
 export function observeHostAllNightActions(gameId: string, verifiedHostUid: string, observer: RealtimeValueObserver<Record<string, Record<string, HostNightActionEntry>>>): Unsubscribe {
   return observeVerifiedHostPath("observe-host-all-night-actions", firebasePaths.gameAllHostNightActions(gameId), verifiedHostUid, observer);
+}
+
+export function observeHostPlayerNightActions(
+  gameId: string,
+  nightId: string,
+  verifiedHostUid: string,
+  observer: RealtimeValueObserver<Record<string, Record<string, PlayerNightActionSubmission>>>,
+): Unsubscribe {
+  return observeVerifiedHostPath(
+    "observe-host-player-night-actions",
+    firebasePaths.gamePlayerNightActions(gameId, nightId),
+    verifiedHostUid,
+    observer,
+  );
+}
+
+/** Placar de acusações ao vivo. Legível por qualquer membro da partida. */
+export function observePublicAccusations(
+  gameId: string,
+  dayNumber: number,
+  observer: RealtimeValueObserver<Record<string, string>>,
+): Unsubscribe {
+  return observePath(
+    "observe-public-accusations",
+    firebasePaths.gameAccusations(gameId, dayNumber),
+    observer,
+  );
+}
+
+/** Submissões de noite do próprio jogador autenticado. */
+export function observeAuthenticatedPlayerNightActions(
+  gameId: string,
+  nightId: string,
+  observer: RealtimeValueObserver<Record<string, PlayerNightActionSubmission>>,
+): Unsubscribe {
+  const uid = firebaseAuth.currentUser?.uid;
+  const path = uid
+    ? firebasePaths.gamePlayerNightActionsForPlayer(gameId, nightId, uid)
+    : firebasePaths.gamePlayerNightActions(gameId, nightId);
+
+  if (!uid) {
+    observer.onError(
+      new RealtimeDatabaseRepositoryError(
+        "observe-player-night-actions",
+        path,
+        new Error("An authenticated player is required."),
+      ),
+    );
+    return () => undefined;
+  }
+
+  return observePath("observe-player-night-actions", path, observer);
 }
 
 export function observeAuthenticatedAccusationVote(

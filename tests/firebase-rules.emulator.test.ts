@@ -80,10 +80,180 @@ before(async () => {
       },
     });
     await set(ref(context.database(), "games/resetGame"), resetGameFixture);
+
+    // Partida em fase de acusação, para os testes de votação e submissão de noite.
+    await set(ref(context.database(), "games/voteGame"), {
+      hostUid: "host",
+      public: {
+        code: "VOTE01",
+        status: "in-progress",
+        phase: "discussion",
+        day: 3,
+        currentNightId: "night-current",
+      },
+      players: {
+        player: { name: "Player", alive: true, disconnected: false, experience: "beginner", seat: 1 },
+        other: { name: "Other", alive: true, disconnected: false, experience: "beginner", seat: 2 },
+        third: { name: "Third", alive: true, disconnected: false, experience: "beginner", seat: 3 },
+        ghost: { name: "Ghost", alive: false, disconnected: false, experience: "beginner", seat: 4 },
+      },
+      privatePlayers: {
+        player: { roleId: "sheriff", faction: "town" },
+        other: { roleId: "doctor", faction: "town" },
+        third: { roleId: "mafioso", faction: "mafia" },
+        ghost: { roleId: "townie", faction: "town" },
+      },
+      nightSessions: { "night-current": { id: "night-current" } },
+    });
   });
 });
 
 after(async () => environment?.cleanup());
+
+const VOTE = "games/voteGame";
+
+async function setPhase(phase: string, extra: Record<string, unknown> = {}) {
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}/public`), { phase, ...extra });
+  });
+}
+
+test("players may cast and clear their own accusation during an accusation phase", async () => {
+  await setPhase("discussion", { accusedPlayerUid: null, verdictClosedAt: null });
+  const player = environment.authenticatedContext("player").database();
+
+  await assertSucceeds(set(ref(player, `${VOTE}/votes/3/accusations/player`), "other"));
+  // .validate não roda em deleção: retirar o voto é permitido.
+  await assertSucceeds(set(ref(player, `${VOTE}/votes/3/accusations/player`), null));
+
+  await setPhase("day");
+  await assertSucceeds(set(ref(player, `${VOTE}/votes/3/accusations/player`), "other"));
+});
+
+test("accusation writes are rejected outside the accusation phases", async () => {
+  const player = environment.authenticatedContext("player").database();
+
+  for (const phase of ["night", "trial", "defense", "verdict"]) {
+    await setPhase(phase);
+    await assertFails(set(ref(player, `${VOTE}/votes/3/accusations/player`), "other"));
+  }
+});
+
+test("a player cannot vote for someone else, on the wrong day, or against a dead or self target", async () => {
+  await setPhase("discussion", { accusedPlayerUid: null });
+  const player = environment.authenticatedContext("player").database();
+  const ghost = environment.authenticatedContext("ghost").database();
+
+  await assertFails(set(ref(player, `${VOTE}/votes/3/accusations/other`), "third"));
+  await assertFails(set(ref(player, `${VOTE}/votes/9/accusations/player`), "other"));
+  await assertFails(set(ref(player, `${VOTE}/votes/3/accusations/player`), "ghost"));
+  await assertFails(set(ref(player, `${VOTE}/votes/3/accusations/player`), "player"));
+  await assertFails(set(ref(ghost, `${VOTE}/votes/3/accusations/ghost`), "other"));
+});
+
+test("once a trial is claimed no further accusations are accepted", async () => {
+  await setPhase("discussion", { accusedPlayerUid: "third" });
+  const player = environment.authenticatedContext("player").database();
+
+  await assertFails(set(ref(player, `${VOTE}/votes/3/accusations/player`), "other"));
+});
+
+test("the live accusation tally is readable by members only", async () => {
+  await setPhase("discussion", { accusedPlayerUid: null });
+  const player = environment.authenticatedContext("player").database();
+  const stranger = environment.authenticatedContext("stranger").database();
+
+  await assertSucceeds(get(ref(player, `${VOTE}/votes/3/accusations`)));
+  await assertFails(get(ref(stranger, `${VOTE}/votes/3/accusations`)));
+});
+
+test("verdicts stay secret until the host closes the vote", async () => {
+  await setPhase("verdict", { accusedPlayerUid: "third", verdictClosedAt: null, verdictOutcome: null });
+  const player = environment.authenticatedContext("player").database();
+
+  await assertSucceeds(set(ref(player, `${VOTE}/votes/3/verdicts/player`), "guilty"));
+  await assertSucceeds(get(ref(player, `${VOTE}/votes/3/verdicts/player`)));
+  // O ponto do voto digital: ninguém espelha o voto de ninguém.
+  await assertFails(get(ref(player, `${VOTE}/votes/3/verdicts/other`)));
+  await assertFails(get(ref(player, `${VOTE}/votes/3/verdicts`)));
+
+  await setPhase("verdict", { verdictClosedAt: 123, verdictOutcome: "guilty" });
+  await assertSucceeds(get(ref(player, `${VOTE}/votes/3/verdicts`)));
+});
+
+test("the accused cannot vote, and nobody votes after the verdict closes", async () => {
+  await setPhase("verdict", { accusedPlayerUid: "player", verdictClosedAt: null });
+  const player = environment.authenticatedContext("player").database();
+  const other = environment.authenticatedContext("other").database();
+
+  await assertFails(set(ref(player, `${VOTE}/votes/3/verdicts/player`), "innocent"));
+  await assertFails(set(ref(other, `${VOTE}/votes/3/verdicts/other`), "maybe"));
+  await assertSucceeds(set(ref(other, `${VOTE}/votes/3/verdicts/other`), "abstain"));
+
+  await setPhase("verdict", { verdictClosedAt: 123 });
+  await assertFails(set(ref(other, `${VOTE}/votes/3/verdicts/other`), "guilty"));
+});
+
+test("a player submits their own night action and nobody else can read it", async () => {
+  await setPhase("night", { accusedPlayerUid: null, verdictClosedAt: null });
+  const player = environment.authenticatedContext("player").database();
+  const other = environment.authenticatedContext("other").database();
+  const submission = {
+    nightId: "night-current",
+    nightNumber: 2,
+    actionId: "interrogate",
+    roleIdSnapshot: "sheriff",
+    targetUids: ["other"],
+    createdAt: 1,
+    updatedAt: 1,
+  };
+
+  await assertSucceeds(set(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`), submission));
+  await assertSucceeds(get(ref(player, `${VOTE}/playerNightActions/night-current/player`)));
+  await assertFails(get(ref(other, `${VOTE}/playerNightActions/night-current/player`)));
+  await assertSucceeds(get(ref(environment.authenticatedContext("host").database(), `${VOTE}/playerNightActions/night-current`)));
+
+  // Não dá para escrever no nó de outro jogador nem se passar por outra role.
+  await assertFails(set(ref(other, `${VOTE}/playerNightActions/night-current/player/interrogate`), submission));
+  await assertFails(set(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`), { ...submission, roleIdSnapshot: "godfather" }));
+  await assertFails(set(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`), { ...submission, targetUids: ["ghost-que-nao-existe"] }));
+});
+
+test("night submissions are rejected off-phase, off-night, when dead, and after resolution", async () => {
+  const player = environment.authenticatedContext("player").database();
+  const ghost = environment.authenticatedContext("ghost").database();
+  const submission = {
+    nightId: "night-current",
+    nightNumber: 2,
+    actionId: "interrogate",
+    roleIdSnapshot: "sheriff",
+    targetUids: ["other"],
+    createdAt: 1,
+    updatedAt: 1,
+  };
+  const path = `${VOTE}/playerNightActions/night-current/player/interrogate`;
+
+  await setPhase("discussion");
+  await assertFails(set(ref(player, path), submission));
+
+  await setPhase("night");
+  await assertSucceeds(set(ref(player, path), submission));
+  await assertFails(set(ref(ghost, `${VOTE}/playerNightActions/night-current/ghost/x`), { ...submission, actionId: "x", roleIdSnapshot: "townie" }));
+
+  // Noite diferente da corrente.
+  await assertFails(set(ref(player, `${VOTE}/playerNightActions/night-old/player/interrogate`), { ...submission, nightId: "night-old" }));
+
+  // Depois que o mestre resolve a noite, o envio fecha — e reabre no rollback.
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}/nightSessions/night-current`), { resolutionAppliedAt: 999 });
+  });
+  await assertFails(set(ref(player, path), { ...submission, updatedAt: 2 }));
+
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}/nightSessions/night-current`), { resolutionAppliedAt: null });
+  });
+  await assertSucceeds(set(ref(player, path), { ...submission, updatedAt: 3 }));
+});
 
 test("unauthenticated and cross-player secret reads fail", async () => {
   await assertFails(get(ref(environment.unauthenticatedContext().database(), "games/game/public")));

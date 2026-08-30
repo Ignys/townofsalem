@@ -66,6 +66,11 @@ export function useHostNightConsoleAction({
       createdAt,
       updatedAt: timestamp,
       status: "confirmed",
+      // Uma edição do mestre assume a entrada: o espelhamento só volta a
+      // sobrescrevê-la se o jogador enviar algo mais novo que este momento.
+      ...(existingEntry?.source === "player"
+        ? { source: "host" as const, overriddenAt: timestamp }
+        : {}),
     };
     const issues = validateHostNightAction(candidate, {
       players,
