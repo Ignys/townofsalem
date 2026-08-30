@@ -13,6 +13,8 @@ const ACTION_SCHEDULES: Readonly<Record<string, NightSchedule>> = {
   "werewolf:full-moon-attack": { fromNight: 2, evenNightsOnly: true },
   "executioner:choose-execution-target": { onlyNight: 1 },
   "amnesiac:remember-role": { onlyNight: 3 },
+  "guardian-angel:choose-guardian-target": { onlyNight: 1 },
+  "guardian-angel:guard-target": { fromNight: 2 },
 };
 
 export function isEngineActionAvailableOnNight(

@@ -28,6 +28,28 @@ const chooseExecutionTarget = nightAction({
   engineEffectConfig: { statusType: "execution-target" },
 });
 
+const chooseGuardianTarget = nightAction({
+  id: "choose-guardian-target",
+  label: "Escolher protegido",
+  verb: "passa a proteger",
+  availableOnNight: 1,
+  maxUses: 1,
+  priority: 6,
+  engineEffectType: "status-effect",
+  engineEffectConfig: { statusType: "guardian-target", countsAsVisit: false },
+});
+
+const guardianProtection = nightAction({
+  id: "guard-target",
+  label: "Proteger o alvo",
+  verb: "protege",
+  availableFromNight: 2,
+  maxUses: 3,
+  priority: 30,
+  engineEffectType: "protect",
+  engineEffectConfig: { protectionType: "doctor" },
+});
+
 const serialKillerAttack = nightAction({
   id: "attack",
   label: "Matar",
@@ -109,6 +131,37 @@ export const NEUTRAL_ROLES = [
     verificationStatus: "needs-verification",
     verificationNotes: [
       "A transformação após uma morte diurna não causada por enforcamento não está definida.",
+    ],
+  },
+  {
+    id: "guardian-angel",
+    name: "Guardian Angel",
+    faction: "neutral",
+    alignment: "Neutral Benign",
+    description:
+      "Na primeira noite, escolha uma pessoa para proteger pelo resto da partida. A partir da segunda noite você pode impedir um ataque contra ela, até 3 vezes na partida.",
+    playTip:
+      "Você escolhe às cegas, como o Executioner. Proteja seu alvo nas noites em que a cidade mais suspeitar dele.",
+    goal: "Termine a partida com o seu alvo vivo, seja qual for a facção vencedora.",
+    virtueValue: 2,
+    cardCount: 1,
+    importantInteractions: [
+      "Vence junto de qualquer facção, desde que o alvo esteja vivo no fim.",
+      "Aparece como Good para o Sheriff.",
+      "Só pode proteger o alvo escolhido na primeira noite.",
+    ],
+    canDieAtNight: true,
+    wakesAtNight: true,
+    wakeOrder: 6,
+    actionDefinitions: [chooseGuardianTarget, guardianProtection],
+    investigativeAppearance: investigativeAppearance(
+      "Guardian Angel",
+      "neutral",
+      "Good",
+    ),
+    verificationStatus: "needs-verification",
+    verificationNotes: [
+      "O engine não impede que a proteção seja usada em outra pessoa; o mestre confere.",
     ],
   },
   {

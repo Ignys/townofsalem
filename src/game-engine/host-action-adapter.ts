@@ -91,6 +91,9 @@ export function adaptHostActions(
       ...(definition?.engineEffectConfig?.protectionType
         ? { protectionType: definition.engineEffectConfig.protectionType }
         : {}),
+      ...(definition?.engineEffectConfig?.attacksVisitors
+        ? { attacksVisitors: definition.engineEffectConfig.attacksVisitors }
+        : {}),
       ...(definition?.engineEffectConfig?.countsAsVisit !== undefined
         ? { countsAsVisit: definition.engineEffectConfig.countsAsVisit }
         : {}),

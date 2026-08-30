@@ -53,6 +53,11 @@ export interface RoleActionDefinition {
     blockedByTargetStatuses?: readonly string[];
     protectionType?: "doctor" | "bodyguard";
     countsAsVisit?: boolean;
+    /**
+     * Attacks whoever visits the targeted house. "all" hits every visitor (the
+     * Veteran on alert); "first" hits a single one, drawn by the seeded chooser.
+     */
+    attacksVisitors?: "first" | "all";
   };
   verificationStatus: RoleVerificationStatus;
 }

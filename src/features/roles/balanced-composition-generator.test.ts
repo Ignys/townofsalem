@@ -26,10 +26,16 @@ test("rejects mismatched totals and unavailable physical copies", () => {
     ),
     { ok: false, code: "PLAYER_COUNT_MISMATCH" },
   );
+  // Derived from the catalog so adding a neutral card cannot silently make this
+  // request satisfiable and turn the assertion into a no-op.
+  const neutralCards = ROLE_DEFINITIONS
+    .filter((role) => role.faction === "neutral")
+    .reduce((total, role) => total + role.cardCount, 0);
+  const moreThanExist = neutralCards + 1;
   assert.deepEqual(
     generateBalancedRoleComposition(
-      8,
-      { town: 0, mafia: 0, neutral: 8 },
+      moreThanExist,
+      { town: 0, mafia: 0, neutral: moreThanExist },
       ROLE_DEFINITIONS,
     ),
     { ok: false, code: "INSUFFICIENT_CARDS", faction: "neutral" },

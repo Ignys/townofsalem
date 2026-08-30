@@ -111,6 +111,10 @@ export function formatNightDeathDescription({
         ? `${subject} para ${attackerName} no contra-ataque do Bodyguard.`
         : `${subject} no contra-ataque de um Bodyguard.`;
     }
+    case "visitor-attack":
+      return attackerName
+        ? `${subject} para ${attackerName} ao visitar a casa vigiada por ${attackerName}.`
+        : `${subject} ao visitar uma casa vigiada.`;
     case "veteran-attack":
       return attackerName
         ? `${subject} para ${attackerName} ao visitá-lo durante o Alert.`

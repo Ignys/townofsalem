@@ -199,10 +199,35 @@ export function resolveNight(
         ));
         continue;
       }
+      // The Disguiser is the one status that marks the actor rather than the
+      // target: it records whose card they will be revealed with when they die.
+      if (effect.actionId === "disguise") {
+        for (const targetUid of effect.targetUids) {
+          const statusType = `disguised-as:${targetUid}`;
+          appliedStatuses.push({
+            targetUid: effect.actorUid,
+            statusType,
+            sourceActionId: effect.id,
+          });
+          events.push({
+            type: "STATUS_APPLIED",
+            actorUid: effect.actorUid,
+            targetUid: effect.actorUid,
+            actionId: effect.id,
+            reasonCode: "STATUS_EFFECT_RESOLVED",
+            details: { statusType },
+          });
+        }
+        appliedEffects.push(effect);
+        continue;
+      }
+
       for (const targetUid of effect.targetUids) {
         const statusType = effect.actionId === "choose-execution-target"
           ? `execution-target:${effect.actorUid}`
-          : effect.statusType;
+          : effect.actionId === "choose-guardian-target"
+            ? `guardian-target:${effect.actorUid}`
+            : effect.statusType;
         appliedStatuses.push({ targetUid, statusType, sourceActionId: effect.id });
         events.push({
           type: "STATUS_APPLIED",

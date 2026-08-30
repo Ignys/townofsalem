@@ -24,6 +24,18 @@ const doctorProtection = nightAction({
   },
 });
 
+const crusaderProtection = nightAction({
+  id: "crusade",
+  label: "Proteger e revidar",
+  verb: "protege",
+  priority: 30,
+  engineEffectType: "protect",
+  engineEffectConfig: {
+    protectionType: "doctor",
+    attacksVisitors: "first",
+  },
+});
+
 export const TOWN_PROTECTIVE_ROLES = [
   {
     id: "bodyguard",
@@ -48,6 +60,31 @@ export const TOWN_PROTECTIVE_ROLES = [
     action: bodyguardProtection,
     investigativeAppearance: investigativeAppearance("Bodyguard", "town"),
     verificationStatus: "verified",
+  },
+  {
+    id: "crusader",
+    name: "Crusader",
+    faction: "town",
+    alignment: "Town Protective",
+    description:
+      "Toda noite, escolha uma pessoa para proteger. Ela não pode morrer naquela noite, e você ataca uma das pessoas que a visitarem — mesmo que seja da Town.",
+    playTip:
+      "Proteger quem a cidade suspeita é forte, mas lembre que o Doctor e o Sheriff também visitam essa casa.",
+    goal: TOWN_GOAL,
+    virtueValue: 5,
+    cardCount: 1,
+    importantInteractions: [
+      "Ataca apenas um visitante; o mestre sorteia quando há mais de um.",
+      "Não ataca você mesmo nem a pessoa protegida.",
+      "Proteger um Veteran em alerta mata o Crusader.",
+    ],
+    canDieAtNight: true,
+    wakesAtNight: true,
+    wakeOrder: 30,
+    actionDefinitions: [crusaderProtection],
+    action: crusaderProtection,
+    investigativeAppearance: investigativeAppearance("Crusader", "town"),
+    verificationStatus: "needs-verification",
   },
   {
     id: "doctor",

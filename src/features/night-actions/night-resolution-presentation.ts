@@ -145,7 +145,7 @@ export function presentNightResolution(
     hostPrivateInformation.push({
       parts: [
         resolutionPlayerPart(status.targetUid, playerNames),
-        resolutionTextPart(` ficou ${getNightStatusLabel(status.statusType)}.`),
+        resolutionTextPart(` ficou ${getNightStatusLabel(status.statusType, playerNames)}.`),
       ],
     });
   });
@@ -153,7 +153,7 @@ export function presentNightResolution(
     hostPrivateInformation.push({
       parts: [
         resolutionPlayerPart(status.targetUid, playerNames),
-        resolutionTextPart(` perdeu o status ${getNightStatusLabel(status.statusType)}.`),
+        resolutionTextPart(` perdeu o status ${getNightStatusLabel(status.statusType, playerNames)}.`),
       ],
     });
   });

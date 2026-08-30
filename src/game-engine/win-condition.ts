@@ -21,7 +21,13 @@ export function getCompletedIndividualWinnerUids(
   return state.players
     .filter((player) =>
       player.statuses.some((status) => status.endsWith("-won"))
-      || (player.roleId === "amnesiac" && (state.nightNumber ?? 1) < 3),
+      || (player.roleId === "amnesiac" && (state.nightNumber ?? 1) < 3)
+      // The Guardian Angel wins with whoever wins, as long as the player they
+      // were assigned on night 1 is still alive.
+      || (player.roleId === "guardian-angel" && state.players.some(
+        (other) => other.alive
+          && other.statuses.includes(`guardian-target:${player.uid}`),
+      )),
     )
     .map(({ uid }) => uid)
     .sort();

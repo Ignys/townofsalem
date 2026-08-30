@@ -13,7 +13,8 @@ type AttackKind =
   | "normal"
   | "mafia"
   | "veteran"
-  | "bodyguard-counterattack";
+  | "bodyguard-counterattack"
+  | "visitor";
 
 interface AttackAttempt {
   id: string;
@@ -23,6 +24,17 @@ interface AttackAttempt {
   targetUid: string;
   kind: AttackKind;
   participantUids: readonly string[];
+}
+
+interface VisitorWatch {
+  watcherUid: string;
+  watchedUid: string;
+  mode: "first" | "all";
+  kind: "veteran" | "visitor";
+  chooseKeyPrefix: string;
+  eventType: string;
+  reasonCode: string;
+  effectId?: string;
 }
 
 interface CombatInput {
@@ -86,6 +98,7 @@ function toDeathCause(kind: AttackKind): EngineDeath["cause"] {
   if (kind === "mafia") return "mafia-attack";
   if (kind === "veteran") return "veteran-attack";
   if (kind === "bodyguard-counterattack") return "bodyguard-counterattack";
+  if (kind === "visitor") return "visitor-attack";
   return "night-attack";
 }
 
@@ -113,50 +126,101 @@ export function resolveCombat({
       .map((effect) => effect.actorUid),
   );
 
-  const veteranVisitKeys = new Set<string>();
-  const veteranVisitorsAttacked = new Set<string>();
-  for (const visit of visits) {
-    if (!alertVeterans.has(visit.targetUid)) continue;
-    const visitKey = `${visit.sourceActionId}:${visit.targetUid}`;
-    if (veteranVisitKeys.has(visitKey)) continue;
-    veteranVisitKeys.add(visitKey);
+  // Every watcher of a house: the Veteran watches their own and hits everyone,
+  // while the Crusader and Ambusher watch someone else's and hit a single one.
+  const visitorWatches: VisitorWatch[] = [
+    ...[...alertVeterans].map((veteranUid) => ({
+      watcherUid: veteranUid,
+      watchedUid: veteranUid,
+      mode: "all" as const,
+      kind: "veteran" as const,
+      chooseKeyPrefix: "veteran-mafia-representative",
+      eventType: "VETERAN_VISITOR_ATTACKED",
+      reasonCode: "VISITOR_ENTERED_ALERT",
+    })),
+    ...effects
+      .filter((effect) => effect.attacksVisitors && effect.targetUids.length > 0)
+      .map((effect) => ({
+        watcherUid: effect.actorUid,
+        watchedUid: effect.targetUids[0],
+        mode: effect.attacksVisitors as "first" | "all",
+        kind: "visitor" as const,
+        chooseKeyPrefix: `visitor-mafia-representative:${effect.id}`,
+        eventType: "VISITOR_ATTACKED",
+        reasonCode: "VISITOR_ENTERED_AMBUSH",
+        effectId: effect.id,
+      })),
+  ];
 
-    let visitorUid = visit.visitorUid;
-    if (!visitorUid && visit.sourceFaction === "mafia") {
-      visitorUid = choose(
-        `veteran-mafia-representative:${visitKey}`,
-        visit.participantUids.filter((uid) => playersByUid.get(uid)?.alive),
-      );
-      events.push({
-        type: "MAFIA_MEMBER_RANDOMLY_SELECTED",
-        actorUid: visit.targetUid,
+  for (const watch of visitorWatches) {
+    const seenVisitKeys = new Set<string>();
+    const candidates: { visitorUid: string; sourceActionId: string }[] = [];
+
+    for (const visit of visits) {
+      if (visit.targetUid !== watch.watchedUid) continue;
+      const visitKey = `${visit.sourceActionId}:${visit.targetUid}`;
+      if (seenVisitKeys.has(visitKey)) continue;
+      seenVisitKeys.add(visitKey);
+
+      let visitorUid = visit.visitorUid;
+      if (!visitorUid && visit.sourceFaction === "mafia") {
+        const eligible = visit.participantUids.filter(
+          (uid) => playersByUid.get(uid)?.alive,
+        );
+        if (eligible.length === 0) continue;
+        visitorUid = choose(`${watch.chooseKeyPrefix}:${visitKey}`, eligible);
+        events.push({
+          type: "MAFIA_MEMBER_RANDOMLY_SELECTED",
+          actorUid: watch.watchedUid,
+          targetUid: visitorUid,
+          actionId: visit.sourceActionId,
+          reasonCode: watch.kind === "veteran"
+            ? "VETERAN_MAFIA_VISITOR_SELECTED"
+            : "AMBUSHED_MAFIA_VISITOR_SELECTED",
+          details: { participantUids: visit.participantUids },
+        });
+      }
+      if (!visitorUid) continue;
+      // Never hit the watcher themselves (they visit the house they watch) or
+      // the resident, who does not visit their own house.
+      if (visitorUid === watch.watcherUid || visitorUid === watch.watchedUid) {
+        continue;
+      }
+      if (candidates.some((candidate) => candidate.visitorUid === visitorUid)) {
+        continue;
+      }
+      candidates.push({ visitorUid, sourceActionId: visit.sourceActionId });
+    }
+
+    if (candidates.length === 0) continue;
+    const chosen = watch.mode === "all"
+      ? candidates
+      : candidates.filter(({ visitorUid }) => visitorUid === choose(
+        `visitor-attack-target:${watch.watcherUid}:${watch.watchedUid}`,
+        candidates.map((candidate) => candidate.visitorUid),
+      ));
+
+    for (const { visitorUid, sourceActionId } of chosen) {
+      attempts.push({
+        id: watch.kind === "veteran"
+          ? `veteran:${watch.watchedUid}:${sourceActionId}:${visitorUid}`
+          : `visitor-attack:${watch.effectId}:${visitorUid}`,
+        sourceActionId: watch.kind === "veteran"
+          ? `veteran-alert:${watch.watchedUid}`
+          : watch.effectId ?? sourceActionId,
+        attackerUid: watch.watcherUid,
         targetUid: visitorUid,
-        actionId: visit.sourceActionId,
-        reasonCode: "VETERAN_MAFIA_VISITOR_SELECTED",
-        details: { participantUids: visit.participantUids },
+        kind: watch.kind === "veteran" ? "veteran" : "visitor",
+        participantUids: [watch.watcherUid],
+      });
+      events.push({
+        type: watch.eventType,
+        actorUid: watch.watcherUid,
+        targetUid: visitorUid,
+        actionId: sourceActionId,
+        reasonCode: watch.reasonCode,
       });
     }
-    if (!visitorUid) continue;
-
-    const visitorAttackKey = `${visit.targetUid}:${visitorUid}`;
-    if (veteranVisitorsAttacked.has(visitorAttackKey)) continue;
-    veteranVisitorsAttacked.add(visitorAttackKey);
-
-    attempts.push({
-      id: `veteran:${visit.targetUid}:${visit.sourceActionId}:${visitorUid}`,
-      sourceActionId: `veteran-alert:${visit.targetUid}`,
-      attackerUid: visit.targetUid,
-      targetUid: visitorUid,
-      kind: "veteran",
-      participantUids: [visit.targetUid],
-    });
-    events.push({
-      type: "VETERAN_VISITOR_ATTACKED",
-      actorUid: visit.targetUid,
-      targetUid: visitorUid,
-      actionId: visit.sourceActionId,
-      reasonCode: "VISITOR_ENTERED_ALERT",
-    });
   }
 
   const doctorEffects = effects.filter(

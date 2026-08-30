@@ -86,3 +86,43 @@ test("Bodyguard repeat-target variant checks only the immediately previous night
   });
   assert.ok(!nonConsecutiveIssues.some(({ code }) => code === "BODYGUARD_REPEATED_TARGET"));
 });
+
+test("the Guardian Angel's protection is capped at three uses per game", () => {
+  const angelContext = {
+    players: [
+      { id: "angel", uid: "angel", name: "Anjo", alive: true, disconnected: false, experience: "experienced" as const },
+      { id: "ward", uid: "ward", name: "Protegido", alive: true, disconnected: false, experience: "experienced" as const },
+    ],
+    assignments: { angel: "guardian-angel", ward: "townie" },
+    roleDefinitions: ROLE_DEFINITIONS,
+    nightId: "night-5",
+    nightNumber: 5,
+  };
+  const guard = (id: string, nightId = "night-5"): HostNightActionEntry => ({
+    id,
+    nightId,
+    actorUid: "angel",
+    roleIdSnapshot: "guardian-angel",
+    actionId: "guard-target",
+    targetUids: ["ward"],
+    createdAt: 1,
+    updatedAt: 1,
+    status: "confirmed",
+  });
+  const spent = ["n2", "n3", "n4"].map((id) => guard(id, "night-5"));
+
+  assert.deepEqual(
+    validateHostNightAction(guard("n4-again"), {
+      ...angelContext,
+      actionEntries: spent.slice(0, 2),
+    }),
+    [],
+    "the third use is still allowed",
+  );
+
+  const blocked = validateHostNightAction(guard("n5"), {
+    ...angelContext,
+    actionEntries: spent,
+  });
+  assert.deepEqual(blocked.map(({ code }) => code), ["ACTION_USE_LIMIT_REACHED"]);
+});

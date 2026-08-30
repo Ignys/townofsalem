@@ -23,6 +23,25 @@ const consigliereInvestigation = nightAction({
   ...exactInvestigationConfig,
 });
 
+const disguiseAction = nightAction({
+  id: "disguise",
+  label: "Escolher disfarce",
+  verb: "se disfarça de",
+  maxUses: 1,
+  priority: 60,
+  engineEffectType: "status-effect",
+  engineEffectConfig: { statusType: "disguised-as", countsAsVisit: false },
+});
+
+const ambushAction = nightAction({
+  id: "ambush",
+  label: "Emboscar casa",
+  verb: "embosca a casa de",
+  priority: 50,
+  engineEffectType: "status-effect",
+  engineEffectConfig: { statusType: "ambushed", attacksVisitors: "first" },
+});
+
 const mafiaRoleBase = {
   faction: "mafia",
   alignment: "Mafia",
@@ -35,6 +54,25 @@ const mafiaRoleBase = {
 } as const;
 
 export const MAFIA_ROLES = [
+  {
+    ...mafiaRoleBase,
+    id: "ambusher",
+    name: "Ambusher",
+    description:
+      "Toda noite você pode esperar do lado de fora da casa de uma pessoa e atacar quem a visitar. Na noite em que você emboscar, a Mafia não realiza o ataque coletivo.",
+    playTip:
+      "Embosque quem a cidade suspeita: o Doctor e o Sheriff costumam visitar exatamente essa casa.",
+    virtueValue: -8,
+    cardCount: 1,
+    importantInteractions: [
+      "Ataca apenas um visitante; o mestre sorteia quando há mais de um.",
+      "Não ataca você mesmo nem o dono da casa emboscada.",
+      "Emboscar um Veteran em alerta mata o Ambusher.",
+    ],
+    actionDefinitions: [ambushAction, mafiaAttackOrderAction],
+    investigativeAppearance: investigativeAppearance("Ambusher", "mafia"),
+    verificationStatus: "needs-verification",
+  },
   {
     ...mafiaRoleBase,
     id: "blackmailer",
@@ -69,6 +107,24 @@ export const MAFIA_ROLES = [
     actionDefinitions: [consigliereInvestigation, mafiaAttackOrderAction],
     investigativeAppearance: investigativeAppearance("Consigliere", "mafia"),
     verificationStatus: "verified",
+  },
+  {
+    ...mafiaRoleBase,
+    id: "disguiser",
+    name: "Disguiser",
+    description:
+      "Uma vez por partida, escolha uma pessoa. Quando você morrer, o mestre revela você com a carta dessa pessoa em vez da sua verdadeira.",
+    playTip:
+      "Escolha alguém cuja carta você conseguiria defender na discussão do dia seguinte.",
+    virtueValue: -7,
+    cardCount: 1,
+    importantInteractions: [
+      "Se o Janitor limpar o mesmo corpo, a limpeza prevalece e nada é revelado.",
+      "A contagem de cartas da partida pode denunciar o disfarce.",
+    ],
+    actionDefinitions: [disguiseAction, mafiaAttackOrderAction],
+    investigativeAppearance: investigativeAppearance("Disguiser", "mafia"),
+    verificationStatus: "needs-verification",
   },
   {
     ...mafiaRoleBase,

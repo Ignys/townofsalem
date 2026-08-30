@@ -36,6 +36,7 @@ export interface EngineNightAction {
   statusType?: string;
   blockedByTargetStatuses?: readonly string[];
   protectionType?: "doctor" | "bodyguard";
+  attacksVisitors?: "first" | "all";
   sourceType?: "player" | "faction";
   sourceFaction?: Faction;
   participantUids?: readonly string[];
@@ -82,6 +83,7 @@ export type NightDeathCause =
   | "veteran-attack"
   | "bodyguard-counterattack"
   | "bodyguard-sacrifice"
+  | "visitor-attack"
   | "witch-curse";
 
 export interface EngineDeath {

@@ -10,7 +10,7 @@ test("generates deterministically from confirmed faction taxonomy and injected R
   const first = generateRoleComposition(3, slots, ROLE_DEFINITIONS, () => 0);
   const second = generateRoleComposition(3, slots, ROLE_DEFINITIONS, () => 0);
   assert.deepEqual(first, second);
-  assert.deepEqual(first, { ok: true, roleIds: ["bodyguard", "deputy", "blackmailer"] });
+  assert.deepEqual(first, { ok: true, roleIds: ["bodyguard", "crusader", "ambusher"] });
 });
 
 test("returns structured errors without mutating inputs", () => {

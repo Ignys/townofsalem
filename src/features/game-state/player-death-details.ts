@@ -67,6 +67,7 @@ function describeDeath(
     case "bodyguard-counterattack":
     case "veteran-attack":
     case "witch-curse":
+    case "visitor-attack":
     case "night-attack":
       return "A causa da morte noturna não possui detalhes suficientes.";
     case "hanging":

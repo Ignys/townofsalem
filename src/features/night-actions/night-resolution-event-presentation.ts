@@ -37,7 +37,7 @@ export function presentNightResolutionEvent(
         : null;
     case "STATUS_APPLIED":
       return actor && target
-        ? { parts: [actor, resolutionTextPart(" aplicou em "), target, resolutionTextPart(` o status ${getNightStatusLabel(String(event.details?.statusType ?? "registrado"))}.`)] }
+        ? { parts: [actor, resolutionTextPart(" aplicou em "), target, resolutionTextPart(` o status ${getNightStatusLabel(String(event.details?.statusType ?? "registrado"), playerNames)}.`)] }
         : null;
     case "VETERAN_VISITOR_ATTACKED":
       return actor && target

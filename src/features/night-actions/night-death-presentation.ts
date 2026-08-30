@@ -23,6 +23,7 @@ const PUBLIC_DEATH_CAUSES: Record<NightDeathCause, string> = {
   "veteran-attack": "o Alert de um Veteran",
   "bodyguard-counterattack": "o contra-ataque de um Bodyguard",
   "bodyguard-sacrifice": "um sacrifício durante a proteção de outra pessoa",
+  "visitor-attack": "uma emboscada ao visitar uma casa vigiada",
   "witch-curse": "a maldição de uma Witch",
 };
 
@@ -32,6 +33,7 @@ const PRIVATE_DEATH_CAUSES: Record<NightDeathCause, string> = {
   "veteran-attack": "Alert de Veteran",
   "bodyguard-counterattack": "contra-ataque de Bodyguard",
   "bodyguard-sacrifice": "sacrifício de Bodyguard",
+  "visitor-attack": "emboscada a um visitante",
   "witch-curse": "maldição de Witch",
 };
 
