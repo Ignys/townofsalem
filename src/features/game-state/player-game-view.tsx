@@ -2,8 +2,16 @@
 
 import { getRoleById } from "@/data/roles";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
+import { PlayerNightActionPanel } from "@/features/night-actions/player-night-action-panel";
 import { GameTimerDisplay } from "@/features/timer/game-timer-display";
+import { AccusationTallyBoard } from "@/features/voting/accusation-tally-board";
+import { PlayerAccusationVoting } from "@/features/voting/player-accusation-voting";
+import { PlayerVerdictVoting } from "@/features/voting/player-verdict-voting";
+import { isAccusationPhase } from "@/features/voting/voting-phases";
 import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
+import type { Player } from "@/types";
+
+import { getPlayerEntries } from "./player-roster";
 
 import { GAME_PHASE_LABELS } from "./game-phase-presentation";
 import { PlayerRoleHoldButton } from "./player-role-hold-button";
@@ -74,6 +82,16 @@ export function PlayerGameView({
   }
 
   const isNight = game.phase === "night";
+  const roster: Player[] = getPlayerEntries(players).map(([uid, player]) => ({
+    id: uid,
+    uid,
+    ...player,
+  }));
+  const viewer = roster.find((player) => player.uid === viewerUid);
+  const accused = game.accusedPlayerUid ? players[game.accusedPlayerUid] : undefined;
+  const accusing = isAccusationPhase(game.phase) && !game.accusedPlayerUid;
+  const blackmailed = Boolean(privateRole.privatePlayer.statuses?.blackmailed)
+    && gameVariants.variants.blackmailedCannotVote;
 
   return (
     <div className="w-full max-w-md pb-24">
@@ -108,11 +126,37 @@ export function PlayerGameView({
 
         <div className="mt-5">
           {isNight ? (
-            <p className="text-sm leading-6 text-[#a9b3cc]">
-              A noite está em andamento. Aguarde o mestre chamar sua role.
+            viewer ? (
+              <PlayerNightActionPanel
+                gameId={gameId}
+                nightId={game.currentNightId}
+                nightNumber={game.nightNumber}
+                viewer={viewer}
+                roleId={privateRole.privatePlayer.roleId}
+                players={roster}
+                variants={gameVariants.variants}
+                playerCount={playerCount}
+                resourceUses={privateRole.privatePlayer.resourceUses}
+              />
+            ) : (
+              <p className="text-sm leading-6 text-[#a9b3cc]">
+                A noite está em andamento. Aguarde o mestre chamar sua role.
+              </p>
+            )
+          ) : game.phase === "trial" ? (
+            <p className="text-sm leading-6 text-[#e6cfa9]">
+              <strong className="text-[#fffaf0]">{accused?.name ?? "Um jogador"}</strong> está
+              sendo julgado. Aguarde o mestre iniciar a defesa.
             </p>
           ) : (
-            <GameTimerDisplay game={game} />
+            <>
+              {game.phase === "defense" && (
+                <p className="mb-3 text-sm leading-6 text-[#e6cfa9]">
+                  Defesa de <strong className="text-[#fffaf0]">{accused?.name ?? "—"}</strong>.
+                </p>
+              )}
+              <GameTimerDisplay game={game} />
+            </>
           )}
         </div>
       </section>
@@ -132,6 +176,42 @@ export function PlayerGameView({
         <p className="mt-4 rounded-xl border border-[#a33843]/30 bg-[#a33843]/10 px-4 py-3 text-center text-sm text-[#f0b9bd]">
           Você está morto, mas continua acompanhando a partida.
         </p>
+      )}
+
+      {accusing && (
+        <>
+          {blackmailed ? (
+            <p className="mt-5 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-[#bdb7ad]">
+              Você está silenciado hoje — seu voto não será contado.
+            </p>
+          ) : (
+            <PlayerAccusationVoting
+              gameId={gameId}
+              dayNumber={game.day}
+              playerAlive={alive}
+              players={players}
+            />
+          )}
+          <AccusationTallyBoard gameId={gameId} dayNumber={game.day} players={players} />
+        </>
+      )}
+
+      {game.phase === "verdict" && (
+        blackmailed && !game.verdictClosedAt ? (
+          <p className="mt-5 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-[#bdb7ad]">
+            Você está silenciado hoje — seu voto não será contado.
+          </p>
+        ) : (
+          <PlayerVerdictVoting
+            gameId={gameId}
+            dayNumber={game.day}
+            playerUid={viewerUid}
+            playerAlive={alive}
+            accusedPlayerUid={game.accusedPlayerUid}
+            verdictClosedAt={game.verdictClosedAt}
+            verdictOutcome={game.verdictOutcome}
+          />
+        )
       )}
 
       <div className="mt-4">

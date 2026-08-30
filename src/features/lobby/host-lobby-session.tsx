@@ -10,6 +10,7 @@ import { HostInvestigationCalculator } from "@/features/game-state/host-investig
 import { HostDiagnostics } from "@/features/game-state/host-diagnostics";
 import { HostWinConditionSuggestion } from "@/features/game-state/host-win-condition-suggestion";
 import { HostNightWorkspace } from "@/features/night-actions/host-night-workspace";
+import { HostVotingPanel } from "@/features/voting/host-voting-panel";
 import { HostRoleComposition } from "@/features/roles/host-role-composition";
 
 import { HostLobbyHeader } from "./host-lobby-header";
@@ -126,11 +127,24 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                                     externalSelectedActorUid={composeActorUid}
                                 />
                                 {game.phase !== "night" && (
-                                    <HostDayWorkspace
-                                        gameId={sessionState.session.gameId}
-                                        hostUid={sessionState.session.uid}
-                                        players={lobby.players}
-                                    />
+                                    <>
+                                        <HostVotingPanel
+                                            gameId={sessionState.session.gameId}
+                                            verifiedHostUid={sessionState.session.uid}
+                                            game={game}
+                                            players={lobby.players}
+                                        />
+                                        <HostDayWorkspace
+                                            gameId={sessionState.session.gameId}
+                                            hostUid={sessionState.session.uid}
+                                            players={lobby.players}
+                                            condemnedPlayerUid={
+                                                game.verdictOutcome === "guilty" && game.verdictClosedAt
+                                                    ? game.accusedPlayerUid ?? undefined
+                                                    : undefined
+                                            }
+                                        />
+                                    </>
                                 )}
                                 {game.phase === "night" && game.currentNightId && (
                                     <HostNightWorkspace
