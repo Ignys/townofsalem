@@ -99,3 +99,17 @@ export function createPhaseSession(
       : {}),
   };
 }
+
+/**
+ * O dia N vem depois da noite N. Votos e vingança do Jester são guardados por dia, então
+ * sem avançar o número todos os dias da partida dividiriam a mesma lista de votos.
+ * Devolve `null` quando a fase não começa um dia.
+ */
+export function dayNumberForPhase(
+  phase: GamePhase,
+  currentDay: number | undefined,
+  nightNumber: number,
+): number | null {
+  if (phase !== "day" && phase !== "discussion") return null;
+  return Math.max(currentDay ?? 0, nightNumber);
+}
