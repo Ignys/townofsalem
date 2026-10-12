@@ -13,6 +13,7 @@ import { GameOverCard } from "./game-over-card";
 import { PlayerStatusBoard } from "./player-status-board";
 import { RemainingRolesBoard } from "./remaining-roles-board";
 import { useGraveyard } from "./use-graveyard";
+import { useMayorReveals } from "./use-mayor-reveals";
 
 interface HostlessTableViewProps {
   gameId: string;
@@ -30,6 +31,7 @@ interface HostlessTableViewProps {
  */
 export function HostlessTableView({ gameId, game, players, controls, engine }: HostlessTableViewProps) {
   const { graveyard } = useGraveyard(gameId);
+  const mayorReveals = useMayorReveals(gameId);
   const gameVariants = useGameVariants(gameId);
   const isNight = game.phase === "night";
 
@@ -59,7 +61,7 @@ export function HostlessTableView({ gameId, game, players, controls, engine }: H
             closed={Boolean(game.verdictClosedAt)}
           />
         )}
-        <PlayerStatusBoard players={players} viewerUid="" graveyard={graveyard} />
+        <PlayerStatusBoard players={players} viewerUid="" graveyard={graveyard} mayorReveals={mayorReveals} />
         <RemainingRolesBoard roleComposition={gameVariants.roleComposition} graveyard={graveyard} />
         <div hidden aria-hidden="true">
           {engine}

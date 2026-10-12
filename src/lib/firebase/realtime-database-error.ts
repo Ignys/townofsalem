@@ -20,6 +20,8 @@ export type RealtimeDatabaseOperation =
   | "observe-player-dawn-results"
   | "observe-day-announcements"
   | "observe-public-verdicts"
+  | "observe-host-jester-revenges"
+  | "observe-mayor-reveals"
   | "observe-host-player-night-actions"
   | "observe-verdict-vote"
   | "read-room-code"

@@ -12,6 +12,7 @@ import { HostWinConditionSuggestion } from "@/features/game-state/host-win-condi
 import { HostlessAutopilotRunner } from "@/features/game-state/hostless-autopilot-runner";
 import { HostlessTableControls } from "@/features/game-state/hostless-table-controls";
 import { HostlessTableView } from "@/features/game-state/hostless-table-view";
+import { useMirrorMayorReveals } from "@/features/game-state/use-mayor-reveals";
 import { HostDayAnnouncements } from "@/features/night-actions/host-day-announcements";
 import { HostNightWorkspace } from "@/features/night-actions/host-night-workspace";
 import { HostVotingPanel } from "@/features/voting/host-voting-panel";
@@ -31,6 +32,12 @@ import { scrollToNightConsoleAction } from "@/features/night-actions/night-conso
 
 interface HostLobbySessionProps {
     roomCode: string;
+}
+
+/** Leva as revelações de Mayor feitas no celular para o status privado, nos dois modos. */
+function MayorRevealMirror({ gameId, hostUid }: Readonly<{ gameId: string; hostUid: string }>) {
+    useMirrorMayorReveals(gameId, hostUid, true);
+    return null;
 }
 
 type HostSessionState = { status: "loading" } | { status: "ready"; session: RestoredHostSession } | { status: "error"; message: string };
@@ -145,6 +152,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                     controls={<HostlessTableControls gameId={gameId} game={game} />}
                     engine={
                         <>
+                            <MayorRevealMirror gameId={gameId} hostUid={hostUid} />
                             <HostlessAutopilotRunner gameId={gameId} hostUid={hostUid} game={game} players={lobby.players} />
                             {nightConsole}
                             {game.phase !== "night" && votingPanel}
@@ -177,6 +185,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                     ) : (
                         <div className="pr-4 p-1 grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(18rem,0.7fr)]">
                             <div className="space-y-4">
+                                <MayorRevealMirror gameId={gameId} hostUid={hostUid} />
                                 {nightConsole}
                                 {game.phase !== "night" && (
                                     <>

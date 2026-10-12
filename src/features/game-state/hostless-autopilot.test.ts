@@ -78,6 +78,28 @@ test("a lynch that wins the game still shows the vote result first", () => {
   );
 });
 
+test("a lynched jester gets 30s to take revenge before night", () => {
+  const closed = { ...base, phase: "verdict" as const, accusedPlayerUid: "jess", verdictOutcome: "guilty" as const };
+  const dead = () => false;
+  const winner = { gameOver: true, winningFactions: ["town"], winningPlayerUids: [] };
+
+  // Esperando a escolha: nada acontece, nem a vitória.
+  assert.equal(
+    decideHostlessStep({ ...closed, verdictClosedAt: NOW - 12_000 }, "expired", dead, NOW, winner, { jesterUid: "jess", targetUid: null }),
+    null,
+  );
+  // Escolheu: resolve na hora.
+  assert.deepEqual(
+    decideHostlessStep({ ...closed, verdictClosedAt: NOW - 1_000 }, "expired", dead, NOW, null, { jesterUid: "jess", targetUid: "ana" }),
+    { kind: "resolve-jester-revenge", jesterUid: "jess", targetUid: "ana" },
+  );
+  // Prazo acabou sem escolha: resolve sem vingança.
+  assert.deepEqual(
+    decideHostlessStep({ ...closed, verdictClosedAt: NOW - 30_000 }, "expired", dead, NOW, null, { jesterUid: "jess", targetUid: null }),
+    { kind: "resolve-jester-revenge", jesterUid: "jess", targetUid: null },
+  );
+});
+
 test("nothing happens outside a running game", () => {
   assert.equal(decideHostlessStep({ ...base, status: "finished", phase: "night" }, "expired", alive, NOW), null);
   assert.equal(decideHostlessStep({ ...base, status: "lobby", phase: "lobby" }, "idle", alive, NOW), null);

@@ -476,3 +476,26 @@ export function observePublicVerdicts(
 ): Unsubscribe {
   return observePath("observe-public-verdicts", firebasePaths.gameVerdicts(gameId, dayNumber), observer);
 }
+
+/** Escolhas de vingança do Jester no dia. Só o mestre lê todas. */
+export function observeHostJesterRevenges(
+  gameId: string,
+  dayNumber: number,
+  verifiedHostUid: string,
+  observer: RealtimeValueObserver<Record<string, string>>,
+): Unsubscribe {
+  return observeVerifiedHostPath(
+    "observe-host-jester-revenges",
+    firebasePaths.gameJesterRevenges(gameId, dayNumber),
+    verifiedHostUid,
+    observer,
+  );
+}
+
+/** Mayors que se revelaram (uid → momento). Público para a partida. */
+export function observeMayorReveals(
+  gameId: string,
+  observer: RealtimeValueObserver<Record<string, number>>,
+): Unsubscribe {
+  return observePath("observe-mayor-reveals", firebasePaths.gameMayorReveals(gameId), observer);
+}

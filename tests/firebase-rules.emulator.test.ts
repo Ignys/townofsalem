@@ -328,6 +328,60 @@ test("the play mode is chosen in the lobby and frozen once the game starts", asy
   await assertSucceeds(set(ref(host, field), "hostless"));
 });
 
+test("only the real mayor reveals themselves, alive, by day, once", async () => {
+  const player = environment.authenticatedContext("player").database();
+  const other = environment.authenticatedContext("other").database();
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}`), {
+      "privatePlayers/player/roleId": "mayor",
+      "privatePlayers/other/roleId": "sheriff",
+      "players/player/alive": true,
+      mayorReveals: null,
+    });
+  });
+
+  await setPhase("night");
+  await assertFails(set(ref(player, `${VOTE}/mayorReveals/player`), 1));
+
+  await setPhase("discussion");
+  await assertFails(set(ref(other, `${VOTE}/mayorReveals/other`), 1));
+  await assertFails(set(ref(other, `${VOTE}/mayorReveals/player`), 1));
+  await assertSucceeds(set(ref(player, `${VOTE}/mayorReveals/player`), 1));
+  await assertFails(set(ref(player, `${VOTE}/mayorReveals/player`), 2));
+  await assertSucceeds(get(ref(other, `${VOTE}/mayorReveals`)));
+});
+
+test("a lynched jester picks one guilty voter, once, during the verdict", async () => {
+  const jester = environment.authenticatedContext("player").database();
+  const other = environment.authenticatedContext("other").database();
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}`), {
+      "privatePlayers/player/statuses/jester-revenge-pending": { type: "jester-revenge-pending" },
+      "privatePlayers/other/statuses/jester-revenge-pending": null,
+      "players/player/alive": false,
+      "players/other/alive": true,
+      "votes/3/verdicts": { other: "guilty", third: "innocent" },
+      jesterRevenge: null,
+    });
+  });
+  await setPhase("verdict", { verdictClosedAt: 123, verdictOutcome: "guilty", accusedPlayerUid: "player" });
+
+  // Só quem votou culpado; e só quem tem a vingança pendente.
+  await assertFails(set(ref(jester, `${VOTE}/jesterRevenge/3/player`), "third"));
+  await assertFails(set(ref(other, `${VOTE}/jesterRevenge/3/other`), "player"));
+  await assertSucceeds(set(ref(jester, `${VOTE}/jesterRevenge/3/player`), "other"));
+  await assertFails(set(ref(jester, `${VOTE}/jesterRevenge/3/player`), "other"));
+  await assertFails(get(ref(other, `${VOTE}/jesterRevenge/3/player`)));
+
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}`), {
+      "privatePlayers/player/statuses/jester-revenge-pending": null,
+      "players/player/alive": true,
+      jesterRevenge: null,
+    });
+  });
+});
+
 test("malicious player administrative writes fail", async () => {
   const player = environment.authenticatedContext("player").database();
   await assertFails(update(ref(player), { "games/game/public/phase": "night" }));

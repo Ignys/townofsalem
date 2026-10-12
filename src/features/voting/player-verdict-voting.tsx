@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import type { VerdictOutcome, VerdictVote } from "@/lib/firebase/schema";
 
+import { getForcedVerdict } from "@/game-engine/role-rules";
 import { isPlayerEligibleForVerdict } from "@/game-engine/verdict-result";
 import { DEFAULT_VERDICT_VOTING_SETTINGS } from "./voting-settings";
 import { usePlayerVerdictVote } from "./use-player-verdict-vote";
@@ -29,6 +30,8 @@ interface PlayerVerdictVotingProps {
   accusedPlayerUid?: string | null;
   verdictClosedAt?: number | null;
   verdictOutcome?: VerdictOutcome | null;
+  /** Role do próprio jogador: Peaceful/Spiteful Townie têm o voto definido pela carta. */
+  roleId?: string;
 }
 
 export function PlayerVerdictVoting(props: PlayerVerdictVotingProps) {
@@ -41,6 +44,9 @@ export function PlayerVerdictVoting(props: PlayerVerdictVotingProps) {
     props.accusedPlayerUid,
     DEFAULT_VERDICT_VOTING_SETTINGS,
   );
+
+  // O voto é público, então a carta manda no botão: o que aparece é o que conta.
+  const forcedVerdict = props.roleId ? getForcedVerdict(props.roleId) : null;
 
   const handleVote = async (vote: VerdictVote) => {
     setBusy(true);
@@ -72,13 +78,17 @@ export function PlayerVerdictVoting(props: PlayerVerdictVotingProps) {
   return (
     <section className="mt-5 rounded-2xl border border-[#d3b88c]/25 bg-black/20 p-4 sm:p-5">
       <h2 className="font-serif text-xl font-semibold text-[#fffaf0]">Seu veredito</h2>
-      <p className="mt-1 text-sm text-[#bdb7ad]">Você pode alterar a escolha até o mestre encerrar a votação.</p>
+      <p className="mt-1 text-sm text-[#bdb7ad]">
+        {forcedVerdict
+          ? `Sua role sempre vota ${forcedVerdict === "guilty" ? "Culpado" : "Inocente"}.`
+          : "Você pode alterar a escolha até a votação encerrar."}
+      </p>
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
         {VERDICT_OPTIONS.map((option) => (
           <button
             key={option.value}
             type="button"
-            disabled={busy || !currentVote.loaded}
+            disabled={busy || !currentVote.loaded || (forcedVerdict !== null && option.value !== forcedVerdict)}
             onClick={() => void handleVote(option.value)}
             className={`min-h-12 rounded-xl border px-3 font-bold disabled:opacity-50 ${
               currentVote.vote === option.value

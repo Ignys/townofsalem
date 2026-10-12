@@ -11,6 +11,7 @@ import { GameTimerDisplay } from "@/features/timer/game-timer-display";
 import { AccusationTallyBoard } from "@/features/voting/accusation-tally-board";
 import { PlayerAccusationVoting } from "@/features/voting/player-accusation-voting";
 import { PlayerVerdictVoting } from "@/features/voting/player-verdict-voting";
+import { PlayerJesterRevenge } from "@/features/voting/player-jester-revenge";
 import { VerdictVotesBoard } from "@/features/voting/verdict-votes-board";
 import { isAccusationPhase } from "@/features/voting/voting-phases";
 import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
@@ -24,7 +25,9 @@ import { PlayerRoleHoldButton } from "./player-role-hold-button";
 import { PlayerRoleNotice } from "./player-role-notice";
 import { PlayerStatusBoard } from "./player-status-board";
 import { RemainingRolesBoard } from "./remaining-roles-board";
+import { PlayerMayorReveal } from "./player-mayor-reveal";
 import { useGraveyard } from "./use-graveyard";
+import { useMayorReveals } from "./use-mayor-reveals";
 import { usePrivatePlayerRole } from "./use-private-player-role";
 
 interface PlayerGameViewProps {
@@ -58,6 +61,7 @@ export function PlayerGameView({
   const privateRole = usePrivatePlayerRole(gameId);
   const gameVariants = useGameVariants(gameId);
   const { graveyard } = useGraveyard(gameId);
+  const mayorReveals = useMayorReveals(gameId);
 
   if (!privateRole.loaded || !gameVariants.loaded) {
     return <PlayerRoleNotice loading message="Carregando sua informação privada…" />;
@@ -178,6 +182,10 @@ export function PlayerGameView({
         </p>
       )}
 
+      {role.id === "mayor" && alive && !isNight && game.status === "in-progress" && !mayorReveals[viewerUid] && (
+        <PlayerMayorReveal gameId={gameId} />
+      )}
+
       {accusing && (
         <>
           {blackmailed ? (
@@ -210,8 +218,14 @@ export function PlayerGameView({
             accusedPlayerUid={game.accusedPlayerUid}
             verdictClosedAt={game.verdictClosedAt}
             verdictOutcome={game.verdictOutcome}
+            roleId={privateRole.privatePlayer.roleId}
           />
         )
+      )}
+      {game.phase === "verdict"
+        && game.verdictClosedAt
+        && privateRole.privatePlayer.statuses?.["jester-revenge-pending"] && (
+        <PlayerJesterRevenge gameId={gameId} dayNumber={game.day} viewerUid={viewerUid} players={players} />
       )}
       {game.phase === "verdict" && (
         <VerdictVotesBoard
@@ -224,7 +238,7 @@ export function PlayerGameView({
       )}
 
       <div className="mt-4">
-        <PlayerStatusBoard players={players} viewerUid={viewerUid} graveyard={graveyard} />
+        <PlayerStatusBoard players={players} viewerUid={viewerUid} graveyard={graveyard} mayorReveals={mayorReveals} />
       </div>
 
       <div className="mt-4">

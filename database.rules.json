@@ -436,6 +436,25 @@
             ".validate": "newData.hasChildren(['nightNumber', 'lines', 'createdAt']) && newData.child('nightNumber').isNumber() && newData.child('createdAt').isNumber()"
           }
         },
+        "jesterRevenge": {
+          ".read": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          "$dayNumber": {
+            "$uid": {
+              ".read": "auth !== null && auth.uid === $uid",
+              ".write": "auth !== null && auth.uid === $uid && !data.exists() && newData.exists() && root.child('games').child($gameId).child('privatePlayers').child($uid).child('statuses').child('jester-revenge-pending').exists() && root.child('games').child($gameId).child('public').child('phase').val() === 'verdict' && root.child('games').child($gameId).child('public').child('day').val() + '' === $dayNumber",
+              ".validate": "newData.isString() && root.child('games').child($gameId).child('votes').child($dayNumber).child('verdicts').child(newData.val()).val() === 'guilty' && root.child('games').child($gameId).child('players').child(newData.val()).child('alive').val() === true"
+            }
+          }
+        },
+        "mayorReveals": {
+          ".read": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid || (auth !== null && root.child('games').child($gameId).child('players').child(auth.uid).exists())",
+          ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          "$uid": {
+            ".write": "auth !== null && auth.uid === $uid && !data.exists() && newData.exists() && root.child('games').child($gameId).child('privatePlayers').child($uid).child('roleId').val() === 'mayor' && root.child('games').child($gameId).child('players').child($uid).child('alive').val() === true && root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' && root.child('games').child($gameId).child('public').child('phase').val() !== 'night'",
+            ".validate": "newData.isNumber()"
+          }
+        },
         "$other": {
           ".validate": false
         }

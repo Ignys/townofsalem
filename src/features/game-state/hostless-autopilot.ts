@@ -19,6 +19,15 @@ export const HOSTLESS_PHASE_LABELS = {
 /** Quanto tempo o resultado da votação fica na tela antes da noite começar. */
 export const VERDICT_RESULT_DISPLAY_MS = 10_000;
 
+/** Tempo que o Jester enforcado tem para escolher a vingança, contado do fim da votação. */
+export const JESTER_REVENGE_WINDOW_MS = 30_000;
+
+/** Jester enforcado com vingança em aberto, e o alvo que ele já escolheu (se escolheu). */
+export interface PendingJesterRevenge {
+  jesterUid: string;
+  targetUid: string | null;
+}
+
 export type HostlessStep =
   | { kind: "declare-winner"; winningFactions: readonly string[]; winningPlayerUids: readonly string[] }
   | { kind: "start-timer"; seconds: number }
@@ -26,7 +35,8 @@ export type HostlessStep =
   | { kind: "start-night" }
   | { kind: "start-verdict" }
   | { kind: "close-verdict" }
-  | { kind: "apply-lynch"; targetUid: string };
+  | { kind: "apply-lynch"; targetUid: string }
+  | { kind: "resolve-jester-revenge"; jesterUid: string; targetUid: string | null };
 
 /**
  * O próximo passo do motor sem mestre. Puro: recebe o estado público e o estado do timer,
@@ -38,6 +48,7 @@ export function decideHostlessStep(
   isAlive: (uid: string) => boolean,
   now: number,
   winner: { gameOver: boolean; winningFactions: readonly string[]; winningPlayerUids: readonly string[] } | null = null,
+  jesterRevenge: PendingJesterRevenge | null = null,
 ): HostlessStep | null {
   if (game.status !== "in-progress") return null;
 
@@ -45,8 +56,9 @@ export function decideHostlessStep(
     && Boolean(game.verdictClosedAt)
     && now - (game.verdictClosedAt ?? 0) < VERDICT_RESULT_DISPLAY_MS;
 
-  // A vitória vale antes de qualquer outra coisa, mas espera a lista de votos sair da tela.
-  if (winner?.gameOver && !showingVerdictResult) {
+  // A vitória vale antes de qualquer outra coisa, mas espera a lista de votos sair da tela
+  // e a vingança do Jester (que ainda pode matar alguém).
+  if (winner?.gameOver && !showingVerdictResult && !jesterRevenge) {
     return {
       kind: "declare-winner",
       winningFactions: winner.winningFactions,
@@ -58,6 +70,15 @@ export function decideHostlessStep(
   if (game.phase === "verdict" && game.verdictClosedAt) {
     if (game.verdictOutcome === "guilty" && game.accusedPlayerUid && isAlive(game.accusedPlayerUid)) {
       return { kind: "apply-lynch", targetUid: game.accusedPlayerUid };
+    }
+    // O Jester enforcado escolhe na hora; sem escolha no prazo, a vingança não acontece.
+    if (jesterRevenge) {
+      if (jesterRevenge.targetUid) {
+        return { kind: "resolve-jester-revenge", ...jesterRevenge };
+      }
+      return now - game.verdictClosedAt >= JESTER_REVENGE_WINDOW_MS
+        ? { kind: "resolve-jester-revenge", jesterUid: jesterRevenge.jesterUid, targetUid: null }
+        : null;
     }
     // Deixa a lista de culpados/inocentes na tela por um momento antes da noite.
     return now - game.verdictClosedAt >= VERDICT_RESULT_DISPLAY_MS ? { kind: "start-night" } : null;

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ROLE_DEFINITIONS } from "@/data/roles";
 import { useHostRoleAssignments } from "@/features/roles/use-host-role-assignments";
@@ -9,9 +9,17 @@ import { checkWinCondition } from "@/game-engine/win-condition";
 import type { Player } from "@/types";
 
 import { useSynchronizedTimer } from "@/features/timer/use-synchronized-timer";
+import { observeHostJesterRevenges } from "@/lib/firebase/realtime-database-repository";
 import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
 
-import { decideHostlessStep, HOSTLESS_PHASE_LABELS, HOSTLESS_PHASE_SECONDS, type HostlessStep } from "./hostless-autopilot";
+import { JESTER_REVENGE_STATUS } from "./apply-jester-revenge";
+import {
+  decideHostlessStep,
+  HOSTLESS_PHASE_LABELS,
+  HOSTLESS_PHASE_SECONDS,
+  type HostlessStep,
+  type PendingJesterRevenge,
+} from "./hostless-autopilot";
 import { getPhaseDefinition } from "./phase-definitions";
 
 /** Encurta os timers nos testes end-to-end; em produção fica 1. */
@@ -66,6 +74,11 @@ async function runStep(gameId: string, step: HostlessStep, serverTimeOffsetMs: n
       await declareWinner(gameId, step);
       return;
     }
+    case "resolve-jester-revenge": {
+      const { applyJesterRevenge } = await import("./apply-jester-revenge");
+      await applyJesterRevenge(gameId, step.jesterUid, step.targetUid);
+      return;
+    }
     case "close-verdict": {
       const { closeVerdictVoting } = await import("@/features/voting/close-verdict-voting");
       await closeVerdictVoting(gameId);
@@ -109,10 +122,32 @@ export function HostlessAutopilotRunner({ gameId, hostUid, game, players }: Host
     }));
   }, [game.currentNightId, gameId, players, privateRoles.assignments, privateRoles.loaded]);
   const inFlightRef = useRef<string | null>(null);
-  const step = decideHostlessStep(game, timer.status, (uid) => Boolean(players[uid]?.alive), timer.serverAdjustedNow, winner);
+  const [revengeChoices, setRevengeChoices] = useState<Record<string, string>>({});
+  useEffect(
+    () => observeHostJesterRevenges(gameId, game.day, hostUid, {
+      onData: (value) => setRevengeChoices(value ?? {}),
+      onError: () => setRevengeChoices({}),
+    }),
+    [game.day, gameId, hostUid],
+  );
+  const jesterRevenge = useMemo<PendingJesterRevenge | null>(() => {
+    const jesterUid = Object.entries(privateRoles.assignments).find(
+      ([, assignment]) => assignment.statuses?.[JESTER_REVENGE_STATUS],
+    )?.[0];
+    return jesterUid ? { jesterUid, targetUid: revengeChoices[jesterUid] ?? null } : null;
+  }, [privateRoles.assignments, revengeChoices]);
+
+  const step = decideHostlessStep(
+    game,
+    timer.status,
+    (uid) => Boolean(players[uid]?.alive),
+    timer.serverAdjustedNow,
+    winner,
+    jesterRevenge,
+  );
   // Um passo por fase/estado: o tick repete a decisão, mas só a primeira execução vale.
   const stepKey = step
-    ? `${game.phaseSessionId ?? ""}:${game.phase}:${game.verdictClosedAt ?? ""}:${step.kind}`
+    ? `${game.phaseSessionId ?? ""}:${game.phase}:${game.verdictClosedAt ?? ""}:${step.kind}:${"targetUid" in step ? step.targetUid ?? "" : ""}`
     : null;
 
   useEffect(() => {
