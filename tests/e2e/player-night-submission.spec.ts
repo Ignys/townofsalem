@@ -84,3 +84,69 @@ test("a player confirms their own night action and it locks for everyone", async
 
   await Promise.all(contexts.map((context) => context.close()));
 });
+
+test("investigations arrive on confirm and the rest of the night waits for the day", async ({ browser }) => {
+  const contexts = await Promise.all([
+    browser.newContext(),
+    browser.newContext({ viewport: { width: 375, height: 812 } }),
+    browser.newContext({ viewport: { width: 375, height: 812 } }),
+    browser.newContext({ viewport: { width: 375, height: 812 } }),
+  ]);
+  const [host, ana, beto, caio] = await Promise.all(contexts.map((context) => context.newPage()));
+  const players = [ana, beto, caio];
+
+  await host.goto("/");
+  await expect(host.getByText("Acesso seguro pronto")).toBeVisible();
+  await host.getByRole("button", { name: "Criar partida" }).click();
+  await expect(host).toHaveURL(/\/host\/[A-Z0-9]{6}$/);
+  const code = host.url().split("/").pop()!;
+
+  await joinPlayer(ana, code, "Ana");
+  await joinPlayer(beto, code, "Beto");
+  await joinPlayer(caio, code, "Caio");
+  await expect(host.getByText("Caio", { exact: true })).toBeVisible();
+
+  await host.getByRole("button", { name: /Doctor/ }).click();
+  await host.getByRole("button", { name: /Sheriff/ }).click();
+  await host.getByRole("button", { name: /Mafioso/ }).click();
+  await host.getByRole("button", { name: "Sortear roles" }).click();
+  await expect(host.getByRole("heading", { name: "Noite 1" }).first()).toBeVisible();
+
+  // Quem tiver "Investigar alinhamento" é o Sheriff.
+  await expect.poll(async () => {
+    const counts = await Promise.all(
+      players.map((player) => player.getByRole("heading", { name: "Investigar alinhamento" }).count()),
+    );
+    return counts.reduce((total, count) => total + count, 0);
+  }).toBe(1);
+  let sheriff = ana;
+  for (const player of players) {
+    if (await player.getByRole("heading", { name: "Investigar alinhamento" }).count()) sheriff = player;
+  }
+
+  for (const player of players) {
+    const panel = player.getByRole("region", { name: "Sua ação da noite" });
+    if (!(await panel.count())) continue;
+    await panel.getByRole("button", { name: /^(Ana|Beto|Caio)$/ }).first().click();
+    await panel.getByRole("button", { name: "Confirmar" }).click();
+    await expect(panel.getByText("Confirmado", { exact: true }).first()).toBeVisible();
+  }
+
+  // A investigação chega na hora; o resto só ao amanhecer.
+  const instant = sheriff.getByRole("region", { name: "Resultado da sua ação" });
+  await expect(instant).toContainText(/Você investigou (Ana|Beto|Caio): (suspeito|não suspeito)\./);
+
+  await host.getByRole("button", { name: "Aplicar resultado" }).click();
+  await expect(host.getByText("Resultado aplicado.", { exact: false })).toBeVisible();
+  for (const player of players) {
+    await expect(player.getByRole("region", { name: "Anúncios do dia" })).toHaveCount(0);
+  }
+
+  await host.getByRole("button", { name: "Dia", exact: true }).click();
+  await host.getByRole("button", { name: "Sim", exact: true }).click();
+  for (const player of players) {
+    await expect(player.getByRole("region", { name: "Anúncios do dia" })).toContainText("Noite 1");
+  }
+
+  await Promise.all(contexts.map((context) => context.close()));
+});
