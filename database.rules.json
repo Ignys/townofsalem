@@ -404,6 +404,35 @@
             }
           }
         },
+        "playerInstantResults": {
+          ".read": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          "$uid": {
+            ".read": "auth !== null && auth.uid === $uid",
+            "$nightId": {
+              "$resultKey": {
+                ".validate": "newData.hasChildren(['nightNumber', 'line', 'createdAt']) && newData.child('nightNumber').isNumber() && newData.child('createdAt').isNumber()"
+              }
+            }
+          }
+        },
+        "playerDawnResults": {
+          ".read": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          "$uid": {
+            ".read": "auth !== null && auth.uid === $uid && root.child('games').child($gameId).child('public').child('phase').val() !== 'night'",
+            "$nightId": {
+              ".validate": "newData.hasChildren(['nightNumber', 'lines', 'createdAt']) && newData.child('nightNumber').isNumber() && newData.child('createdAt').isNumber()"
+            }
+          }
+        },
+        "dayAnnouncements": {
+          ".read": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid || (auth !== null && root.child('games').child($gameId).child('players').child(auth.uid).exists() && root.child('games').child($gameId).child('public').child('phase').val() !== 'night')",
+          ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          "$nightId": {
+            ".validate": "newData.hasChildren(['nightNumber', 'lines', 'createdAt']) && newData.child('nightNumber').isNumber() && newData.child('createdAt').isNumber()"
+          }
+        },
         "$other": {
           ".validate": false
         }

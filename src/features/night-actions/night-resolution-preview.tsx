@@ -21,6 +21,7 @@ import {
 } from "./calculate-night-resolution-preview";
 import { presentNightResolution } from "./night-resolution-presentation";
 import { NightResolutionSections } from "./night-resolution-sections";
+import { useDeliverInstantNightResults } from "./use-deliver-instant-night-results";
 
 interface NightResolutionPreviewProps {
   gameId: string;
@@ -127,6 +128,16 @@ export function NightResolutionPreview({
   const presentation = displayedResolution
     ? presentNightResolution(displayedResolution, playerNames, assignments)
     : null;
+  useDeliverInstantNightResults({
+    gameId,
+    nightId,
+    nightNumber,
+    resolution: displayedResolution,
+    entries,
+    players,
+    assignments,
+    applied,
+  });
   const deathDetailsByPlayer = useMemo(() => getPlayerDeathDetailsByUid({
     events: {},
     playerNames,

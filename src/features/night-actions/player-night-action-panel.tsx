@@ -65,7 +65,7 @@ export function PlayerNightActionPanel({
   return (
     <section aria-label="Sua ação da noite" className="text-left">
       <p className="text-sm leading-6 text-[#a9b3cc]">
-        Escolha sua ação desta noite. O mestre recebe sua escolha no console e pode ajustá-la.
+        Escolha sua ação desta noite e confirme. Depois de confirmar, ninguém muda a escolha, nem o mestre.
       </p>
 
       {error && (

@@ -3,6 +3,10 @@
 import { getRoleById } from "@/data/roles";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
 import { PlayerNightActionPanel } from "@/features/night-actions/player-night-action-panel";
+import {
+  PlayerDawnNightResults,
+  PlayerInstantNightResults,
+} from "@/features/night-actions/player-night-results-cards";
 import { GameTimerDisplay } from "@/features/timer/game-timer-display";
 import { AccusationTallyBoard } from "@/features/voting/accusation-tally-board";
 import { PlayerAccusationVoting } from "@/features/voting/player-accusation-voting";
@@ -160,6 +164,9 @@ export function PlayerGameView({
           )}
         </div>
       </section>
+
+      {isNight && <PlayerInstantNightResults gameId={gameId} nightId={game.currentNightId} />}
+      <PlayerDawnNightResults gameId={gameId} revealed={!isNight && game.phase !== "lobby"} />
 
       {game.status === "finished" && (
         <section className="mt-4 rounded-2xl border border-[#d3b88c]/30 bg-[#d3b88c]/10 p-4 text-center">

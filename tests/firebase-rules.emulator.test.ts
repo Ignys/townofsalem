@@ -268,6 +268,38 @@ test("night submissions are rejected off-phase, off-night, when dead, and after 
   await assertFails(set(ref(player, path), { ...submission, updatedAt: 3 }));
 });
 
+test("night results: instant ones reach only their owner, dawn ones wait for the night to end", async () => {
+  const host = environment.authenticatedContext("host").database();
+  const player = environment.authenticatedContext("player").database();
+  const other = environment.authenticatedContext("other").database();
+  const line = { parts: [{ kind: "text", text: "Você investigou alguém." }] };
+  const dawn = { nightNumber: 2, lines: [line], createdAt: 1 };
+
+  await setPhase("night");
+  // Só o mestre escreve resultados.
+  await assertFails(set(ref(player, `${VOTE}/playerInstantResults/player/night-current/investigation-x`), { nightNumber: 2, line, createdAt: 1 }));
+  await assertFails(set(ref(player, `${VOTE}/playerDawnResults/player/night-current`), dawn));
+  await assertFails(set(ref(player, `${VOTE}/dayAnnouncements/night-current`), dawn));
+  await assertSucceeds(set(ref(host, `${VOTE}/playerInstantResults/player/night-current/investigation-x`), { nightNumber: 2, line, createdAt: 1 }));
+  await assertSucceeds(set(ref(host, `${VOTE}/playerDawnResults/player/night-current`), dawn));
+  await assertSucceeds(set(ref(host, `${VOTE}/dayAnnouncements/night-current`), dawn));
+
+  // O resultado instantâneo é do dono, na hora.
+  await assertSucceeds(get(ref(player, `${VOTE}/playerInstantResults/player`)));
+  await assertFails(get(ref(other, `${VOTE}/playerInstantResults/player`)));
+
+  // O amanhecer fica fechado durante a noite, mesmo já aplicado.
+  await assertFails(get(ref(player, `${VOTE}/playerDawnResults/player`)));
+  await assertFails(get(ref(player, `${VOTE}/dayAnnouncements`)));
+
+  await setPhase("day");
+  await assertSucceeds(get(ref(player, `${VOTE}/playerDawnResults/player`)));
+  await assertFails(get(ref(other, `${VOTE}/playerDawnResults/player`)));
+  await assertSucceeds(get(ref(player, `${VOTE}/dayAnnouncements`)));
+  await assertSucceeds(get(ref(other, `${VOTE}/dayAnnouncements`)));
+  await assertFails(get(ref(environment.authenticatedContext("stranger").database(), `${VOTE}/dayAnnouncements`)));
+});
+
 test("unauthenticated and cross-player secret reads fail", async () => {
   await assertFails(get(ref(environment.unauthenticatedContext().database(), "games/game/public")));
   const player = environment.authenticatedContext("player").database();

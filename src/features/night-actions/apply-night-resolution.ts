@@ -15,9 +15,17 @@ import { applyAtomicUpdate, type AtomicUpdateMap } from "@/lib/firebase/realtime
 import { getDatabaseReference } from "@/lib/firebase/references";
 import { omitUndefinedValues } from "@/lib/firebase/omit-undefined-values";
 import { buildGraveyardEntry } from "@/features/game-state/graveyard-entry";
-import type { NightResolutionRecord, NightSession, PlayerStatus } from "@/types";
+import type {
+  DayAnnouncementRecord,
+  NightResolutionRecord,
+  NightSession,
+  PlayerDawnNightResultRecord,
+  PlayerStatus,
+} from "@/types";
 import { getRoleById } from "@/data/roles";
 
+import { presentNightResolution } from "./night-resolution-presentation";
+import { buildPlayerDawnNightResults } from "./player-night-results";
 import { canRollbackResolution, captureAliveBefore, getResolutionApplicationDecision, isResolutionClaimExpired } from "./resolution-state";
 
 async function claimResolution(
@@ -133,6 +141,29 @@ export async function applyNightResolution(
       payload: { nightId: draft.nightId, resolutionId: record.id },
     },
   };
+  // O que cada jogador e a cidade descobrem ao amanhecer. As regras só liberam a leitura
+  // quando a fase sai da noite, então aplicar ainda durante a noite não vaza nada.
+  const playerNames = Object.fromEntries(
+    Object.entries(players).map(([uid, player]) => [uid, player.name]),
+  );
+  const assignments = Object.fromEntries(
+    Object.entries(privatePlayers ?? {}).map(([uid, privatePlayer]) => [uid, privatePlayer.roleId]),
+  );
+  const nightNumber = game.nightNumber ?? 0;
+  for (const [uid, lines] of Object.entries(buildPlayerDawnNightResults(record.resolution, playerNames))) {
+    if (!players[uid]) continue;
+    updates[firebasePaths.gamePlayerDawnNightResult(gameId, uid, draft.nightId)] = {
+      nightNumber,
+      lines,
+      createdAt: now,
+    } satisfies PlayerDawnNightResultRecord;
+  }
+  updates[firebasePaths.gameDayAnnouncement(gameId, draft.nightId)] = {
+    nightNumber,
+    lines: presentNightResolution(record.resolution, playerNames, assignments).announcements,
+    createdAt: now,
+  } satisfies DayAnnouncementRecord;
+
   const cleanedUids = new Set(record.resolution.cleanedPlayerUids);
   for (const uid of record.resolution.deaths) {
     if (!players[uid]) continue;
@@ -200,6 +231,10 @@ export async function rollbackNightResolution(gameId: string, nightId: string, n
       type: "NIGHT_RESOLUTION_ROLLED_BACK", timestamp: now, actorUid: hostUid, visibility: "host-only", payload: { nightId, resolutionId: record.id },
     },
   };
+  updates[firebasePaths.gameDayAnnouncement(gameId, nightId)] = null;
+  for (const uid of Object.keys(buildPlayerDawnNightResults(record.resolution, {}))) {
+    updates[firebasePaths.gamePlayerDawnNightResult(gameId, uid, nightId)] = null;
+  }
   for (const [uid, alive] of Object.entries(record.playerAliveBefore ?? {})) {
     updates[firebasePaths.gamePlayerField(gameId, uid, "alive")] = alive;
     if (alive) {

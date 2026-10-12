@@ -8,11 +8,14 @@ import {
 } from "firebase/database";
 
 import type {
+  DayAnnouncementRecord,
   HostNightActionEntry,
   HostNightNote,
   NightSession,
   NightResolutionRecord,
   PhaseSession,
+  PlayerDawnNightResultRecord,
+  PlayerInstantNightResultRecord,
   PlayerStatus,
   WakeChecklistState,
 } from "@/types";
@@ -68,6 +71,9 @@ export type AtomicUpdateValue =
   | HostNightNote
   | WakeChecklistState
   | NightResolutionRecord
+  | PlayerInstantNightResultRecord
+  | PlayerDawnNightResultRecord
+  | DayAnnouncementRecord
   | PlayerStatus
   | GameVariants;
 
@@ -407,4 +413,57 @@ export async function applyAtomicUpdate(
   } catch (error: unknown) {
     throw toRealtimeDatabaseError("atomic-update", "/", error);
   }
+}
+
+function observeAuthenticatedPlayerPath<Value>(
+  operation: RealtimeDatabaseOperation,
+  buildPath: (uid: string) => FirebasePath,
+  observer: RealtimeValueObserver<Value>,
+): Unsubscribe {
+  const uid = firebaseAuth.currentUser?.uid;
+
+  if (!uid) {
+    observer.onError(
+      new RealtimeDatabaseRepositoryError(
+        operation,
+        buildPath("anonymous"),
+        new Error("An authenticated player is required."),
+      ),
+    );
+    return () => undefined;
+  }
+
+  return observePath(operation, buildPath(uid), observer);
+}
+
+/** Investigações e pistas entregues ao próprio jogador, por noite. */
+export function observeAuthenticatedPlayerInstantResults(
+  gameId: string,
+  observer: RealtimeValueObserver<Record<string, Record<string, PlayerInstantNightResultRecord>>>,
+): Unsubscribe {
+  return observeAuthenticatedPlayerPath(
+    "observe-player-instant-results",
+    (uid) => firebasePaths.gamePlayerInstantNightResults(gameId, uid),
+    observer,
+  );
+}
+
+/** O que o jogador descobriu ao amanhecer. A regra só libera fora da noite. */
+export function observeAuthenticatedPlayerDawnResults(
+  gameId: string,
+  observer: RealtimeValueObserver<Record<string, PlayerDawnNightResultRecord>>,
+): Unsubscribe {
+  return observeAuthenticatedPlayerPath(
+    "observe-player-dawn-results",
+    (uid) => firebasePaths.gamePlayerDawnNightResults(gameId, uid),
+    observer,
+  );
+}
+
+/** Anúncios do amanhecer. A regra só libera fora da noite. */
+export function observeDayAnnouncements(
+  gameId: string,
+  observer: RealtimeValueObserver<Record<string, DayAnnouncementRecord>>,
+): Unsubscribe {
+  return observePath("observe-day-announcements", firebasePaths.gameDayAnnouncements(gameId), observer);
 }
