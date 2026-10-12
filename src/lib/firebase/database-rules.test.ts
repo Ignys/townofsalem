@@ -13,11 +13,60 @@ test("security rules parse and keep every administrative night branch host-only"
   }
 });
 
-test("players cannot write legacy automated actions or votes in principal mode", () => {
+test("the legacy automated actions path stays closed to players", () => {
   assert.match(gameRules.actions[".write"], /hostUid/);
-  assert.match(gameRules.votes[".write"], /hostUid/);
   assert.equal(gameRules.actions.$nightNumber.$uid[".write"], undefined);
-  assert.equal(gameRules.votes.$dayNumber.accusations.$uid[".write"], undefined);
+});
+
+test("players may only cast their own accusation, while alive and in an accusation phase", () => {
+  assert.match(gameRules.votes[".write"], /hostUid/);
+  const write = gameRules.votes.$dayNumber.accusations.$uid[".write"] as string;
+
+  assert.match(write, /auth\.uid === \$uid/);
+  assert.match(write, /child\('alive'\)\.val\(\) === true/);
+  assert.match(write, /'day'/);
+  assert.match(write, /'discussion'/);
+  // Uma vez que o julgamento começou, nenhuma acusação nova entra.
+  assert.match(write, /!.*child\('accusedPlayerUid'\)\.exists\(\)/);
+  assert.match(write, /child\('day'\)\.val\(\) \+ '' === \$dayNumber/);
+
+  const validate = gameRules.votes.$dayNumber.accusations.$uid[".validate"] as string;
+  assert.match(validate, /newData\.val\(\) !== auth\.uid/, "ninguém se auto-acusa");
+  assert.match(validate, /child\('alive'\)\.val\(\) === true/, "o alvo precisa estar vivo");
+});
+
+test("verdicts are secret until the host closes them", () => {
+  const verdicts = gameRules.votes.$dayNumber.verdicts;
+
+  // Leitura do subnó inteiro só depois de fechado, e sempre restrita ao dia corrente.
+  assert.match(verdicts[".read"], /child\('verdictClosedAt'\)\.exists\(\)/);
+  assert.match(verdicts[".read"], /child\('day'\)\.val\(\) \+ '' === \$dayNumber/);
+  // Antes disso, cada jogador só enxerga o próprio voto.
+  assert.equal(verdicts.$uid[".read"], "auth !== null && auth.uid === $uid");
+
+  const write = verdicts.$uid[".write"] as string;
+  assert.match(write, /auth\.uid === \$uid/);
+  assert.match(write, /child\('phase'\)\.val\(\) === 'verdict'/);
+  assert.match(write, /child\('accusedPlayerUid'\)\.val\(\) !== auth\.uid/, "o acusado não vota");
+  assert.match(write, /!.*child\('verdictClosedAt'\)\.exists\(\)/);
+});
+
+test("player night submissions are private, alive-only and locked after resolution", () => {
+  const node = gameRules.playerNightActions.$nightId.$uid;
+
+  assert.match(gameRules.playerNightActions[".read"], /hostUid/);
+  assert.equal(node[".read"], "auth !== null && auth.uid === $uid");
+
+  const write = node[".write"] as string;
+  assert.match(write, /auth\.uid === \$uid/);
+  assert.match(write, /child\('alive'\)\.val\(\) === true/);
+  assert.match(write, /child\('phase'\)\.val\(\) === 'night'/);
+  assert.match(write, /child\('currentNightId'\)\.val\(\) === \$nightId/);
+  assert.match(write, /!.*child\('resolutionAppliedAt'\)\.exists\(\)/);
+
+  // A role enviada é fixada no valor do servidor: não dá para se passar por outra.
+  const validate = node.$actionId[".validate"] as string;
+  assert.match(validate, /child\('privatePlayers'\)\.child\(\$uid\)\.child\('roleId'\)/);
 });
 
 test("private roles are readable only by their owner or through the host parent rule", () => {

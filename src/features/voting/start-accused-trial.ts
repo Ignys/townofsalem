@@ -1,6 +1,7 @@
 "use client";
 
-import { canTransition } from "@/game-engine/game-phase-machine";
+import { runTransaction } from "firebase/database";
+
 import {
   readGameDayVotes,
   readGamePlayers,
@@ -10,28 +11,39 @@ import {
 } from "@/lib/firebase/game-access-repository";
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
+import { getDatabaseReference } from "@/lib/firebase/references";
 import { requireAuthenticatedGameHost } from "@/features/game-state/require-authenticated-game-host";
-
-import {
-  countAccusationVotes,
-  getVotesRequired,
-} from "@/game-engine/accusation-counting";
-import { DEFAULT_ACCUSATION_VOTING_SETTINGS } from "./voting-settings";
+import { buildStartHostPhaseUpdates } from "@/features/game-state/start-host-phase";
+import { getPhaseDefinition } from "@/features/game-state/phase-definitions";
 import { withDefaultVariants } from "@/game-engine/variants";
-import { getEligibleVoterUids, getVoterWeights } from "./voter-rules";
 
+import { selectAccusationTrigger } from "./accusation-threshold";
+import { isAccusationPhase } from "./voting-phases";
+import { DEFAULT_ACCUSATION_VOTING_SETTINGS } from "./voting-settings";
+
+/**
+ * Coloca um jogador em julgamento quando a maioria o acusou.
+ *
+ * O jogo "para": a fase vira `trial` sem timer (`phaseEndsAt` nulo), porque o mestre
+ * precisa interromper a conversa presencial antes de iniciar a defesa de 30s.
+ *
+ * Idempotente entre abas: o acusado é reivindicado por transação, e quem perder
+ * simplesmente retorna sem escrever.
+ */
 export async function startAccusedTrial(
   gameId: string,
   targetUid: string,
-): Promise<void> {
-  await requireAuthenticatedGameHost(gameId);
+  now: () => number = Date.now,
+  createId: () => string = () => crypto.randomUUID(),
+): Promise<boolean> {
+  const hostUid = await requireAuthenticatedGameHost(gameId);
   const game = await readPublicGame(gameId);
 
   if (
     !game ||
     game.status !== "in-progress" ||
-    game.phase !== "discussion" ||
-    !canTransition(game.phase, "trial")
+    !isAccusationPhase(game.phase) ||
+    game.accusedPlayerUid
   ) {
     throw new Error("The game is not accepting an accusation trial.");
   }
@@ -42,43 +54,65 @@ export async function startAccusedTrial(
     readHostPrivatePlayers(gameId),
     readGameSettings(gameId),
   ]);
-  const target = players?.[targetUid];
 
-  if (!target?.alive) {
+  if (!players?.[targetUid]?.alive) {
     throw new Error("The accused player is not alive.");
   }
 
-  const alivePlayers = Object.values(players ?? {}).filter(
-    (player) => player.alive,
-  ).length;
-  const eligibleVoterUids = getEligibleVoterUids(
-    players ?? {},
-    privatePlayers ?? {},
-    withDefaultVariants(settings?.gameVariants),
-  );
-  const votesForTarget = countAccusationVotes(
-    dayVotes?.accusations,
-    eligibleVoterUids,
-    getVoterWeights(privatePlayers ?? {}, Object.keys(players ?? {}).length),
-  )[targetUid] ?? 0;
-  const votesRequired = getVotesRequired(
-    alivePlayers,
-    DEFAULT_ACCUSATION_VOTING_SETTINGS,
-  );
+  // Revalidação server-side do limiar: a UI é só um gatilho.
+  const trigger = selectAccusationTrigger({
+    accusations: dayVotes?.accusations,
+    players: players ?? {},
+    privatePlayers: privatePlayers ?? {},
+    variants: withDefaultVariants(settings?.gameVariants),
+    settings: DEFAULT_ACCUSATION_VOTING_SETTINGS,
+  });
 
-  if (votesForTarget < votesRequired) {
+  if (!trigger || trigger.targetUid !== targetUid) {
     throw new Error("The accusation threshold is no longer satisfied.");
   }
 
+  // Reivindica o acusado; se outra aba já reivindicou, desiste em silêncio.
+  const claim = await runTransaction(
+    getDatabaseReference(firebasePaths.gamePublicField(gameId, "accusedPlayerUid")),
+    (current: string | null) => (current ? undefined : targetUid),
+    { applyLocally: false },
+  );
+
+  if (!claim.committed) return false;
+
+  const startedAt = now();
+  const eventId = createId();
+  const trialPhase = getPhaseDefinition("trial");
+
   await applyAtomicUpdate({
+    ...buildStartHostPhaseUpdates({
+      gameId,
+      hostUid,
+      game,
+      // Sem timer: o mestre inicia a fase Defesa manualmente depois de calar a mesa.
+      input: { phaseId: "trial", label: trialPhase.label, durationSeconds: null },
+      startedAt,
+      createId,
+    }),
     [firebasePaths.gamePublicField(gameId, "accusedPlayerUid")]: targetUid,
     [firebasePaths.gamePublicField(gameId, "verdictClosedAt")]: null,
     [firebasePaths.gamePublicField(gameId, "verdictOutcome")]: null,
-    [firebasePaths.gamePublicField(gameId, "phase")]: "trial",
-    [firebasePaths.gamePublicField(gameId, "phaseEndsAt")]: null,
-    [firebasePaths.gamePublicField(gameId, "timerPaused")]: false,
-    [firebasePaths.gamePublicField(gameId, "timerRemainingMs")]: null,
     [firebasePaths.gameAccusations(gameId, game.day)]: null,
     [firebasePaths.gameVerdicts(gameId, game.day)]: null,
+    [firebasePaths.gameEvent(gameId, eventId)]: {
+      type: "TRIAL_STARTED",
+      timestamp: startedAt,
+      actorUid: hostUid,
+      visibility: "host-only",
+      payload: {
+        accusedPlayerUid: targetUid,
+        day: game.day,
+        votes: trigger.votes,
+        votesRequired: trigger.votesRequired,
+      },
+    },
   });
+
+  return true;
 }

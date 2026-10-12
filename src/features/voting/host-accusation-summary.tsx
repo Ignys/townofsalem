@@ -13,10 +13,12 @@ import {
   getVotesRequired,
 } from "@/game-engine/accusation-counting";
 import { startAccusedTrial } from "./start-accused-trial";
+import { useAutoAccusedTrial } from "./use-auto-accused-trial";
 import { DEFAULT_ACCUSATION_VOTING_SETTINGS } from "./voting-settings";
 
 interface HostAccusationSummaryProps {
   gameId: string;
+  day: number;
   accusations?: Record<string, string>;
   players: Record<string, PublicPlayerRecord>;
   privatePlayers: Record<string, PrivatePlayerRecord>;
@@ -25,6 +27,7 @@ interface HostAccusationSummaryProps {
 
 export function HostAccusationSummary({
   gameId,
+  day,
   accusations,
   players,
   privatePlayers,
@@ -42,6 +45,15 @@ export function HostAccusationSummary({
     alivePlayers.length,
     DEFAULT_ACCUSATION_VOTING_SETTINGS,
   );
+  const auto = useAutoAccusedTrial({
+    gameId,
+    enabled: true,
+    day,
+    accusations,
+    players,
+    privatePlayers,
+    variants,
+  });
 
   const handleTrial = async (targetUid: string, playerName: string) => {
     if (!window.confirm(`Iniciar o julgamento de ${playerName}? As acusações atuais serão encerradas.`)) {
@@ -61,6 +73,27 @@ export function HostAccusationSummary({
 
   return (
     <div className="mt-5">
+      {auto.countdown !== null && (
+        <div
+          role="status"
+          className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#d3b88c]/45 bg-[#d3b88c]/15 px-4 py-3"
+        >
+          <p className="font-semibold text-[#fffaf0]">
+            Maioria atingida — julgando{" "}
+            <strong>{auto.targetName ?? "jogador"}</strong> em {auto.countdown}…
+          </p>
+          <button
+            type="button"
+            onClick={auto.cancel}
+            className="min-h-10 shrink-0 rounded-lg border border-white/20 px-3 text-sm font-bold text-[#e5ded2]"
+          >
+            Cancelar
+          </button>
+        </div>
+      )}
+      {auto.error && (
+        <p role="alert" className="mb-3 text-sm text-[#f0b9bd]">{auto.error}</p>
+      )}
       <p className="text-sm text-[#bdb7ad]">
         Limiar: maioria estrita dos {alivePlayers.length} vivos ({votesRequired} votos).
       </p>

@@ -12,9 +12,11 @@ export interface HostDayWorkspaceProps {
   gameId: string;
   hostUid: string;
   players: Readonly<Record<string, PublicPlayerRecord>>;
+  /** Alvo já condenado pelo veredito digital, quando houver. */
+  condemnedPlayerUid?: string;
 }
 
-export function HostDayWorkspace({ gameId, hostUid, players: playerRecords }: HostDayWorkspaceProps) {
+export function HostDayWorkspace({ gameId, hostUid, players: playerRecords, condemnedPlayerUid }: HostDayWorkspaceProps) {
   const privateRoles = useHostRoleAssignments(gameId, hostUid);
   const players = useMemo<Player[]>(() => Object.entries(playerRecords).map(([uid, player]) => ({
     id: uid,
@@ -53,6 +55,9 @@ export function HostDayWorkspace({ gameId, hostUid, players: playerRecords }: Ho
         players={players}
         assignments={assignments}
         privatePlayers={privateRoles.assignments}
+        initialTargetUid={condemnedPlayerUid}
+        initialKind={condemnedPlayerUid ? "lynch" : undefined}
+        lockedTarget={Boolean(condemnedPlayerUid)}
       />
     </section>
   );

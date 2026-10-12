@@ -6,8 +6,11 @@ import {
   readPublicGame,
 } from "@/lib/firebase/game-access-repository";
 import { firebasePaths } from "@/lib/firebase/paths";
-import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
+import { applyAtomicUpdate, type AtomicUpdateMap } from "@/lib/firebase/realtime-database-repository";
+import type { GamePublicRecord, PrivatePlayerRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
 import type { PlayablePhase } from "@/types";
+
+import { isAccusationPhase } from "@/features/voting/voting-phases";
 
 import { createPhaseSession } from "./create-phase-session";
 import { selectDeputyPromotion } from "./deputy-promotion";
@@ -19,25 +22,36 @@ export interface StartHostPhaseInput {
   durationSeconds: number | null;
 }
 
-export async function startHostPhase(
-  gameId: string,
-  input: StartHostPhaseInput,
-  now: () => number = Date.now,
-  createId: () => string = () => crypto.randomUUID(),
-  random: () => number = Math.random,
-): Promise<void> {
-  const hostUid = await requireAuthenticatedGameHost(gameId);
-  const [game, players, privatePlayers] = await Promise.all([
-    readPublicGame(gameId),
-    input.phaseId === "night" ? readGamePlayers(gameId) : null,
-    input.phaseId === "night" ? readHostPrivatePlayers(gameId) : null,
-  ]);
+export interface BuildStartHostPhaseUpdatesInput {
+  gameId: string;
+  hostUid: string;
+  game: GamePublicRecord;
+  input: StartHostPhaseInput;
+  players?: Readonly<Record<string, PublicPlayerRecord>> | null;
+  privatePlayers?: Readonly<Record<string, PrivatePlayerRecord>> | null;
+  startedAt: number;
+  createId?: () => string;
+  random?: () => number;
+}
 
-  if (!game || game.status !== "in-progress") {
-    throw new Error("game-not-in-progress");
-  }
-
-  const startedAt = now();
+/**
+ * Monta o update atômico de início de fase.
+ *
+ * Extraído de `startHostPhase` para que `startAccusedTrial` possa entrar em `trial`
+ * pelo mesmo caminho, preservando PhaseSession, `phaseSequenceNumber`, `PHASE_STARTED`
+ * e a limpeza de `blackmailed`.
+ */
+export function buildStartHostPhaseUpdates({
+  gameId,
+  hostUid,
+  game,
+  input,
+  players = null,
+  privatePlayers = null,
+  startedAt,
+  createId = () => crypto.randomUUID(),
+  random = Math.random,
+}: BuildStartHostPhaseUpdatesInput): AtomicUpdateMap {
   const phaseSessionId = createId();
   const nightId = input.phaseId === "night" ? createId() : undefined;
   const eventId = createId();
@@ -61,7 +75,11 @@ export async function startHostPhase(
     : created.nightSession;
   const deputyPromotionEventId = deputyPromotion ? createId() : null;
 
-  await applyAtomicUpdate({
+  // Sair do julgamento limpa o acusado; caso contrário a regra `!accusedPlayerUid`
+  // bloquearia permanentemente novas acusações.
+  const clearsAccusation = isAccusationPhase(created.phase) || created.phase === "night";
+
+  return {
     [firebasePaths.gamePublicField(gameId, "phase")]: created.phase,
     [firebasePaths.gamePublicField(gameId, "phaseLabel")]: created.phaseSession.label,
     [firebasePaths.gamePublicField(gameId, "phaseSessionId")]: phaseSessionId,
@@ -112,6 +130,13 @@ export async function startHostPhase(
           },
         }
       : {}),
+    ...(clearsAccusation
+      ? {
+          [firebasePaths.gamePublicField(gameId, "accusedPlayerUid")]: null,
+          [firebasePaths.gamePublicField(gameId, "verdictClosedAt")]: null,
+          [firebasePaths.gamePublicField(gameId, "verdictOutcome")]: null,
+        }
+      : {}),
     ...Object.fromEntries(
       Object.entries(privatePlayers ?? {})
         .filter(([, player]) => player.statuses?.blackmailed)
@@ -120,5 +145,38 @@ export async function startHostPhase(
           null,
         ]),
     ),
-  });
+  };
+}
+
+export async function startHostPhase(
+  gameId: string,
+  input: StartHostPhaseInput,
+  now: () => number = Date.now,
+  createId: () => string = () => crypto.randomUUID(),
+  random: () => number = Math.random,
+): Promise<void> {
+  const hostUid = await requireAuthenticatedGameHost(gameId);
+  const [game, players, privatePlayers] = await Promise.all([
+    readPublicGame(gameId),
+    input.phaseId === "night" ? readGamePlayers(gameId) : null,
+    input.phaseId === "night" ? readHostPrivatePlayers(gameId) : null,
+  ]);
+
+  if (!game || game.status !== "in-progress") {
+    throw new Error("game-not-in-progress");
+  }
+
+  await applyAtomicUpdate(
+    buildStartHostPhaseUpdates({
+      gameId,
+      hostUid,
+      game,
+      input,
+      players,
+      privatePlayers,
+      startedAt: now(),
+      createId,
+      random,
+    }),
+  );
 }

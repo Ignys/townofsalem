@@ -35,9 +35,9 @@ interface HostVerdictSummaryProps {
 export function HostVerdictSummary(props: HostVerdictSummaryProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
-  const [resolutionBusy, setResolutionBusy] = useState(false);
-  const [resolutionApplied, setResolutionApplied] = useState(!props.accused?.alive);
-  const [revengeTargetUid, setRevengeTargetUid] = useState("");
+  // O linchamento em si é aplicado no painel de Resolução do dia; aqui só sinalizamos
+  // quando o condenado já morreu.
+  const resolutionApplied = !props.accused?.alive;
   const eligibleVoterUids = getEligibleVoterUids(
     props.players,
     props.privatePlayers,
@@ -50,12 +50,6 @@ export function HostVerdictSummary(props: HostVerdictSummaryProps) {
     eligibleVoterUids,
     getVoterWeights(props.privatePlayers, Object.keys(props.players).length),
   );
-  const accusedRoleId = props.accusedPlayerUid
-    ? props.privatePlayers[props.accusedPlayerUid]?.roleId
-    : undefined;
-  const guiltyVoterUids = Object.entries(effectiveVerdicts)
-    .filter(([uid, vote]) => vote === "guilty" && eligibleVoterUids.has(uid))
-    .map(([uid]) => uid);
 
   const handleClose = async () => {
     if (!window.confirm("Encerrar a votação e registrar o resultado atual? Isso não executará ninguém automaticamente.")) {
@@ -72,22 +66,6 @@ export function HostVerdictSummary(props: HostVerdictSummaryProps) {
     }
   };
 
-  const applyResolution = async () => {
-    setResolutionBusy(true);
-    setError(false);
-    try {
-      const { applyHangingResolution } = await import("./apply-hanging-resolution");
-      await applyHangingResolution(
-        props.gameId,
-        accusedRoleId === "jester" ? revengeTargetUid : undefined,
-      );
-      setResolutionApplied(true);
-    } catch {
-      setError(true);
-    } finally {
-      setResolutionBusy(false);
-    }
-  };
 
   return (
     <div className="mt-5">
@@ -104,32 +82,24 @@ export function HostVerdictSummary(props: HostVerdictSummaryProps) {
           </p>
           {props.verdictOutcome === "guilty" && !resolutionApplied && (
             <>
-              {accusedRoleId === "jester" && (
-                <label className="grid gap-1 text-sm text-[#f4dfbd]">
-                  Vingança inevitável — escolha quem votou Guilty
-                  <select
-                    value={revengeTargetUid}
-                    onChange={(event) => setRevengeTargetUid(event.target.value)}
-                    className="min-h-10 rounded-lg border border-white/15 bg-[#171719] px-3 text-[#fffaf0]"
-                  >
-                    <option value="">Selecionar</option>
-                    {guiltyVoterUids.map((uid) => (
-                      <option key={uid} value={uid}>{props.players[uid]?.name ?? uid}</option>
-                    ))}
-                  </select>
-                </label>
-              )}
+              <p className="text-sm text-[#f4dfbd]">
+                O linchamento é aplicado na Resolução do dia, já preenchida com o condenado —
+                é lá que a lápide, a vingança do Jester e a decisão do Executioner são tratadas.
+              </p>
               <button
                 type="button"
-                disabled={resolutionBusy || (accusedRoleId === "jester" && !revengeTargetUid)}
-                onClick={() => void applyResolution()}
-                className="min-h-10 rounded-lg bg-[#7d2330] px-4 font-bold text-white disabled:opacity-50"
+                onClick={() => {
+                  document
+                    .querySelector("#host-day-workspace")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+                className="min-h-10 rounded-lg bg-[#7d2330] px-4 font-bold text-white"
               >
-                {resolutionBusy ? "Aplicando…" : "Aplicar enforcamento e efeitos"}
+                Aplicar linchamento
               </button>
             </>
           )}
-          {resolutionApplied && <p className="text-sm text-[#bfe0c5]">Enforcamento e efeitos associados aplicados.</p>}
+          {resolutionApplied && <p className="text-sm text-[#bfe0c5]">Linchamento e efeitos associados aplicados.</p>}
         </div>
       ) : (
         <button type="button" disabled={busy || !props.accused} onClick={() => void handleClose()} className="mt-4 min-h-11 w-full rounded-xl bg-[#d3b88c] px-4 font-black text-[#17191b] disabled:opacity-50">

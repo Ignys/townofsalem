@@ -7,6 +7,7 @@ import { useHostRoleAssignments } from "../roles/use-host-role-assignments";
 import type { Player } from "@/types/player";
 import { ROLE_DEFINITIONS } from "@/data/roles";
 import { useHostNightLog } from "@/features/night-actions/use-host-night-log";
+import { useHostPlayerNightActionMirror } from "@/features/night-actions/use-host-player-night-action-mirror";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
 
 import { HostNightConsoleRow } from "./host-night-console-row";
@@ -68,9 +69,25 @@ function ActiveHostNightConsole({ gameId, nightId, nightNumber, hostUid, players
             : rows;
     }, [assignments, externalSelectedActorUid, gameVariants.variants, nightNumber, players]);
 
-    const entries = Object.values(nightLog.actions);
-    const actionHistory = Object.values(nightLog.allActions).flatMap((actions) => Object.values(actions));
+    const entries = useMemo(() => Object.values(nightLog.actions), [nightLog.actions]);
+    const actionHistory = useMemo(
+        () => Object.values(nightLog.allActions).flatMap((actions) => Object.values(actions)),
+        [nightLog.allActions],
+    );
     const locked = Boolean(nightLog.session?.resolutionAppliedAt && !nightLog.session.rolledBackAt);
+    const mirror = useHostPlayerNightActionMirror({
+        gameId,
+        nightId,
+        nightNumber,
+        hostUid,
+        players,
+        assignments,
+        interactions,
+        entries,
+        actionHistory,
+        locked,
+        variants: gameVariants.variants,
+    });
 
     if (!privateRoles.loaded || !nightLog.loaded) {
         return (
@@ -94,6 +111,22 @@ function ActiveHostNightConsole({ gameId, nightId, nightNumber, hostUid, players
                 promotion={nightLog.session?.deputyPromotion}
                 players={playerRecords}
             />
+            {(mirror.pendingCount > 0 || mirror.error) && (
+                <div className="flex items-center justify-between gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+                    <span>
+                        {mirror.error
+                            ? "Não foi possível ler as submissões dos jogadores."
+                            : `${mirror.pendingCount} submissão(ões) de jogador pendente(s).`}
+                    </span>
+                    <button
+                        type="button"
+                        onClick={mirror.sync}
+                        className="shrink-0 rounded-md border border-amber-400/40 px-2 py-1 text-xs font-bold"
+                    >
+                        Sincronizar submissões
+                    </button>
+                </div>
+            )}
             {interactions.length === 0 ? (
                 <p className="py-6 text-center text-sm text-zinc-500">Nenhuma role possui interação nesta noite.</p>
             ) : interactions.map((interaction) => {
