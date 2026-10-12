@@ -21,16 +21,17 @@ export function AccusationTallyBoard({ gameId, dayNumber, players }: AccusationT
   const { accusations, loaded, error } = usePublicAccusations(gameId, dayNumber);
   const votesRequired = getAccusationVotesRequired(players);
 
-  const tallies = Object.entries(accusations)
+  // Quem acusou quem: a acusação é pública, então todos veem os nomes.
+  const votersByTarget = Object.entries(accusations)
     .filter(([voterUid, targetUid]) => players[voterUid]?.alive && players[targetUid]?.alive)
-    .reduce<Record<string, number>>((counts, [, targetUid]) => {
-      counts[targetUid] = (counts[targetUid] ?? 0) + 1;
-      return counts;
+    .reduce<Record<string, string[]>>((voters, [voterUid, targetUid]) => {
+      (voters[targetUid] ??= []).push(players[voterUid]?.name ?? "?");
+      return voters;
     }, {});
 
-  const rows = Object.entries(tallies).sort(
+  const rows = Object.entries(votersByTarget).sort(
     ([leftUid, left], [rightUid, right]) =>
-      right - left ||
+      right.length - left.length ||
       (players[leftUid]?.name ?? "").localeCompare(players[rightUid]?.name ?? "", "pt-BR"),
   );
 
@@ -53,16 +54,21 @@ export function AccusationTallyBoard({ gameId, dayNumber, players }: AccusationT
         <p className="mt-2 text-sm text-[#9f9990]">Ninguém foi acusado ainda.</p>
       ) : (
         <ul className="mt-2 grid gap-1">
-          {rows.map(([targetUid, votes]) => (
-            <li key={targetUid} className="flex items-center justify-between gap-3 text-sm">
-              <span className="truncate text-[#e5ded2]">{players[targetUid]?.name}</span>
-              <span
-                className={`shrink-0 font-bold ${
-                  votes >= votesRequired ? "text-[#f0b9bd]" : "text-[#bdb7ad]"
-                }`}
-              >
-                {votes}/{votesRequired}
-              </span>
+          {rows.map(([targetUid, voters]) => (
+            <li key={targetUid} className="text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <span className="truncate text-[#e5ded2]">{players[targetUid]?.name}</span>
+                <span
+                  className={`shrink-0 font-bold ${
+                    voters.length >= votesRequired ? "text-[#f0b9bd]" : "text-[#bdb7ad]"
+                  }`}
+                >
+                  {voters.length}/{votesRequired}
+                </span>
+              </div>
+              <p className="text-xs text-[#9f9990]">
+                {voters.sort((left, right) => left.localeCompare(right, "pt-BR")).join(", ")}
+              </p>
             </li>
           ))}
         </ul>

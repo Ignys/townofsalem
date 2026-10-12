@@ -112,3 +112,31 @@ test("lets action metadata block protection for a target status", () => {
   assert.deepEqual(result.failedActions, ["heal"]);
   assert.equal(result.engineEvents[0].reasonCode, "TARGET_STATUS_BLOCKS_PROTECTION");
 });
+
+test("the Executioner can pick a target on a later night, but only once", () => {
+  const choose = action({
+    id: "choose",
+    actorUid: "immune",
+    roleId: "executioner",
+    actionId: "choose-execution-target",
+    targetUids: ["target"],
+    effectType: "status-effect",
+    statusType: "execution-target",
+    priority: 6,
+  });
+  const night3 = { ...game, nightNumber: 3 };
+  const result = resolveNight(night3, [choose]);
+  assert.deepEqual(
+    result.appliedStatuses?.map(({ targetUid, statusType }) => [targetUid, statusType]),
+    [["immune", "executioner-target:target"], ["target", "execution-target:immune"]],
+  );
+  assert.equal(result.partial, false);
+
+  const chosen = {
+    ...night3,
+    players: night3.players.map((player) =>
+      player.uid === "immune" ? { ...player, statuses: ["executioner-target:target"] } : player),
+  };
+  const again = resolveNight(chosen, [{ ...choose, targetUids: ["protector"] }]);
+  assert.deepEqual(again.appliedStatuses ?? [], []);
+});

@@ -54,7 +54,7 @@ test("recalculates the automatic preview from the latest confirmed actions", () 
   const calculation = calculateNightResolutionPreview({
     gameId: "game",
     nightId: "night-1",
-    nightNumber: 1,
+    nightNumber: 2,
     actionsRevision: 3,
     previewEpoch: 200,
     players,

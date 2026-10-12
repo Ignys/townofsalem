@@ -1,6 +1,8 @@
 "use client";
 
+import { getRoleById } from "@/data/roles";
 import { getEffectiveVerdicts } from "@/features/voting/voter-rules";
+import { findWatchingExecutioners } from "@/game-engine/role-rules";
 import {
   readGameDayVotes,
   readGamePlayers,
@@ -62,6 +64,16 @@ export async function applyJesterRevenge(
       false,
       now,
     );
+    // O alvo de um Executioner morreu sem ser enforcado: o Executioner vira Jester.
+    const jester = getRoleById("jester");
+    const executionerUids = findWatchingExecutioners(
+      Object.keys(privatePlayers[targetUid]?.statuses ?? {}),
+      (uid) => ({ roleId: privatePlayers[uid]?.roleId, alive: players?.[uid]?.alive && uid !== targetUid }),
+    );
+    for (const executionerUid of jester ? executionerUids : []) {
+      updates[firebasePaths.gamePrivatePlayerField(gameId, executionerUid, "roleId")] = "jester";
+      updates[firebasePaths.gamePrivatePlayerField(gameId, executionerUid, "faction")] = jester?.faction;
+    }
   }
 
   await applyAtomicUpdate(updates);

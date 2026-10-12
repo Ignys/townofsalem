@@ -15,8 +15,8 @@ const base = {
 test("every timed phase starts its timer as soon as it begins", () => {
   assert.deepEqual(decideHostlessStep({ ...base, phase: "night" }, "idle", alive, NOW), { kind: "start-timer", seconds: 90 });
   assert.deepEqual(decideHostlessStep({ ...base, phase: "discussion" }, "idle", alive, NOW), { kind: "start-timer", seconds: 300 });
-  assert.deepEqual(decideHostlessStep({ ...base, phase: "trial", accusedPlayerUid: "ana" }, "idle", alive, NOW), { kind: "start-timer", seconds: 15 });
-  assert.deepEqual(decideHostlessStep({ ...base, phase: "verdict", accusedPlayerUid: "ana" }, "idle", alive, NOW), { kind: "start-timer", seconds: 60 });
+  assert.deepEqual(decideHostlessStep({ ...base, phase: "trial", accusedPlayerUid: "ana" }, "idle", alive, NOW), { kind: "start-timer", seconds: 30 });
+  assert.deepEqual(decideHostlessStep({ ...base, phase: "verdict", accusedPlayerUid: "ana" }, "idle", alive, NOW), { kind: "start-timer", seconds: 30 });
 });
 
 test("a running or paused timer is left alone", () => {
@@ -125,10 +125,13 @@ test("fast track ends the night once everyone acted, and the vote once everyone 
   );
 });
 
-test("fast track skips the preparation before the defense", () => {
+test("every pace gives 30s of defense and 30s of voting", () => {
   const trial = { ...base, phase: "trial" as const, accusedPlayerUid: "ana" };
-  assert.deepEqual(decideHostlessStep(trial, "idle", alive, NOW, null, null, "fast"), { kind: "start-verdict" });
-  assert.deepEqual(decideHostlessStep(trial, "idle", alive, NOW, null, null, "normal"), { kind: "start-timer", seconds: 10 });
+  const verdict = { ...trial, phase: "verdict" as const };
+  for (const pace of ["relaxed", "normal", "fast"] as const) {
+    assert.deepEqual(decideHostlessStep(trial, "idle", alive, NOW, null, null, pace), { kind: "start-timer", seconds: 30 });
+    assert.deepEqual(decideHostlessStep(verdict, "idle", alive, NOW, null, null, pace), { kind: "start-timer", seconds: 30 });
+  }
 });
 
 test("nothing happens outside a running game", () => {

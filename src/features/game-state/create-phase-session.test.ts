@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  dayNumberForPhase,
   createPhaseSession,
   InvalidPhaseSessionError,
   MAX_PHASE_DURATION_SECONDS,
@@ -57,4 +58,12 @@ test("rejects zero and excessive custom durations", () => {
       InvalidPhaseSessionError,
     );
   }
+});
+
+test("the day after night N is day N, and only a day start moves it", () => {
+  assert.equal(dayNumberForPhase("discussion", 0, 3), 3);
+  assert.equal(dayNumberForPhase("day", 2, 3), 3);
+  assert.equal(dayNumberForPhase("discussion", 3, 3), 3);
+  assert.equal(dayNumberForPhase("night", 2, 3), null);
+  assert.equal(dayNumberForPhase("trial", 3, 3), null);
 });

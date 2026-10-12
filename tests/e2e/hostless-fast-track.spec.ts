@@ -69,10 +69,11 @@ test("fast track: the night ends when everyone acted and the vote when everyone 
     await expect(player.getByRole("region", { name: "Anúncios do dia" })).toContainText("Noite 1", { timeout: 20_000 });
   }
 
-  // Sem preparação: a acusação vai direto para defesa e votação.
+  // A acusação abre a defesa (30s) e depois a votação.
   await ana.getByRole("button", { name: "Caio", exact: true }).first().click();
   await beto.getByRole("button", { name: "Caio", exact: true }).first().click();
-  await expect(ana.getByRole("heading", { name: /Defesa e votação/ })).toBeVisible({ timeout: 20_000 });
+  await expect(ana.getByRole("heading", { name: /Defesa/ })).toBeVisible({ timeout: 20_000 });
+  await expect(ana.getByRole("heading", { name: /Votação/ })).toBeVisible({ timeout: 45_000 });
   await pauseTable(table);
 
   // Todos os eleitores votaram: a votação fecha mesmo com o timer pausado.

@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useRef, useState } from "react";
 
 import { getRoleById } from "@/data/roles";
+import { getChosenExecutionTarget } from "@/game-engine/role-rules";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
 import { MafiaTeamPanel, useMafiaTeam } from "@/features/mafia/mafia-team-panel";
 import { PlayerNightActionPanel } from "@/features/night-actions/player-night-action-panel";
@@ -134,6 +135,19 @@ export function PlayerGameView({
   const accusing = isAccusationPhase(game.phase) && !game.accusedPlayerUid;
   const blackmailed = Boolean(privateRole.privatePlayer.statuses?.blackmailed)
     && gameVariants.variants.blackmailedCannotVote;
+  // Segredos que não ficam expostos na tela: só aparecem segurando o botão da role.
+  const mafiaNames = Object.keys(mafiaTeam)
+    .filter((uid) => uid !== viewerUid)
+    .map((uid) => `${players[uid]?.name ?? "?"} (${getRoleById(mafiaTeam[uid].roleId)?.name ?? mafiaTeam[uid].roleId})${players[uid]?.alive === false ? " †" : ""}`);
+  const executionTargetUid = getChosenExecutionTarget(Object.keys(privateRole.privatePlayer.statuses ?? {}));
+  const holdSecrets = mafiaNames.length > 0 || (role.id === "executioner" && executionTargetUid) ? (
+    <>
+      {mafiaNames.length > 0 && <p>Sua Máfia: {mafiaNames.join(", ")}</p>}
+      {role.id === "executioner" && executionTargetUid && (
+        <p>Seu alvo: {players[executionTargetUid]?.name ?? "?"}</p>
+      )}
+    </>
+  ) : null;
 
   return (
     <div className="w-full max-w-md pb-24">
@@ -188,7 +202,7 @@ export function PlayerGameView({
                 gameId={gameId}
                 nightId={game.currentNightId}
                 nightNumber={game.nightNumber}
-                viewer={viewer}
+                viewer={{ ...viewer, statuses: Object.values(privateRole.privatePlayer.statuses ?? {}) }}
                 roleId={privateRole.privatePlayer.roleId}
                 players={roster}
                 variants={gameVariants.variants}
@@ -201,6 +215,14 @@ export function PlayerGameView({
                 A noite está em andamento. Aguarde o mestre chamar sua role.
               </p>
             )
+          ) : game.phase === "trial" && game.playMode === "hostless" ? (
+            <>
+              <p className="mb-3 text-sm leading-6 text-[#e6cfa9]">
+                <strong className="text-[#fffaf0]">{accused?.name ?? "Um jogador"}</strong> tem a
+                palavra para se defender. A votação começa em seguida.
+              </p>
+              <GameTimerDisplay game={game} />
+            </>
           ) : game.phase === "trial" ? (
             <p className="text-sm leading-6 text-[#e6cfa9]">
               <strong className="text-[#fffaf0]">{accused?.name ?? "Um jogador"}</strong> está
@@ -220,7 +242,7 @@ export function PlayerGameView({
       </section>
 
       {isNight && <PlayerInstantNightResults gameId={gameId} nightId={game.currentNightId} />}
-      {privateRole.privatePlayer.faction === "mafia" && game.status === "in-progress" && (
+      {privateRole.privatePlayer.faction === "mafia" && game.status === "in-progress" && isNight && (
         <MafiaTeamPanel
           gameId={gameId}
           viewerUid={viewerUid}
@@ -310,6 +332,7 @@ export function PlayerGameView({
         role={role}
         variants={gameVariants.variants}
         playerCount={playerCount}
+        secrets={holdSecrets}
       />
     </div>
   );

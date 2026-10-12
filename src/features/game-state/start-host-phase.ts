@@ -12,7 +12,7 @@ import type { PlayablePhase } from "@/types";
 
 import { isAccusationPhase } from "@/features/voting/voting-phases";
 
-import { createPhaseSession } from "./create-phase-session";
+import { createPhaseSession, dayNumberForPhase } from "./create-phase-session";
 import { selectDeputyPromotion } from "./deputy-promotion";
 import { requireAuthenticatedGameHost } from "./require-authenticated-game-host";
 
@@ -78,6 +78,7 @@ export function buildStartHostPhaseUpdates({
   // Sair do julgamento limpa o acusado; caso contrário a regra `!accusedPlayerUid`
   // bloquearia permanentemente novas acusações.
   const clearsAccusation = isAccusationPhase(created.phase) || created.phase === "night";
+  const day = dayNumberForPhase(created.phase, game.day, created.nextNightNumber);
 
   return {
     [firebasePaths.gamePublicField(gameId, "phase")]: created.phase,
@@ -86,6 +87,7 @@ export function buildStartHostPhaseUpdates({
     [firebasePaths.gamePublicField(gameId, "currentNightId")]: nightId ?? null,
     [firebasePaths.gamePublicField(gameId, "phaseSequenceNumber")]: created.nextPhaseSequenceNumber,
     [firebasePaths.gamePublicField(gameId, "nightNumber")]: created.nextNightNumber,
+    ...(day !== null ? { [firebasePaths.gamePublicField(gameId, "day")]: day } : {}),
     [firebasePaths.gamePublicField(gameId, "phaseEndsAt")]: created.phaseEndsAt,
     [firebasePaths.gamePublicField(gameId, "timerPaused")]: false,
     [firebasePaths.gamePublicField(gameId, "timerRemainingMs")]: null,

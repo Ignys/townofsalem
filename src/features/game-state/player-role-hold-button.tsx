@@ -1,7 +1,7 @@
 "use client";
 
 import { Eye } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 
 import type { GameVariants } from "@/game-engine/variants";
 import type { RoleDefinition } from "@/types";
@@ -13,6 +13,8 @@ interface PlayerRoleHoldButtonProps {
   role: RoleDefinition;
   variants: GameVariants;
   playerCount: number;
+  /** Segredos extras que só aparecem enquanto o botão é segurado (ex.: a equipe da Máfia). */
+  secrets?: ReactNode;
 }
 
 /**
@@ -26,6 +28,7 @@ export function PlayerRoleHoldButton({
   role,
   variants,
   playerCount,
+  secrets,
 }: PlayerRoleHoldButtonProps) {
   const [revealed, setRevealed] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -108,6 +111,7 @@ export function PlayerRoleHoldButton({
               playerCount={playerCount}
             />
           </FitToBox>
+          {secrets && <div className="shrink-0 pt-2 text-center text-sm text-[#e6cfa9]">{secrets}</div>}
           <p className="shrink-0 pt-2 text-center text-xs leading-5 text-[#8f8a82]">
             Solte para esconder. Não mostre sua tela aos outros jogadores.
           </p>
