@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import test, { after, before } from "node:test";
 
 import { assertFails, assertSucceeds, initializeTestEnvironment, type RulesTestEnvironment } from "@firebase/rules-unit-testing";
-import { get, ref, set, update } from "firebase/database";
+import { get, ref, remove, set, update } from "firebase/database";
 
 let environment: RulesTestEnvironment;
 const projectId = "demo-townofsalem";
@@ -217,6 +217,11 @@ test("a player submits their own night action and nobody else can read it", asyn
   await assertFails(set(ref(other, `${VOTE}/playerNightActions/night-current/player/interrogate`), submission));
   await assertFails(set(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`), { ...submission, roleIdSnapshot: "godfather" }));
   await assertFails(set(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`), { ...submission, targetUids: ["ghost-que-nao-existe"] }));
+
+  // Confirmar é definitivo: o jogador não troca o alvo nem apaga a ação.
+  await assertFails(set(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`), { ...submission, targetUids: ["player"], updatedAt: 2 }));
+  await assertFails(remove(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`)));
+  await assertFails(remove(ref(player, `${VOTE}/playerNightActions/night-current/player`)));
 });
 
 test("night submissions are rejected off-phase, off-night, when dead, and after resolution", async () => {
@@ -232,6 +237,10 @@ test("night submissions are rejected off-phase, off-night, when dead, and after 
     updatedAt: 1,
   };
   const path = `${VOTE}/playerNightActions/night-current/player/interrogate`;
+  // Ações confirmadas são definitivas; limpa o que o teste anterior travou.
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await remove(ref(context.database(), `${VOTE}/playerNightActions`));
+  });
 
   await setPhase("discussion");
   await assertFails(set(ref(player, path), submission));
@@ -247,12 +256,16 @@ test("night submissions are rejected off-phase, off-night, when dead, and after 
   await environment.withSecurityRulesDisabled(async (context) => {
     await update(ref(context.database(), `${VOTE}/nightSessions/night-current`), { resolutionAppliedAt: 999 });
   });
-  await assertFails(set(ref(player, path), { ...submission, updatedAt: 2 }));
+  const otherActionPath = `${VOTE}/playerNightActions/night-current/player/second-look`;
+  const otherAction = { ...submission, actionId: "second-look", updatedAt: 2 };
+  await assertFails(set(ref(player, otherActionPath), otherAction));
 
+  // O rollback reabre o envio das ações ainda não confirmadas; as confirmadas seguem travadas.
   await environment.withSecurityRulesDisabled(async (context) => {
     await update(ref(context.database(), `${VOTE}/nightSessions/night-current`), { resolutionAppliedAt: null });
   });
-  await assertSucceeds(set(ref(player, path), { ...submission, updatedAt: 3 }));
+  await assertSucceeds(set(ref(player, otherActionPath), otherAction));
+  await assertFails(set(ref(player, path), { ...submission, updatedAt: 3 }));
 });
 
 test("unauthenticated and cross-player secret reads fail", async () => {

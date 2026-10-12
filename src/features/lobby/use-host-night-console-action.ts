@@ -45,6 +45,15 @@ export function useHostNightConsoleAction({
   const [noTargetActionRecorded, setNoTargetActionRecorded] = useState(
     existingEntry?.status === "confirmed",
   );
+  // A submissão do jogador costuma chegar depois de a linha montar; ressincroniza
+  // a seleção sempre que a entrada salva muda.
+  const entryVersion = existingEntry ? `${existingEntry.id}:${existingEntry.updatedAt}` : "";
+  const [syncedEntryVersion, setSyncedEntryVersion] = useState(entryVersion);
+  if (entryVersion !== syncedEntryVersion) {
+    setSyncedEntryVersion(entryVersion);
+    setSelectedTargetUids(existingEntry?.targetUids ?? []);
+    setNoTargetActionRecorded(existingEntry?.status === "confirmed");
+  }
   const entryIdRef = useRef(existingEntry?.id);
   const createdAtRef = useRef(existingEntry?.createdAt);
   const saveQueueRef = useRef(Promise.resolve());

@@ -11,7 +11,7 @@ async function joinPlayer(page: import("@playwright/test").Page, code: string, n
   await expect(page).toHaveURL(new RegExp(`/game/${code}$`));
 }
 
-test("a player submits their own night action and the host can override it", async ({ browser }) => {
+test("a player confirms their own night action and it locks for everyone", async ({ browser }) => {
   const contexts = await Promise.all([
     browser.newContext(),
     browser.newContext({ viewport: { width: 375, height: 812 } }),
@@ -40,39 +40,46 @@ test("a player submits their own night action and the host can override it", asy
 
   // Cada jogador escolhe no próprio celular. As roles são sorteadas, então
   // dirigimos a UI pela estrutura e não pelo nome de quem calhou de agir.
-  // Doctor, Sheriff e Mafioso acordam todos na Noite 1.
-  await expect(ana.getByRole("region", { name: "Sua ação da noite" })).toBeVisible();
+  // Nem toda role age na Noite 1, então espera até algum dos três ter o painel.
+  await expect.poll(async () => {
+    const counts = await Promise.all(
+      [ana, beto, caio].map((player) => player.getByRole("region", { name: "Sua ação da noite" }).count()),
+    );
+    return counts.reduce((total, count) => total + count, 0);
+  }).toBeGreaterThan(0);
 
-  let submitters = 0;
+  const submittedTargets: string[] = [];
   for (const player of [ana, beto, caio]) {
     const panel = player.getByRole("region", { name: "Sua ação da noite" });
     if (!(await panel.count())) continue;
     const targets = panel.getByRole("button", { name: /^(Ana|Beto|Caio)$/ });
     if (!(await targets.count())) continue;
+
+    // Escolher não envia nada: dá para cancelar e escolher de novo antes de confirmar.
     await targets.first().click();
-    await expect(panel.getByText("Enviado", { exact: true }).first()).toBeVisible();
-    submitters += 1;
+    await panel.getByRole("button", { name: "Cancelar" }).click();
+    await expect(panel.getByRole("button", { name: "Confirmar" })).toBeDisabled();
+
+    const target = (await targets.last().textContent())?.trim() ?? "";
+    await targets.last().click();
+    await panel.getByRole("button", { name: "Confirmar" }).click();
+    await expect(panel.getByText("Confirmado", { exact: true }).first()).toBeVisible();
+
+    // Depois de confirmar, o jogador não troca mais o alvo.
+    await expect(targets.first()).toBeDisabled();
+    await expect(panel.getByRole("button", { name: "Confirmar" })).toHaveCount(0);
+    submittedTargets.push(target);
   }
-  expect(submitters, "ao menos um jogador precisa ter ação na Noite 1").toBeGreaterThan(0);
+  expect(submittedTargets.length, "ao menos um jogador precisa ter ação na Noite 1").toBeGreaterThan(0);
 
-  // As submissões viram linhas do console do mestre, marcadas como vindas do jogador.
-  await expect(host.getByText("Enviado pelo jogador").first()).toBeVisible();
-
-  // O mestre continua soberano: pode sobrescrever o alvo escolhido pelo jogador.
-  const hostTarget = host.getByRole("combobox", { name: /^Alvo 1/ }).first();
-  const submitted = (await hostTarget.textContent())?.trim() ?? "";
-  expect(submitted).not.toBe("");
-
-  await hostTarget.click();
-  const options = host.getByRole("option");
-  const optionCount = await options.count();
-  for (let index = 1; index < optionCount; index += 1) {
-    const label = (await options.nth(index).textContent())?.trim() ?? "";
-    if (label && !submitted.startsWith(label)) {
-      await options.nth(index).click();
-      await expect(hostTarget).toContainText(label);
-      break;
-    }
+  // As submissões viram linhas do console do mestre, com o alvo do jogador já
+  // preenchido e travado: nem o mestre altera o que o jogador confirmou.
+  await expect(host.getByText("Confirmado pelo jogador")).toHaveCount(submittedTargets.length);
+  const lockedTargets = host.getByRole("combobox", { name: /^Alvo 1/ });
+  for (let index = 0; index < submittedTargets.length; index += 1) {
+    const combobox = lockedTargets.nth(index);
+    await expect(combobox).toBeDisabled();
+    await expect(combobox).not.toContainText("Selecionar");
   }
 
   await Promise.all(contexts.map((context) => context.close()));

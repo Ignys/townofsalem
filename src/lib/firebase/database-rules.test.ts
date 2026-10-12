@@ -57,12 +57,15 @@ test("player night submissions are private, alive-only and locked after resoluti
   assert.match(gameRules.playerNightActions[".read"], /hostUid/);
   assert.equal(node[".read"], "auth !== null && auth.uid === $uid");
 
-  const write = node[".write"] as string;
+  const write = node.$actionId[".write"] as string;
   assert.match(write, /auth\.uid === \$uid/);
   assert.match(write, /child\('alive'\)\.val\(\) === true/);
   assert.match(write, /child\('phase'\)\.val\(\) === 'night'/);
   assert.match(write, /child\('currentNightId'\)\.val\(\) === \$nightId/);
   assert.match(write, /!.*child\('resolutionAppliedAt'\)\.exists\(\)/);
+  // Confirmar é definitivo: nada de sobrescrever nem apagar.
+  assert.match(write, /!data\.exists\(\) && newData\.exists\(\)$/);
+  assert.equal(node[".write"], undefined);
 
   // A role enviada é fixada no valor do servidor: não dá para se passar por outra.
   const validate = node.$actionId[".validate"] as string;
