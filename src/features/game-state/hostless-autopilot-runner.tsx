@@ -9,14 +9,23 @@ import { checkWinCondition } from "@/game-engine/win-condition";
 import type { Player } from "@/types";
 
 import { useSynchronizedTimer } from "@/features/timer/use-synchronized-timer";
-import { observeHostJesterRevenges } from "@/lib/firebase/realtime-database-repository";
-import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
+import { useGameVariants } from "@/features/game-variants/use-game-variants";
+import { canActTonight, isNightComplete } from "@/features/night-actions/night-readiness";
+import { getEligibleVoterUids } from "@/features/voting/voter-rules";
+import { DEFAULT_VERDICT_VOTING_SETTINGS } from "@/features/voting/voting-settings";
+import {
+  observeHostJesterRevenges,
+  observeHostNightPasses,
+  observeHostPlayerNightActions,
+  observePublicVerdicts,
+} from "@/lib/firebase/realtime-database-repository";
+import type { GamePace, GamePublicRecord, PublicPlayerRecord, VerdictVote } from "@/lib/firebase/schema";
 
 import { JESTER_REVENGE_STATUS } from "./apply-jester-revenge";
 import {
   decideHostlessStep,
+  HOSTLESS_PACE_SECONDS,
   HOSTLESS_PHASE_LABELS,
-  HOSTLESS_PHASE_SECONDS,
   type HostlessStep,
   type PendingJesterRevenge,
 } from "./hostless-autopilot";
@@ -32,7 +41,8 @@ function scaled(seconds: number | undefined): number | null {
 /** Espera antes de tentar de novo um passo que falhou (ex.: ações ainda sendo salvas). */
 const RETRY_DELAY_MS = 3_000;
 
-async function runStep(gameId: string, step: HostlessStep, serverTimeOffsetMs: number): Promise<void> {
+async function runStep(gameId: string, step: HostlessStep, serverTimeOffsetMs: number, pace: GamePace): Promise<void> {
+  const seconds = HOSTLESS_PACE_SECONDS[pace];
   switch (step.kind) {
     case "start-timer": {
       const { controlGameTimer } = await import("@/features/timer/control-game-timer");
@@ -47,7 +57,7 @@ async function runStep(gameId: string, step: HostlessStep, serverTimeOffsetMs: n
       await startHostPhase(gameId, {
         phaseId: "discussion",
         label: getPhaseDefinition("discussion").label,
-        durationSeconds: scaled(HOSTLESS_PHASE_SECONDS.discussion),
+        durationSeconds: scaled(seconds.discussion),
       });
       return;
     }
@@ -56,7 +66,7 @@ async function runStep(gameId: string, step: HostlessStep, serverTimeOffsetMs: n
       await startHostPhase(gameId, {
         phaseId: "night",
         label: getPhaseDefinition("night").label,
-        durationSeconds: scaled(HOSTLESS_PHASE_SECONDS.night),
+        durationSeconds: scaled(seconds.night),
       });
       return;
     }
@@ -65,7 +75,7 @@ async function runStep(gameId: string, step: HostlessStep, serverTimeOffsetMs: n
       await startHostPhase(gameId, {
         phaseId: "verdict",
         label: HOSTLESS_PHASE_LABELS.verdict,
-        durationSeconds: scaled(HOSTLESS_PHASE_SECONDS.verdict),
+        durationSeconds: scaled(seconds.verdict),
       });
       return;
     }
@@ -90,6 +100,84 @@ async function runStep(gameId: string, step: HostlessStep, serverTimeOffsetMs: n
       return;
     }
   }
+}
+
+/**
+ * Ritmo rápido: a noite acaba quando todos que têm ação confirmaram ou passaram, e o
+ * veredito fecha quando todos os eleitores votaram.
+ */
+function useFastTrackSignals(
+  gameId: string,
+  hostUid: string,
+  game: GamePublicRecord,
+  players: Readonly<Record<string, PublicPlayerRecord>>,
+  enabled: boolean,
+) {
+  const privateRoles = useHostRoleAssignments(gameId, hostUid);
+  const gameVariants = useGameVariants(gameId);
+  const nightId = enabled && game.phase === "night" ? game.currentNightId ?? null : null;
+  const verdictDay = enabled && game.phase === "verdict" && !game.verdictClosedAt ? game.day : null;
+  const [submissions, setSubmissions] = useState<Record<string, unknown>>({});
+  const [passes, setPasses] = useState<Record<string, number>>({});
+  const [verdicts, setVerdicts] = useState<Record<string, VerdictVote>>({});
+
+  useEffect(() => {
+    if (!nightId) return;
+    const stopSubmissions = observeHostPlayerNightActions(gameId, nightId, hostUid, {
+      onData: (value) => setSubmissions(value ?? {}),
+      onError: () => setSubmissions({}),
+    });
+    const stopPasses = observeHostNightPasses(gameId, nightId, hostUid, {
+      onData: (value) => setPasses(value ?? {}),
+      onError: () => setPasses({}),
+    });
+    return () => {
+      stopSubmissions();
+      stopPasses();
+    };
+  }, [gameId, hostUid, nightId]);
+
+  useEffect(() => {
+    if (verdictDay === null) return;
+    return observePublicVerdicts(gameId, verdictDay, {
+      onData: (value) => setVerdicts(value ?? {}),
+      onError: () => setVerdicts({}),
+    });
+  }, [gameId, verdictDay]);
+
+  return useMemo(() => {
+    if (!enabled || !privateRoles.loaded || !gameVariants.loaded) {
+      return { nightComplete: false, allVerdictsIn: false };
+    }
+    const playerCount = gameVariants.roleCount ?? Object.keys(players).length;
+    const actorUids = nightId
+      ? Object.entries(players)
+        .filter(([uid, player]) => {
+          const assignment = privateRoles.assignments[uid];
+          return assignment && canActTonight(
+            { id: uid, uid, ...player },
+            assignment.roleId,
+            game.nightNumber ?? 1,
+            gameVariants.variants,
+            playerCount,
+            assignment.resourceUses,
+          );
+        })
+        .map(([uid]) => uid)
+      : [];
+    const voterUids = verdictDay !== null
+      ? getEligibleVoterUids(
+        players,
+        privateRoles.assignments,
+        gameVariants.variants,
+        DEFAULT_VERDICT_VOTING_SETTINGS.accusedCanVote ? null : game.accusedPlayerUid ?? null,
+      )
+      : new Set<string>();
+    return {
+      nightComplete: Boolean(nightId) && isNightComplete(actorUids, new Set(Object.keys(submissions)), new Set(Object.keys(passes))),
+      allVerdictsIn: verdictDay !== null && voterUids.size > 0 && [...voterUids].every((uid) => Boolean(verdicts[uid])),
+    };
+  }, [enabled, game.accusedPlayerUid, game.nightNumber, gameVariants, nightId, passes, players, privateRoles, submissions, verdictDay, verdicts]);
 }
 
 interface HostlessAutopilotRunnerProps {
@@ -137,6 +225,9 @@ export function HostlessAutopilotRunner({ gameId, hostUid, game, players }: Host
     return jesterUid ? { jesterUid, targetUid: revengeChoices[jesterUid] ?? null } : null;
   }, [privateRoles.assignments, revengeChoices]);
 
+  const pace: GamePace = game.gamePace ?? "relaxed";
+  const fastTrack = useFastTrackSignals(gameId, hostUid, game, players, pace === "fast");
+
   const step = decideHostlessStep(
     game,
     timer.status,
@@ -144,6 +235,8 @@ export function HostlessAutopilotRunner({ gameId, hostUid, game, players }: Host
     timer.serverAdjustedNow,
     winner,
     jesterRevenge,
+    pace,
+    fastTrack,
   );
   // Um passo por fase/estado: o tick repete a decisão, mas só a primeira execução vale.
   const stepKey = step
@@ -155,13 +248,13 @@ export function HostlessAutopilotRunner({ gameId, hostUid, game, players }: Host
     if (step.kind === "start-timer" && !timer.serverOffsetAvailable) return;
 
     inFlightRef.current = stepKey;
-    runStep(gameId, step, timer.serverTimeOffsetMs).catch((error: unknown) => {
+    runStep(gameId, step, timer.serverTimeOffsetMs, pace).catch((error: unknown) => {
       console.warn("[HostlessAutopilot] Passo falhou; tentando de novo.", { step, error });
       setTimeout(() => {
         if (inFlightRef.current === stepKey) inFlightRef.current = null;
       }, RETRY_DELAY_MS);
     });
-  }, [gameId, step, stepKey, timer.serverOffsetAvailable, timer.serverTimeOffsetMs]);
+  }, [gameId, pace, step, stepKey, timer.serverOffsetAvailable, timer.serverTimeOffsetMs]);
 
   return null;
 }

@@ -182,7 +182,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                 <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 mt-4">
                     {compositionEditable ? (
                         <>
-                            <PlayModeSelector gameId={gameId} playMode={game.playMode ?? "hosted"} />
+                            <PlayModeSelector gameId={gameId} playMode={game.playMode ?? "hosted"} gamePace={game.gamePace ?? "relaxed"} />
                             <HostRoleComposition gameId={gameId} playerCount={playerCount} editable />
                         </>
                     ) : (

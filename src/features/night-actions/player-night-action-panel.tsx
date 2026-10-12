@@ -5,18 +5,11 @@ import { getRoleResourceLimit } from "@/game-engine/role-resource-limits";
 import type { GameVariants } from "@/game-engine/variants";
 import type { Player } from "@/types";
 
+import { RESOURCE_BY_ROLE } from "./night-readiness";
+import { PlayerNightPass } from "./player-night-pass";
 import { getPlayerNightInteractions } from "./player-night-interactions";
 import { PlayerNightActionRow } from "./player-night-action-row";
 import { usePlayerNightSubmissions } from "./use-player-night-submissions";
-
-const RESOURCE_BY_ROLE: Readonly<Record<string, string>> = {
-  mayor: "mayor-vote",
-  investigator: "investigator",
-  consigliere: "consigliere",
-  janitor: "janitor",
-  veteran: "veteran-alert",
-  vigilante: "vigilante-shot",
-};
 
 interface PlayerNightActionPanelProps {
   gameId: string;
@@ -28,6 +21,8 @@ interface PlayerNightActionPanelProps {
   variants: GameVariants;
   playerCount: number;
   resourceUses?: Readonly<Record<string, number>>;
+  /** Ritmo rápido: oferece "Passar a noite" a quem ainda não confirmou nada. */
+  fastTrack?: boolean;
 }
 
 export function PlayerNightActionPanel({
@@ -40,6 +35,7 @@ export function PlayerNightActionPanel({
   variants,
   playerCount,
   resourceUses,
+  fastTrack = false,
 }: PlayerNightActionPanelProps) {
   const { submissions, loaded, error } = usePlayerNightSubmissions(gameId, nightId);
   const interactions = nightId && nightNumber
@@ -97,6 +93,10 @@ export function PlayerNightActionPanel({
           />
         ))}
       </ul>
+
+      {fastTrack && !exhausted && Object.keys(submissions).length === 0 && (
+        <PlayerNightPass gameId={gameId} nightId={nightId} />
+      )}
     </section>
   );
 }

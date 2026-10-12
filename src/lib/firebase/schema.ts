@@ -42,7 +42,12 @@ export interface GamePublicRecord {
   gameEndedAt?: number;
   /** "hostless": o computador vira só a mesa e o motor resolve tudo. Ausente equivale a "hosted". */
   playMode?: GamePlayMode;
+  /** Ritmo do modo sem mestre. Ausente equivale a "relaxed". */
+  gamePace?: GamePace;
 }
+
+export const GAME_PACES = ["relaxed", "normal", "fast"] as const;
+export type GamePace = (typeof GAME_PACES)[number];
 
 export const GAME_PLAY_MODES = ["hosted", "hostless"] as const;
 export type GamePlayMode = (typeof GAME_PLAY_MODES)[number];

@@ -6,6 +6,7 @@ import { HostGameTimer } from "@/features/timer/host-game-timer";
 import type { GamePublicRecord } from "@/lib/firebase/schema";
 
 import { CurrentGamePhase } from "./current-game-phase";
+import { GAME_PACE_LABELS } from "./hostless-autopilot";
 import { EndGameButton } from "./end-game-button";
 
 interface HostlessTableControlsProps {
@@ -46,7 +47,7 @@ export function HostlessTableControls({ gameId, game }: HostlessTableControlsPro
       <CurrentGamePhase game={game} />
       {game.phase !== "game-over" && <HostGameTimer gameId={gameId} game={game} />}
       <p className="mt-4 text-xs leading-5 text-zinc-500">
-        Partida sem mestre: as fases avançam sozinhas quando o timer acaba.
+        Partida sem mestre · ritmo {GAME_PACE_LABELS[game.gamePace ?? "relaxed"].title}: as fases avançam sozinhas.
       </p>
       <div className="mt-4">
         {game.status === "finished" ? (

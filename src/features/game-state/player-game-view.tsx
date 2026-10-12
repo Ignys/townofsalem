@@ -194,6 +194,7 @@ export function PlayerGameView({
                 variants={gameVariants.variants}
                 playerCount={playerCount}
                 resourceUses={privateRole.privatePlayer.resourceUses}
+                fastTrack={game.playMode === "hostless" && game.gamePace === "fast"}
               />
             ) : (
               <p className="text-sm leading-6 text-[#a9b3cc]">
