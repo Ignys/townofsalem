@@ -107,6 +107,8 @@ public/           # assets estáticos
 
 1. Importe o repositório na Vercel.
 2. Configure as mesmas variáveis `NEXT_PUBLIC_FIREBASE_*` do `.env.local`.
+   Configure também `SYNC_SERVICE_ACCOUNT` com o JSON da service account do Firebase
+   (o JSON puro ou em base64). Sem ela, não dá para voltar para uma partida em andamento nem usar o sync.
 3. Mantenha o framework detectado como Next.js.
 4. Faça o deploy.
 

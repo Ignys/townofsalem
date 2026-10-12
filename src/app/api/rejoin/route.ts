@@ -28,6 +28,15 @@ function reply(status: number, body: Record<string, string>) {
  * servidor devolve um token que faz o jogador entrar de novo com o uid antigo.
  */
 export async function POST(request: Request) {
+  try {
+    return await rejoin(request);
+  } catch (error: unknown) {
+    console.error("rejoin failed", error);
+    return reply(500, { error: "server-error" });
+  }
+}
+
+async function rejoin(request: Request) {
   const client = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     ?? "unknown";
 

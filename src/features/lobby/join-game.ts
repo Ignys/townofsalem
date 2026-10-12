@@ -21,7 +21,7 @@ import {
   type PlayerExperience,
 } from "@/types";
 
-import { JoinGameError } from "./join-game-error";
+import { JoinGameError, type JoinGameErrorCode } from "./join-game-error";
 
 export interface LocatedGame {
   code: string;
@@ -125,6 +125,22 @@ export async function joinGame(input: JoinGameInput): Promise<LocatedGame> {
   return locatedGame;
 }
 
+function rejoinErrorCode(status: number): JoinGameErrorCode {
+  switch (status) {
+    case 404:
+      return "seat-not-found";
+    case 409:
+      return "game-not-joinable";
+    case 429:
+      return "rate-limited";
+    case 500:
+    case 503:
+      return "rejoin-unavailable";
+    default:
+      return "lookup-failed";
+  }
+}
+
 /**
  * Volta a um lugar de uma partida em andamento: o servidor confere o nickname e devolve
  * um token do uid antigo, e esta sessão passa a ser aquele jogador.
@@ -145,7 +161,7 @@ async function rejoinGame(code: string, nickname: string): Promise<void> {
   const body = (await response.json().catch(() => ({}))) as { token?: string };
 
   if (!response.ok || !body.token) {
-    throw new JoinGameError(response.status === 404 ? "seat-not-found" : "lookup-failed");
+    throw new JoinGameError(rejoinErrorCode(response.status));
   }
 
   try {

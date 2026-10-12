@@ -4,6 +4,8 @@ import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
 import { getAuth, type Auth } from "firebase-admin/auth";
 import { getDatabase, type Database } from "firebase-admin/database";
 
+import { parseServiceAccount } from "./parse-service-account";
+
 let database: Database | null = null;
 
 function getAdminApp(): App | null {
@@ -14,11 +16,21 @@ function getAdminApp(): App | null {
     return null;
   }
 
-  return getApps().find((existing) => existing.name === "sync")
-    ?? initializeApp(
-      { credential: cert(JSON.parse(credentials)), databaseURL },
+  const existing = getApps().find((app) => app.name === "sync");
+
+  if (existing) {
+    return existing;
+  }
+
+  try {
+    return initializeApp(
+      { credential: cert(parseServiceAccount(credentials)), databaseURL },
       "sync",
     );
+  } catch (error: unknown) {
+    console.error("SYNC_SERVICE_ACCOUNT is not a valid service account", error);
+    return null;
+  }
 }
 
 export function getAdminDatabase(): Database | null {
