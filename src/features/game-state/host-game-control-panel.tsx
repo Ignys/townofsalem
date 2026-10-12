@@ -45,6 +45,16 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
     setFeedback(null);
 
     try {
+      // Sair da noite aplica o resultado antes, para mortes e anúncios chegarem ao dia.
+      if (game.phase === "night" && input.phaseId !== "night") {
+        const { applyNightBeforeLeaving } = await import("@/features/night-actions/night-apply-registry");
+        const outcome = await applyNightBeforeLeaving(gameId);
+        if (outcome.kind === "blocked") {
+          setFeedback({ kind: "error", message: outcome.reason });
+          return false;
+        }
+      }
+
       const { startHostPhase } = await import("./start-host-phase");
       await startHostPhase(gameId, input);
       setFeedback({ kind: "success", message: `${input.label} iniciada.` });
