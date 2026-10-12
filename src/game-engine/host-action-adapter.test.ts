@@ -51,6 +51,22 @@ test("uses the Godfather vote to break an internal tie", () => {
   assert.deepEqual(result.actions[0].targetUids, ["first"]);
 });
 
+test("draws a stable target when a tie has no Godfather", () => {
+  const votes = [
+    mafiaVote("a", "first-mafioso", "mafioso", "first"),
+    mafiaVote("b", "second-mafioso", "mafioso", "second"),
+  ];
+  const result = adaptHostActions(votes, ROLE_DEFINITIONS);
+
+  assert.equal(result.warnings.length, 0);
+  assert.equal(result.actions[0].actionId, "mafia-attack");
+  assert.ok(["first", "second"].includes(result.actions[0].targetUids[0]));
+  assert.deepEqual(
+    adaptHostActions([...votes].reverse(), ROLE_DEFINITIONS).actions[0].targetUids,
+    result.actions[0].targetUids,
+  );
+});
+
 test("omits undefined optional fields from effects persisted in a resolution", () => {
   const result = adaptHostActions([{
     id: "investigation",

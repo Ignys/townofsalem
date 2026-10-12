@@ -166,7 +166,7 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
             {tally.projectedTargetUid
               ? `Se a noite acabar agora, ${nameOf(tally.projectedTargetUid)} é atacado.`
               : tally.tied
-                ? "Empate sem desempate do Godfather: ninguém é atacado."
+                ? "Empate sem desempate do Godfather: um dos alvos empatados será sorteado."
                 : "Só votos confirmados contam."}
           </p>
         </div>

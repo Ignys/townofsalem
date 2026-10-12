@@ -90,6 +90,7 @@ export function arePlayersAdjacent(
 export function resolveMafiaVoteTarget(
   votes: Readonly<Record<string, string>>,
   godfatherUid?: string,
+  tieBreakSeed?: string,
 ): string | null {
   const counts = new Map<string, number>();
   Object.values(votes).forEach((targetUid) =>
@@ -107,7 +108,18 @@ export function resolveMafiaVoteTarget(
   if (tiedTargets.length === 1) return tiedTargets[0];
 
   const godfatherTarget = godfatherUid ? votes[godfatherUid] : undefined;
-  return godfatherTarget && tiedTargets.includes(godfatherTarget)
-    ? godfatherTarget
-    : null;
+  if (godfatherTarget && tiedTargets.includes(godfatherTarget)) return godfatherTarget;
+  // No Godfather to decide: draw among the tied targets. Seeded so every
+  // recompute of the same night lands on the same target.
+  return tieBreakSeed === undefined
+    ? null
+    : tiedTargets[hashString(tieBreakSeed) % tiedTargets.length];
+}
+
+function hashString(value: string): number {
+  let hash = 2166136261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash = Math.imul(hash ^ value.charCodeAt(index), 16777619);
+  }
+  return hash >>> 0;
 }
