@@ -1,5 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
+import { useRef, useState } from "react";
+
 import { getRoleById } from "@/data/roles";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
 import { PlayerNightActionPanel } from "@/features/night-actions/player-night-action-panel";
@@ -21,6 +24,11 @@ import { getPlayerEntries } from "./player-roster";
 
 import { GameOverCard } from "./game-over-card";
 import { GAME_PHASE_LABELS } from "./game-phase-presentation";
+import { useSessionSyncKey } from "./use-session-sync";
+
+const SessionSyncSheet = dynamic(() => import("./session-sync-sheet"), {
+  ssr: false,
+});
 import { PlayerRoleHoldButton } from "./player-role-hold-button";
 import { PlayerRoleNotice } from "./player-role-notice";
 import { PlayerStatusBoard } from "./player-status-board";
@@ -62,6 +70,28 @@ export function PlayerGameView({
   const gameVariants = useGameVariants(gameId);
   const { graveyard } = useGraveyard(gameId);
   const mayorReveals = useMayorReveals(gameId);
+  const syncKey = useSessionSyncKey();
+  const [syncOpen, setSyncOpen] = useState(false);
+  const holdTimer = useRef<number | null>(null);
+  const cancelHold = () => {
+    if (holdTimer.current !== null) {
+      window.clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+  };
+  const holdHandlers = syncKey
+    ? {
+        onPointerDown: () => {
+          cancelHold();
+          holdTimer.current = window.setTimeout(() => setSyncOpen(true), 800);
+        },
+        onPointerUp: cancelHold,
+        onPointerLeave: cancelHold,
+        onPointerCancel: cancelHold,
+        onContextMenu: (event: { preventDefault: () => void }) =>
+          event.preventDefault(),
+      }
+    : {};
 
   if (!privateRole.loaded || !gameVariants.loaded) {
     return <PlayerRoleNotice loading message="Carregando sua informação privada…" />;
@@ -105,8 +135,18 @@ export function PlayerGameView({
 
   return (
     <div className="w-full max-w-md pb-24">
+      {syncKey && syncOpen ? (
+        <SessionSyncSheet
+          syncKey={syncKey}
+          code={code}
+          onClose={() => setSyncOpen(false)}
+        />
+      ) : null}
       <header className="flex items-center justify-between gap-3">
-        <p className="text-xs font-semibold tracking-[0.2em] text-[#8f8a82] uppercase">
+        <p
+          className="text-xs font-semibold tracking-[0.2em] text-[#8f8a82] uppercase select-none"
+          {...holdHandlers}
+        >
           Sala {code}
         </p>
         <span
