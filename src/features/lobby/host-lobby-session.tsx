@@ -13,6 +13,7 @@ import { HostlessAutopilotRunner } from "@/features/game-state/hostless-autopilo
 import { HostlessTableControls } from "@/features/game-state/hostless-table-controls";
 import { HostlessTableView } from "@/features/game-state/hostless-table-view";
 import { useMirrorMayorReveals } from "@/features/game-state/use-mayor-reveals";
+import { useMirrorMafiaTeam } from "@/features/mafia/use-mirror-mafia-team";
 import { HostDayAnnouncements } from "@/features/night-actions/host-day-announcements";
 import { HostNightWorkspace } from "@/features/night-actions/host-night-workspace";
 import { HostVotingPanel } from "@/features/voting/host-voting-panel";
@@ -37,6 +38,8 @@ interface HostLobbySessionProps {
 /** Leva as revelações de Mayor feitas no celular para o status privado, nos dois modos. */
 function MayorRevealMirror({ gameId, hostUid }: Readonly<{ gameId: string; hostUid: string }>) {
     useMirrorMayorReveals(gameId, hostUid, true);
+    // Mesma lógica de espelho: a Máfia precisa saber quem é da Máfia.
+    useMirrorMafiaTeam(gameId, hostUid);
     return null;
 }
 

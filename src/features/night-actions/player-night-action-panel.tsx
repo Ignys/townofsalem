@@ -1,6 +1,6 @@
 "use client";
 
-import { ROLE_DEFINITIONS } from "@/data/roles";
+import { getRoleById, ROLE_DEFINITIONS } from "@/data/roles";
 import { getRoleResourceLimit } from "@/game-engine/role-resource-limits";
 import type { GameVariants } from "@/game-engine/variants";
 import type { Player } from "@/types";
@@ -93,6 +93,7 @@ export function PlayerNightActionPanel({
             variants={variants}
             disabled={false}
             exhausted={exhausted}
+            shareWithMafia={getRoleById(roleId)?.faction === "mafia"}
           />
         ))}
       </ul>

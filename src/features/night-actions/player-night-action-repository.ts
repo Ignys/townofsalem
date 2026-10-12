@@ -24,6 +24,7 @@ function requireAuthenticatedPlayerUid(): string {
 export function savePlayerNightAction(
   gameId: string,
   submission: PlayerNightActionSubmission,
+  shareWithMafia = false,
 ): Promise<void> {
   const uid = requireAuthenticatedPlayerUid();
 
@@ -34,5 +35,33 @@ export function savePlayerNightAction(
       uid,
       submission.actionId,
     )]: submission,
+    // A Máfia vê a escolha travar junto com a confirmação.
+    ...(shareWithMafia
+      ? {
+          [firebasePaths.gameMafiaBoardPick(gameId, submission.nightId, uid, submission.actionId)]: {
+            targetUids: [...submission.targetUids],
+            locked: true,
+            updatedAt: submission.updatedAt,
+          },
+        }
+      : {}),
+  });
+}
+
+/** Escolha ainda não confirmada, para a Máfia acompanhar ao vivo. */
+export function shareMafiaDraftPick(
+  gameId: string,
+  nightId: string,
+  actionId: string,
+  targetUids: readonly string[],
+): Promise<void> {
+  const uid = requireAuthenticatedPlayerUid();
+
+  return applyAtomicUpdate({
+    [firebasePaths.gameMafiaBoardPick(gameId, nightId, uid, actionId)]: {
+      targetUids: targetUids.filter(Boolean),
+      locked: false,
+      updatedAt: Date.now(),
+    },
   });
 }

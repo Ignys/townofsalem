@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 
 import { getRoleById } from "@/data/roles";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
+import { MafiaTeamPanel, useMafiaTeam } from "@/features/mafia/mafia-team-panel";
 import { PlayerNightActionPanel } from "@/features/night-actions/player-night-action-panel";
 import {
   PlayerDawnNightResults,
@@ -70,6 +71,7 @@ export function PlayerGameView({
   const gameVariants = useGameVariants(gameId);
   const { graveyard } = useGraveyard(gameId);
   const mayorReveals = useMayorReveals(gameId);
+  const mafiaTeam = useMafiaTeam(gameId, privateRole.privatePlayer?.faction === "mafia");
   const syncKey = useSessionSyncKey();
   const [syncOpen, setSyncOpen] = useState(false);
   const holdTimer = useRef<number | null>(null);
@@ -217,6 +219,16 @@ export function PlayerGameView({
       </section>
 
       {isNight && <PlayerInstantNightResults gameId={gameId} nightId={game.currentNightId} />}
+      {privateRole.privatePlayer.faction === "mafia" && game.status === "in-progress" && (
+        <MafiaTeamPanel
+          gameId={gameId}
+          viewerUid={viewerUid}
+          viewerAlive={alive}
+          nightId={isNight ? game.currentNightId : null}
+          players={players}
+          team={mafiaTeam}
+        />
+      )}
       <PlayerDawnNightResults gameId={gameId} revealed={!isNight && game.phase !== "lobby"} />
 
       <GameOverCard game={game} players={players} />

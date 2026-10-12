@@ -6,7 +6,7 @@ import type { NightConsoleInteraction } from "@/features/lobby/night-console-int
 import { currentTimestamp } from "@/lib/utils/timestamp";
 import type { PlayerNightActionSubmission } from "@/types";
 
-import { savePlayerNightAction } from "./player-night-action-repository";
+import { savePlayerNightAction, shareMafiaDraftPick } from "./player-night-action-repository";
 
 interface UsePlayerNightActionOptions {
   gameId: string;
@@ -15,6 +15,8 @@ interface UsePlayerNightActionOptions {
   interaction: NightConsoleInteraction;
   submission?: PlayerNightActionSubmission;
   disabled: boolean;
+  /** Membro da Máfia: a escolha aparece ao vivo para o resto da Máfia. */
+  shareWithMafia?: boolean;
 }
 
 /**
@@ -28,6 +30,7 @@ export function usePlayerNightAction({
   interaction,
   submission,
   disabled,
+  shareWithMafia = false,
 }: UsePlayerNightActionOptions) {
   const [draftTargetUids, setDraftTargetUids] = useState<readonly string[]>([]);
   const [saving, setSaving] = useState(false);
@@ -40,13 +43,18 @@ export function usePlayerNightAction({
   const setTarget = (targetIndex: number, playerUid: string) => {
     if (disabled || locked || saving) return;
     setError(null);
-    setDraftTargetUids(
-      Array.from({ length: targetCount }, (_, index) =>
-        index === targetIndex
-          ? (draftTargetUids[index] === playerUid ? "" : playerUid)
-          : draftTargetUids[index] ?? "",
-      ),
+    const next = Array.from({ length: targetCount }, (_, index) =>
+      index === targetIndex
+        ? (draftTargetUids[index] === playerUid ? "" : playerUid)
+        : draftTargetUids[index] ?? "",
     );
+    setDraftTargetUids(next);
+    shareDraft(next);
+  };
+
+  const shareDraft = (targetUids: readonly string[]) => {
+    if (!shareWithMafia) return;
+    void shareMafiaDraftPick(gameId, nightId, interaction.action.id, targetUids).catch(() => undefined);
   };
 
   const confirm = () => {
@@ -65,7 +73,7 @@ export function usePlayerNightAction({
 
     setSaving(true);
     setError(null);
-    savePlayerNightAction(gameId, payload)
+    savePlayerNightAction(gameId, payload, shareWithMafia)
       .catch(() => {
         setError("Não foi possível enviar sua ação. Tente de novo; se continuar, a noite pode já ter acabado.");
       })
@@ -81,6 +89,9 @@ export function usePlayerNightAction({
     /** Quantos alvos o jogador escolheu (antes de confirmar). */
     chosenCount,
     confirm,
-    cancel: () => setDraftTargetUids([]),
+    cancel: () => {
+      setDraftTargetUids([]);
+      shareDraft([]);
+    },
   };
 }
