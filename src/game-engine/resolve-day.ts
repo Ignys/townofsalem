@@ -125,6 +125,11 @@ export interface AssistedDayDeathInput {
    * leave undefined. Omitted while the host has not decided yet.
    */
   executionerBecomesJester?: boolean;
+  /**
+   * Modo sem mestre: o próprio Jester escolhe a vingança na noite seguinte, entre quem
+   * votou culpado. Em vez de exigir o alvo agora, marca a vingança como pendente.
+   */
+  deferJesterRevenge?: boolean;
 }
 
 function findExecutionerUids(
@@ -199,6 +204,8 @@ export function resolveAssistedDayDeath(
             unavoidable: true,
           });
         }
+      } else if (input.deferJesterRevenge) {
+        appliedStatuses.push({ targetUid: target.uid, statusType: "jester-revenge-pending" });
       } else {
         warnings.push({
           code: "JESTER_REVENGE_TARGET_REQUIRED",

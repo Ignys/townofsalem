@@ -308,6 +308,25 @@ test("unauthenticated and cross-player secret reads fail", async () => {
   await assertFails(get(ref(player, "games/game/privatePlayers")));
 });
 
+test("the play mode is chosen in the lobby and frozen once the game starts", async () => {
+  const host = environment.authenticatedContext("host").database();
+  const player = environment.authenticatedContext("player").database();
+  const field = `${VOTE}/public/playMode`;
+
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}/public`), { status: "lobby", phase: "lobby" });
+  });
+  await assertSucceeds(set(ref(host, field), "hostless"));
+  await assertFails(set(ref(host, field), "anarchy"));
+  await assertFails(set(ref(player, field), "hosted"));
+
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}/public`), { status: "in-progress", phase: "night" });
+  });
+  await assertFails(set(ref(host, field), "hosted"));
+  await assertSucceeds(set(ref(host, field), "hostless"));
+});
+
 test("malicious player administrative writes fail", async () => {
   const player = environment.authenticatedContext("player").database();
   await assertFails(update(ref(player), { "games/game/public/phase": "night" }));

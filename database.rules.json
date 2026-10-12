@@ -84,6 +84,9 @@
           "verdictOutcome": {
             ".validate": "newData.isString() && (newData.val() === 'guilty' || newData.val() === 'innocent' || newData.val() === 'tie')"
           },
+          "playMode": {
+            ".validate": "newData.isString() && (newData.val() === 'hosted' || newData.val() === 'hostless') && (newData.val() === data.val() || root.child('games').child($gameId).child('public').child('status').val() === 'lobby' || !root.child('games').child($gameId).child('public').exists())"
+          },
           "$other": {
             ".validate": false
           }
