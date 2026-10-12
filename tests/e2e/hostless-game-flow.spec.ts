@@ -46,6 +46,11 @@ test("a hostless game runs night, trial, verdict, lynch and the win without anyo
   await expect(table.getByRole("heading", { name: "Console do Mestre" })).toHaveCount(0);
   await expect(table.getByRole("button", { name: "Dia", exact: true })).toHaveCount(0);
 
+  // Os celulares mostram a contagem da noite.
+  for (const player of players) {
+    await expect(player.getByText("Tempo restante", { exact: true })).toBeVisible({ timeout: 15_000 });
+  }
+
   // A noite acaba sozinha no timer, mesmo sem ninguém agir.
   for (const player of players) {
     await expect(player.getByRole("region", { name: "Anúncios do dia" })).toContainText("Noite 1", { timeout: 30_000 });
