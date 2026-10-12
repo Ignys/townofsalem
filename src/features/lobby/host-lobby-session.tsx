@@ -145,7 +145,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                     controls={<HostlessTableControls gameId={gameId} game={game} />}
                     engine={
                         <>
-                            <HostlessAutopilotRunner gameId={gameId} game={game} players={lobby.players} />
+                            <HostlessAutopilotRunner gameId={gameId} hostUid={hostUid} game={game} players={lobby.players} />
                             {nightConsole}
                             {game.phase !== "night" && votingPanel}
                             {nightWorkspace}

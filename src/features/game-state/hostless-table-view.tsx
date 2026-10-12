@@ -9,6 +9,7 @@ import { VerdictVotesBoard } from "@/features/voting/verdict-votes-board";
 import { isAccusationPhase } from "@/features/voting/voting-phases";
 import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
 
+import { GameOverCard } from "./game-over-card";
 import { PlayerStatusBoard } from "./player-status-board";
 import { RemainingRolesBoard } from "./remaining-roles-board";
 import { useGraveyard } from "./use-graveyard";
@@ -35,6 +36,7 @@ export function HostlessTableView({ gameId, game, players, controls, engine }: H
   return (
     <div className="grid min-w-0 items-start gap-5 p-1 pr-4 xl:grid-cols-[minmax(0,1.65fr)_minmax(18rem,0.7fr)]">
       <div className="space-y-4">
+        <GameOverCard game={game} players={players} />
         {isNight ? (
           <section className="rounded-3xl border border-[#3b4a6b]/40 bg-[#151a26] p-6 text-center">
             <p className="font-serif text-2xl font-semibold text-[#fffaf0]">A cidade dorme.</p>

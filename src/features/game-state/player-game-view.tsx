@@ -18,6 +18,7 @@ import type { Player } from "@/types";
 
 import { getPlayerEntries } from "./player-roster";
 
+import { GameOverCard } from "./game-over-card";
 import { GAME_PHASE_LABELS } from "./game-phase-presentation";
 import { PlayerRoleHoldButton } from "./player-role-hold-button";
 import { PlayerRoleNotice } from "./player-role-notice";
@@ -169,16 +170,7 @@ export function PlayerGameView({
       {isNight && <PlayerInstantNightResults gameId={gameId} nightId={game.currentNightId} />}
       <PlayerDawnNightResults gameId={gameId} revealed={!isNight && game.phase !== "lobby"} />
 
-      {game.status === "finished" && (
-        <section className="mt-4 rounded-2xl border border-[#d3b88c]/30 bg-[#d3b88c]/10 p-4 text-center">
-          <h2 className="font-serif text-xl font-semibold">Partida encerrada</h2>
-          {game.winningFactions && game.winningFactions.length > 0 && (
-            <p className="mt-2 text-sm text-[#e6cfa9]">
-              Vencedores: {game.winningFactions.join(", ")}
-            </p>
-          )}
-        </section>
-      )}
+      <GameOverCard game={game} players={players} />
 
       {!alive && (
         <p className="mt-4 rounded-xl border border-[#a33843]/30 bg-[#a33843]/10 px-4 py-3 text-center text-sm text-[#f0b9bd]">

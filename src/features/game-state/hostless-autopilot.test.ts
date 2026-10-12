@@ -52,6 +52,32 @@ test("the verdict result stays on screen for a moment before night", () => {
   assert.equal(decideHostlessStep(justClosed, "expired", alive, NOW), null);
 });
 
+test("a win ends the game before anything else", () => {
+  const winner = { gameOver: true, winningFactions: ["town"], winningPlayerUids: ["ana"] };
+  assert.deepEqual(
+    decideHostlessStep({ ...base, phase: "discussion" }, "running", alive, NOW, winner),
+    { kind: "declare-winner", winningFactions: ["town"], winningPlayerUids: ["ana"] },
+  );
+  assert.deepEqual(
+    decideHostlessStep({ ...base, phase: "night" }, "expired", alive, NOW, { ...winner, gameOver: false }),
+    { kind: "end-night" },
+  );
+});
+
+test("a lynch that wins the game still shows the vote result first", () => {
+  const winner = { gameOver: true, winningFactions: ["town"], winningPlayerUids: ["ana"] };
+  const closed = { ...base, phase: "verdict" as const, accusedPlayerUid: "caio", verdictOutcome: "guilty" as const };
+  assert.deepEqual(
+    decideHostlessStep({ ...closed, verdictClosedAt: NOW - 1_000 }, "expired", alive, NOW, winner),
+    { kind: "apply-lynch", targetUid: "caio" },
+  );
+  assert.equal(decideHostlessStep({ ...closed, verdictClosedAt: NOW - 1_000 }, "expired", () => false, NOW, winner), null);
+  assert.equal(
+    decideHostlessStep({ ...closed, verdictClosedAt: NOW - 10_000 }, "expired", () => false, NOW, winner)?.kind,
+    "declare-winner",
+  );
+});
+
 test("nothing happens outside a running game", () => {
   assert.equal(decideHostlessStep({ ...base, status: "finished", phase: "night" }, "expired", alive, NOW), null);
   assert.equal(decideHostlessStep({ ...base, status: "lobby", phase: "lobby" }, "idle", alive, NOW), null);

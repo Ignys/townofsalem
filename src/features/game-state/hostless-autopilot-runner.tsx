@@ -1,6 +1,12 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
+
+import { ROLE_DEFINITIONS } from "@/data/roles";
+import { useHostRoleAssignments } from "@/features/roles/use-host-role-assignments";
+import { createEngineGameState } from "@/game-engine/host-action-adapter";
+import { checkWinCondition } from "@/game-engine/win-condition";
+import type { Player } from "@/types";
 
 import { useSynchronizedTimer } from "@/features/timer/use-synchronized-timer";
 import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
@@ -55,6 +61,11 @@ async function runStep(gameId: string, step: HostlessStep, serverTimeOffsetMs: n
       });
       return;
     }
+    case "declare-winner": {
+      const { declareWinner } = await import("./declare-winner");
+      await declareWinner(gameId, step);
+      return;
+    }
     case "close-verdict": {
       const { closeVerdictVoting } = await import("@/features/voting/close-verdict-voting");
       await closeVerdictVoting(gameId);
@@ -70,6 +81,7 @@ async function runStep(gameId: string, step: HostlessStep, serverTimeOffsetMs: n
 
 interface HostlessAutopilotRunnerProps {
   gameId: string;
+  hostUid: string;
   game: GamePublicRecord;
   players: Readonly<Record<string, PublicPlayerRecord>>;
 }
@@ -78,10 +90,26 @@ interface HostlessAutopilotRunnerProps {
  * Conduz a partida sem mestre: a cada tick decide o próximo passo e o executa uma vez.
  * Não renderiza nada; roda no computador da mesa.
  */
-export function HostlessAutopilotRunner({ gameId, game, players }: HostlessAutopilotRunnerProps) {
+export function HostlessAutopilotRunner({ gameId, hostUid, game, players }: HostlessAutopilotRunnerProps) {
   const timer = useSynchronizedTimer(game);
+  const privateRoles = useHostRoleAssignments(gameId, hostUid);
+  const winner = useMemo(() => {
+    if (!privateRoles.loaded || Object.keys(privateRoles.assignments).length === 0) return null;
+    const roster: Player[] = Object.entries(players).map(([uid, player]) => ({ id: uid, uid, ...player }));
+    const assignments = Object.fromEntries(
+      Object.entries(privateRoles.assignments).map(([uid, assignment]) => [uid, assignment.roleId]),
+    );
+    return checkWinCondition(createEngineGameState({
+      gameId,
+      nightId: game.currentNightId ?? "hostless-win-check",
+      players: roster,
+      assignments,
+      privatePlayerStates: privateRoles.assignments,
+      roleDefinitions: ROLE_DEFINITIONS,
+    }));
+  }, [game.currentNightId, gameId, players, privateRoles.assignments, privateRoles.loaded]);
   const inFlightRef = useRef<string | null>(null);
-  const step = decideHostlessStep(game, timer.status, (uid) => Boolean(players[uid]?.alive), timer.serverAdjustedNow);
+  const step = decideHostlessStep(game, timer.status, (uid) => Boolean(players[uid]?.alive), timer.serverAdjustedNow, winner);
   // Um passo por fase/estado: o tick repete a decisão, mas só a primeira execução vale.
   const stepKey = step
     ? `${game.phaseSessionId ?? ""}:${game.phase}:${game.verdictClosedAt ?? ""}:${step.kind}`

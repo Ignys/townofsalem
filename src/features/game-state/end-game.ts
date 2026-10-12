@@ -23,7 +23,7 @@ export async function endGame(
     readGamePlayers(gameId),
   ]);
 
-  if (!game || game.status !== "in-progress") throw new Error("game-not-in-progress");
+  if (!game || (game.status !== "in-progress" && game.status !== "finished")) throw new Error("game-not-running");
 
   await applyAtomicUpdate(
     createEndGameUpdates({

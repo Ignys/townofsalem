@@ -20,6 +20,7 @@ export const HOSTLESS_PHASE_LABELS = {
 export const VERDICT_RESULT_DISPLAY_MS = 10_000;
 
 export type HostlessStep =
+  | { kind: "declare-winner"; winningFactions: readonly string[]; winningPlayerUids: readonly string[] }
   | { kind: "start-timer"; seconds: number }
   | { kind: "end-night" }
   | { kind: "start-night" }
@@ -36,8 +37,22 @@ export function decideHostlessStep(
   timerStatus: TimerStatus,
   isAlive: (uid: string) => boolean,
   now: number,
+  winner: { gameOver: boolean; winningFactions: readonly string[]; winningPlayerUids: readonly string[] } | null = null,
 ): HostlessStep | null {
   if (game.status !== "in-progress") return null;
+
+  const showingVerdictResult = game.phase === "verdict"
+    && Boolean(game.verdictClosedAt)
+    && now - (game.verdictClosedAt ?? 0) < VERDICT_RESULT_DISPLAY_MS;
+
+  // A vitória vale antes de qualquer outra coisa, mas espera a lista de votos sair da tela.
+  if (winner?.gameOver && !showingVerdictResult) {
+    return {
+      kind: "declare-winner",
+      winningFactions: winner.winningFactions,
+      winningPlayerUids: winner.winningPlayerUids,
+    };
+  }
 
   // Veredito fechado: aplica o linchamento (se culpado) e segue para a noite.
   if (game.phase === "verdict" && game.verdictClosedAt) {

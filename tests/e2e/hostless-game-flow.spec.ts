@@ -12,7 +12,7 @@ async function joinPlayer(page: Page, code: string, name: string) {
 }
 
 // Timers reduzidos por NEXT_PUBLIC_HOSTLESS_TIMER_SCALE (playwright.config.ts).
-test("a hostless game runs night, trial, verdict and lynch without anyone at the table", async ({ browser }) => {
+test("a hostless game runs night, trial, verdict, lynch and the win without anyone at the table", async ({ browser }) => {
   test.setTimeout(120_000);
   const contexts = await Promise.all([
     browser.newContext(),
@@ -68,10 +68,25 @@ test("a hostless game runs night, trial, verdict and lynch without anyone at the
   }
   await expect(table.getByRole("heading", { name: "Resultado da votação" })).toBeVisible({ timeout: 30_000 });
 
-  // O veredito fecha no timer, Caio é linchado e começa a Noite 2.
+  // O veredito fecha no timer e Caio é linchado; a mesa revela a role dele.
   await expect(caio.getByText("Morto", { exact: true })).toBeVisible({ timeout: 30_000 });
-  for (const player of players) {
-    await expect(player.getByRole("heading", { name: "Noite 2" })).toBeVisible({ timeout: 30_000 });
+  const lynchedRow = table.getByText("Caio", { exact: true }).locator("xpath=ancestor::li[1]");
+  await expect(lynchedRow).toContainText(/MAFIOSO|SHERIFF|DOCTOR/i, { timeout: 30_000 });
+  const lynchedRole = ((await lynchedRow.textContent()) ?? "").toLowerCase();
+
+  if (lynchedRole.includes("mafioso")) {
+    // Sem Máfia, a Cidade vence: o motor encerra sozinho e todo mundo vê o resultado.
+    for (const viewer of [table, ...players]) {
+      await expect(viewer.getByRole("region", { name: "Partida encerrada" })).toContainText("Vitória: Cidade", { timeout: 30_000 });
+    }
+    await table.getByRole("button", { name: "Nova partida" }).click();
+    await expect(table.getByRole("button", { name: /Sem mestre/ })).toBeVisible();
+  } else {
+    // Ninguém venceu ainda: a partida segue para a Noite 2.
+    for (const player of players) {
+      await expect(player.getByRole("heading", { name: "Noite 2" })).toBeVisible({ timeout: 30_000 });
+    }
+    await expect(table.getByRole("region", { name: "Partida encerrada" })).toHaveCount(0);
   }
 
   await Promise.all(contexts.map((context) => context.close()));

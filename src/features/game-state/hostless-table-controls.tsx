@@ -24,7 +24,8 @@ export function HostlessTableControls({ gameId, game }: HostlessTableControlsPro
   const handleEndGame = async () => {
     if (
       busy ||
-      !window.confirm("Encerrar a partida? Todos os jogadores voltarão ao lobby para uma nova composição de roles.")
+      (game.status !== "finished" &&
+        !window.confirm("Encerrar a partida? Todos os jogadores voltarão ao lobby para uma nova composição de roles."))
     ) {
       return;
     }
@@ -48,7 +49,18 @@ export function HostlessTableControls({ gameId, game }: HostlessTableControlsPro
         Partida sem mestre: as fases avançam sozinhas quando o timer acaba.
       </p>
       <div className="mt-4">
-        <EndGameButton busy={busy} onClick={handleEndGame} />
+        {game.status === "finished" ? (
+          <button
+            type="button"
+            disabled={busy}
+            onClick={handleEndGame}
+            className="min-h-11 w-full rounded-xl border border-[#d3b88c]/40 bg-[#d3b88c]/15 px-4 text-sm font-bold text-[#fffaf0] disabled:opacity-50"
+          >
+            Nova partida
+          </button>
+        ) : (
+          <EndGameButton busy={busy} onClick={handleEndGame} />
+        )}
       </div>
       {error && (
         <p role="alert" className="mt-3 text-sm text-[#f0b9bd]">
