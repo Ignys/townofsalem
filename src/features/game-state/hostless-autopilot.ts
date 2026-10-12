@@ -4,20 +4,20 @@ import type { GamePhase } from "@/types";
 
 /** Tempos do modo sem mestre por ritmo. O rápido usa os tempos do normal e encerra antes. */
 export const HOSTLESS_PACE_SECONDS: Record<GamePace, Partial<Record<GamePhase, number>>> = {
-  relaxed: { night: 90, discussion: 300, trial: 15, verdict: 60 },
-  normal: { night: 60, discussion: 180, trial: 10, verdict: 45 },
-  fast: { night: 60, discussion: 180, verdict: 45 },
+  relaxed: { night: 90, discussion: 300, trial: 30, verdict: 30 },
+  normal: { night: 60, discussion: 180, trial: 30, verdict: 30 },
+  fast: { night: 60, discussion: 180, trial: 30, verdict: 30 },
 };
 
 /** Tempos do ritmo "Relaxed" (padrão). */
 export const HOSTLESS_PHASE_SECONDS = HOSTLESS_PACE_SECONDS.relaxed;
 
 export const GAME_PACE_LABELS: Record<GamePace, { title: string; description: string }> = {
-  relaxed: { title: "Relaxed", description: "Noite 1m30 · Discussão 5m · Preparação 15s · Defesa e votação 1m" },
-  normal: { title: "Normal", description: "Noite 1m · Discussão 3m · Preparação 10s · Defesa e votação 45s" },
+  relaxed: { title: "Relaxed", description: "Noite 1m30 · Discussão 5m · Defesa 30s · Votação 30s" },
+  normal: { title: "Normal", description: "Noite 1m · Discussão 3m · Defesa 30s · Votação 30s" },
   fast: {
     title: "Fast track",
-    description: "Tempos do Normal, mas a noite acaba quando todos agem, a votação quando todos votam, e sem preparação.",
+    description: "Tempos do Normal, mas a noite acaba quando todos agem e a votação quando todos votam.",
   },
 };
 
@@ -27,10 +27,10 @@ export interface FastTrackSignals {
   allVerdictsIn: boolean;
 }
 
-/** No modo sem mestre a defesa e a votação acontecem juntas, na fase de veredito. */
+/** No modo sem mestre o acusado se defende no julgamento e a cidade vota no veredito. */
 export const HOSTLESS_PHASE_LABELS = {
-  trial: "Preparação",
-  verdict: "Defesa e votação",
+  trial: "Defesa",
+  verdict: "Votação",
 } as const;
 
 /** Quanto tempo o resultado da votação fica na tela antes da noite começar. */
@@ -104,9 +104,8 @@ export function decideHostlessStep(
     return now - game.verdictClosedAt >= VERDICT_RESULT_DISPLAY_MS ? { kind: "start-night" } : null;
   }
 
-  // Ritmo rápido: sem preparação, e cada fase acaba assim que todos fizeram sua parte.
+  // Ritmo rápido: cada fase acaba assim que todos fizeram sua parte (a defesa tem tempo fixo).
   if (pace === "fast") {
-    if (game.phase === "trial") return { kind: "start-verdict" };
     // Vale com o timer correndo ou pausado: se todos já fizeram sua parte, não há o que esperar.
     const ticking = timerStatus === "running" || timerStatus === "paused";
     if (ticking && game.phase === "night" && fast.nightComplete) return { kind: "end-night" };
