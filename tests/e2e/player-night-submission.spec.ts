@@ -85,7 +85,7 @@ test("a player confirms their own night action and it locks for everyone", async
   await Promise.all(contexts.map((context) => context.close()));
 });
 
-test("investigations arrive on confirm and the rest of the night waits for the day", async ({ browser }) => {
+test("investigations arrive on confirm and starting the day applies the night", async ({ browser }) => {
   const contexts = await Promise.all([
     browser.newContext(),
     browser.newContext({ viewport: { width: 375, height: 812 } }),
@@ -136,17 +136,18 @@ test("investigations arrive on confirm and the rest of the night waits for the d
   const instant = sheriff.getByRole("region", { name: "Resultado da sua ação" });
   await expect(instant).toContainText(/Você investigou (Ana|Beto|Caio): (suspeito|não suspeito)\./);
 
-  await host.getByRole("button", { name: "Aplicar resultado" }).click();
-  await expect(host.getByText("Resultado aplicado.", { exact: false })).toBeVisible();
   for (const player of players) {
     await expect(player.getByRole("region", { name: "Anúncios do dia" })).toHaveCount(0);
   }
 
+  // Ir para o dia aplica a noite: sem clicar em "Aplicar resultado".
   await host.getByRole("button", { name: "Dia", exact: true }).click();
   await host.getByRole("button", { name: "Sim", exact: true }).click();
   for (const player of players) {
     await expect(player.getByRole("region", { name: "Anúncios do dia" })).toContainText("Noite 1");
   }
+  // O mestre vê o mesmo anúncio na área do dia.
+  await expect(host.getByText("Anúncios do dia · Noite 1")).toBeVisible();
 
   await Promise.all(contexts.map((context) => context.close()));
 });

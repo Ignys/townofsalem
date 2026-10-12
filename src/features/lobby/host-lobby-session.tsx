@@ -9,6 +9,7 @@ import { HostHistoryPanel } from "@/features/game-state/host-history-panel";
 import { HostInvestigationCalculator } from "@/features/game-state/host-investigation-calculator";
 import { HostDiagnostics } from "@/features/game-state/host-diagnostics";
 import { HostWinConditionSuggestion } from "@/features/game-state/host-win-condition-suggestion";
+import { HostDayAnnouncements } from "@/features/night-actions/host-day-announcements";
 import { HostNightWorkspace } from "@/features/night-actions/host-night-workspace";
 import { HostVotingPanel } from "@/features/voting/host-voting-panel";
 import { HostRoleComposition } from "@/features/roles/host-role-composition";
@@ -128,6 +129,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                                 />
                                 {game.phase !== "night" && (
                                     <>
+                                        <HostDayAnnouncements gameId={sessionState.session.gameId} />
                                         <HostVotingPanel
                                             gameId={sessionState.session.gameId}
                                             verifiedHostUid={sessionState.session.uid}

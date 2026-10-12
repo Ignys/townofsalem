@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { HostConsoleFrame } from "@/components/host/host-console-frame";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
@@ -19,6 +19,7 @@ import {
   calculateNightResolutionPreview,
   getNightResolutionPreviewEpoch,
 } from "./calculate-night-resolution-preview";
+import { registerNightApplier, type NightApplyOutcome } from "./night-apply-registry";
 import { presentNightResolution } from "./night-resolution-presentation";
 import { NightResolutionSections } from "./night-resolution-sections";
 import { useDeliverInstantNightResults } from "./use-deliver-instant-night-results";
@@ -174,6 +175,32 @@ export function NightResolutionPreview({
       setBusy(false);
     }
   };
+
+  // Sair da noite pelo painel de fases aplica o resultado, se ainda não foi aplicado.
+  const applyBeforeLeavingRef = useRef<() => Promise<NightApplyOutcome>>(async () => ({
+    kind: "blocked",
+    reason: "A resolução da noite ainda está carregando. Tente de novo em instantes.",
+  }));
+  useEffect(() => {
+    applyBeforeLeavingRef.current = async () => {
+      if (applied) return { kind: "already-applied" };
+      if (actionWritesPending) {
+        return { kind: "blocked", reason: "Ainda há ações sendo salvas. Aguarde o preview atualizar." };
+      }
+      if (!preview) {
+        return { kind: "blocked", reason: "Há ações inválidas na noite. Corrija-as antes de iniciar o dia." };
+      }
+      if (preview.resolution.partial) {
+        return { kind: "blocked", reason: "O resultado da noite está incompleto. Revise as ações antes de iniciar o dia." };
+      }
+      await applyNightResolution(gameId, { id: preview.id, nightId, actionsRevision: preview.actionsRevision, createdAt: preview.createdAt, resolution: preview.resolution });
+      return { kind: "applied" };
+    };
+  });
+  useEffect(
+    () => registerNightApplier(gameId, () => applyBeforeLeavingRef.current()),
+    [gameId],
+  );
 
   const rollback = async () => {
     if (busy || !window.confirm("Desfazer a última resolução e reabrir o Action Log?")) return;

@@ -39,34 +39,38 @@ export function usePlayerInstantNightResults(gameId: string, nightId: string | n
 }
 
 /**
- * Anúncio e resultado pessoal da última noite resolvida. As regras só liberam a leitura fora
- * da noite, então a assinatura é refeita quando a fase muda.
+ * Anúncio da última noite resolvida. As regras só liberam a leitura fora da noite, então a
+ * assinatura é refeita quando a fase muda. Serve ao mestre e aos jogadores.
  */
-export function usePlayerDawnNightResults(gameId: string, revealed: boolean) {
-  const [dawnResults, setDawnResults] = useState<Record<string, PlayerDawnNightResultRecord>>({});
+export function useDayAnnouncement(gameId: string, revealed: boolean) {
   const [announcements, setAnnouncements] = useState<Record<string, DayAnnouncementRecord>>({});
 
   useEffect(() => {
     if (!revealed) return;
-
-    const stopDawn = observeAuthenticatedPlayerDawnResults(gameId, {
-      onData: (value) => setDawnResults(value ?? {}),
-      onError: () => setDawnResults({}),
-    });
-    const stopAnnouncements = observeDayAnnouncements(gameId, {
+    return observeDayAnnouncements(gameId, {
       onData: (value) => setAnnouncements(value ?? {}),
       onError: () => setAnnouncements({}),
     });
+  }, [gameId, revealed]);
 
-    return () => {
-      stopDawn();
-      stopAnnouncements();
-    };
+  return revealed ? latestByNightNumber(announcements) : undefined;
+}
+
+/** Anúncio e resultado pessoal da última noite resolvida, para o jogador. */
+export function usePlayerDawnNightResults(gameId: string, revealed: boolean) {
+  const [dawnResults, setDawnResults] = useState<Record<string, PlayerDawnNightResultRecord>>({});
+  const announcement = useDayAnnouncement(gameId, revealed);
+
+  useEffect(() => {
+    if (!revealed) return;
+    return observeAuthenticatedPlayerDawnResults(gameId, {
+      onData: (value) => setDawnResults(value ?? {}),
+      onError: () => setDawnResults({}),
+    });
   }, [gameId, revealed]);
 
   if (!revealed) return { announcement: undefined, dawnResult: undefined };
 
-  const announcement = latestByNightNumber(announcements);
   const dawnResult = latestByNightNumber(dawnResults);
 
   return {

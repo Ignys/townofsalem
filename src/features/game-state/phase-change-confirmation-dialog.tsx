@@ -65,7 +65,8 @@ export function PhaseChangeConfirmationDialog({
               Finalizar fase?
             </h2>
             <p id={descriptionId} className="mt-1 text-sm leading-6 text-[#bdb7ad]">
-              Isso finalizará a <strong className="text-[#fffaf0]">{endingPhaseLabel}</strong>, tem certeza?
+              Isso finalizará a <strong className="text-[#fffaf0]">{endingPhaseLabel}</strong> e aplicará o
+              resultado da noite, se ainda não foi aplicado. Tem certeza?
             </p>
           </div>
         </div>
