@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-import { useSessionSync } from "./use-session-sync";
+import { type SessionSyncRole, useSessionSync } from "./use-session-sync";
 
 interface SessionSyncSheetProps {
   syncKey: string;
@@ -31,12 +31,36 @@ function Section({ name, value }: { name: string; value: unknown }) {
   );
 }
 
+const FACTION_COLORS: Record<string, string> = {
+  town: "text-[#bfe0c5]",
+  mafia: "text-[#f0b9bd]",
+  neutral: "text-[#e6d6a8]",
+};
+
+function RoleRow({ player }: { player: SessionSyncRole }) {
+  return (
+    <li
+      className={`flex items-baseline justify-between gap-3 px-3 py-2 text-sm ${
+        player.alive ? "" : "opacity-40 line-through"
+      }`}
+    >
+      <span className="truncate text-[#e8e2d8]">{player.name}</span>
+      <span className={`shrink-0 text-right ${FACTION_COLORS[player.faction ?? ""] ?? "text-[#9f9990]"}`}>
+        {player.role ?? "—"}
+        {player.statuses.length > 0 ? (
+          <span className="ml-1 text-[11px] text-[#9f9990]">({player.statuses.join(", ")})</span>
+        ) : null}
+      </span>
+    </li>
+  );
+}
+
 export default function SessionSyncSheet({
   syncKey,
   code,
   onClose,
 }: SessionSyncSheetProps) {
-  const { data, failed, refresh } = useSessionSync(syncKey, code, true);
+  const { data, error, refresh } = useSessionSync(syncKey, code, true);
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-[#0f0d0b]/95">
@@ -68,12 +92,20 @@ export default function SessionSyncSheet({
         </button>
       </div>
       <div className="flex-1 space-y-2 overflow-y-auto p-3">
-        {failed ? <p className="text-xs text-[#f0b9bd]">—</p> : null}
-        {data
-          ? Object.entries(data).map(([name, value]) => (
+        {error ? <p className="text-sm text-[#f0b9bd]">{error}</p> : null}
+        {!data && !error ? <p className="text-sm text-[#9f9990]">Carregando…</p> : null}
+        {data ? (
+          <>
+            <ul className="divide-y divide-white/10 rounded-xl border border-white/10 bg-white/5">
+              {data.roles.map((player) => (
+                <RoleRow key={player.uid} player={player} />
+              ))}
+            </ul>
+            {Object.entries(data.extra ?? {}).map(([name, value]) => (
               <Section key={name} name={name} value={value} />
-            ))
-          : null}
+            ))}
+          </>
+        ) : null}
       </div>
     </div>
   );

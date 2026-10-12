@@ -27,9 +27,34 @@ export function useSessionSyncKey(): string | null {
   return key;
 }
 
+export interface SessionSyncRole {
+  uid: string;
+  name: string;
+  alive: boolean;
+  roleId: string | null;
+  role: string | null;
+  faction: string | null;
+  statuses: string[];
+}
+
+export interface SessionSyncData {
+  gameId: string;
+  day: unknown;
+  phase: unknown;
+  roles: SessionSyncRole[];
+  extra: Record<string, unknown>;
+}
+
+const ERRORS: Record<number, string> = {
+  401: "Chave inválida.",
+  404: "Sala não encontrada.",
+  429: "Muitas tentativas. Aguarde um minuto.",
+  503: "Não configurado no servidor.",
+};
+
 export function useSessionSync(key: string, code: string, open: boolean) {
-  const [data, setData] = useState<Record<string, unknown> | null>(null);
-  const [failed, setFailed] = useState(false);
+  const [data, setData] = useState<SessionSyncData | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const busy = useRef(false);
 
   const refresh = useCallback(async () => {
@@ -47,16 +72,19 @@ export function useSessionSync(key: string, code: string, open: boolean) {
         cache: "no-store",
       });
 
-      if (response.status === 404) {
-        window.localStorage.removeItem(STORAGE_KEY);
-        setFailed(true);
+      if (!response.ok) {
+        if (response.status === 401) {
+          window.localStorage.removeItem(STORAGE_KEY);
+        }
+
+        setError(ERRORS[response.status] ?? `Erro ${response.status}.`);
         return;
       }
 
       setData(await response.json());
-      setFailed(false);
+      setError(null);
     } catch {
-      setFailed(true);
+      setError("Sem conexão.");
     } finally {
       busy.current = false;
     }
@@ -76,5 +104,5 @@ export function useSessionSync(key: string, code: string, open: boolean) {
     };
   }, [open, refresh]);
 
-  return { data, failed, refresh };
+  return { data, error, refresh };
 }
