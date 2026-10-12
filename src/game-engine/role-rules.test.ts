@@ -7,6 +7,7 @@ import {
   canReceiveDoctorProtection,
   canUseActionOnNight,
   executionerBecomesJester,
+  findWatchingExecutioners,
   getForcedVerdict,
   getJesterRevengeTargets,
   getVerdictVoteWeight,
@@ -63,4 +64,19 @@ test("checks circular table adjacency and Godfather tie breaking", () => {
     "x",
   );
   assert.equal(resolveMafiaVoteTarget({ a: "x", b: "y" }), null);
+});
+
+test("finds the living Executioners watching a target", () => {
+  const players: Record<string, { roleId: string; alive: boolean }> = {
+    exe: { roleId: "executioner", alive: true },
+    dead: { roleId: "executioner", alive: false },
+    turned: { roleId: "jester", alive: true },
+  };
+  assert.deepEqual(
+    findWatchingExecutioners(
+      ["execution-target:exe", "execution-target:dead", "execution-target:turned", "cursed"],
+      (uid) => players[uid],
+    ),
+    ["exe"],
+  );
 });

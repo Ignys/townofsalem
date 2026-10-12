@@ -59,6 +59,24 @@ export function getChosenExecutionTarget(
   return null;
 }
 
+/**
+ * Executioners vivos cujo alvo é este jogador. Uma morte fora do enforcamento (noite ou
+ * vingança do Jester) os transforma em Jester.
+ */
+export function findWatchingExecutioners(
+  targetStatuses: Iterable<string>,
+  executioner: (uid: string) => { roleId?: string; alive?: boolean } | undefined,
+): string[] {
+  const uids = new Set<string>();
+  for (const status of targetStatuses) {
+    if (!status.startsWith("execution-target:")) continue;
+    const uid = status.slice("execution-target:".length);
+    const player = executioner(uid);
+    if (player?.roleId === "executioner" && player.alive) uids.add(uid);
+  }
+  return [...uids].sort();
+}
+
 export function canUseActionOnNight(
   action: RoleActionDefinition,
   nightNumber: number,
