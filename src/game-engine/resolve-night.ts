@@ -12,6 +12,7 @@ import {
   EXECUTIONER_TARGET_STATUS_PREFIX,
   getChosenExecutionTarget,
 } from "./role-rules";
+import { getNightActionResource } from "./role-resource-limits";
 import { resolveRoleTriggers } from "./role-triggers";
 import type {
   EngineEffect,
@@ -293,6 +294,14 @@ export function resolveNight(
     engineEvents: events,
     cleanedPlayerUids: combat.cleanedPlayerUids,
     appliedStatuses,
+    // Cada ação confirmada de uma role com usos limitados gasta um uso, dê certo ou não.
+    consumedResources: [
+      ...combat.consumedResources,
+      ...actions.flatMap((action) => {
+        const resource = action.sourceType === "faction" ? null : getNightActionResource(action.roleId);
+        return resource ? [{ playerUid: action.actorUid, resource, amount: 1 }] : [];
+      }),
+    ],
     removedStatuses: gameState.players
       .filter(({ statuses }) => statuses.includes("town-blocked-next-night"))
       .map(({ uid }) => ({
@@ -301,7 +310,6 @@ export function resolveNight(
       })),
     randomDecisions,
     roleChanges: triggers.roleChanges,
-    consumedResources: combat.consumedResources,
     individualWinnerUids: triggers.individualWinnerUids,
     partial: warnings.length > 0,
   };

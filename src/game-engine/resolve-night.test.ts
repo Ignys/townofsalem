@@ -140,3 +140,15 @@ test("the Executioner can pick a target on a later night, but only once", () => 
   const again = resolveNight(chosen, [{ ...choose, targetUids: ["protector"] }]);
   assert.deepEqual(again.appliedStatuses ?? [], []);
 });
+
+test("each confirmed action of a limited role spends one use", () => {
+  const result = resolveNight({ ...game, nightNumber: 2 }, [
+    action({ id: "inv", actorUid: "protector", roleId: "investigator", actionId: "investigate-exact-role", targetUids: ["target"], effectType: "investigate", investigationType: "investigator", priority: 10 }),
+    action({ id: "alert", actorUid: "blocker", roleId: "veteran", actionId: "alert", targetUids: [], effectType: "protect", priority: 20 }),
+    action({ id: "heal", actorUid: "immune", roleId: "doctor", actionId: "protect", targetUids: ["target"], effectType: "protect", priority: 30 }),
+  ]);
+  assert.deepEqual(
+    result.consumedResources?.map(({ playerUid, resource }) => [playerUid, resource]),
+    [["protector", "investigator"], ["blocker", "veteran-alert"]],
+  );
+});
