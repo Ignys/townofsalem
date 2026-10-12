@@ -133,8 +133,9 @@ export function PlayerGameView({
   const viewer = roster.find((player) => player.uid === viewerUid);
   const accused = game.accusedPlayerUid ? players[game.accusedPlayerUid] : undefined;
   const accusing = isAccusationPhase(game.phase) && !game.accusedPlayerUid;
-  const blackmailed = Boolean(privateRole.privatePlayer.statuses?.blackmailed)
-    && gameVariants.variants.blackmailedCannotVote;
+  // O status vive só nos dados privados do próprio jogador: ninguém mais vê o aviso.
+  const silenced = Boolean(privateRole.privatePlayer.statuses?.blackmailed);
+  const blackmailed = silenced && gameVariants.variants.blackmailedCannotVote;
   // Segredos que não ficam expostos na tela: só aparecem segurando o botão da role.
   const mafiaNames = Object.keys(mafiaTeam)
     .filter((uid) => uid !== viewerUid)
@@ -260,6 +261,19 @@ export function PlayerGameView({
         <p className="mt-4 rounded-xl border border-[#a33843]/30 bg-[#a33843]/10 px-4 py-3 text-center text-sm text-[#f0b9bd]">
           Você está morto, mas continua acompanhando a partida.
         </p>
+      )}
+
+      {silenced && alive && !isNight && game.status === "in-progress" && (
+        <section
+          role="alert"
+          aria-label="Você foi chantageado"
+          className="mt-4 rounded-2xl border border-[#a33843]/50 bg-[#a33843]/15 p-4 text-center"
+        >
+          <h2 className="font-serif text-xl font-semibold text-[#fffaf0]">🤐 Você foi chantageado</h2>
+          <p className="mt-1 text-sm leading-6 text-[#f0b9bd]">
+            Você não pode falar hoje{blackmailed ? " nem votar" : ""}. Fique em silêncio até a noite.
+          </p>
+        </section>
       )}
 
       {role.id === "mayor" && alive && !isNight && game.status === "in-progress" && !mayorReveals[viewerUid] && (
