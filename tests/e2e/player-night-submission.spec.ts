@@ -152,7 +152,7 @@ test("investigations arrive on confirm and starting the day applies the night", 
   await Promise.all(contexts.map((context) => context.close()));
 });
 
-test("a veteran goes on alert from the phone: actions without a target are accepted", async ({ browser }) => {
+test("the veteran has no alert on night 1", async ({ browser }) => {
   const contexts = await Promise.all([
     browser.newContext(),
     browser.newContext({ viewport: { width: 375, height: 812 } }),
@@ -178,22 +178,11 @@ test("a veteran goes on alert from the phone: actions without a target are accep
   await host.getByRole("button", { name: "Sortear roles" }).click();
   await expect(host.getByRole("heading", { name: "Noite 1" }).first()).toBeVisible();
 
-  await expect.poll(async () => {
-    const counts = await Promise.all(
-      players.map((player) => player.getByRole("heading", { name: "Entrar em Alert" }).count()),
-    );
-    return counts.reduce((total, count) => total + count, 0);
-  }).toBe(1);
-  let veteran = ana;
+  // Ninguém mata na primeira noite: o Veteran ainda não tem Alert para usar.
+  await expect(ana.getByRole("heading", { name: "Noite 1" }).first()).toBeVisible();
   for (const player of players) {
-    if (await player.getByRole("heading", { name: "Entrar em Alert" }).count()) veteran = player;
+    await expect(player.getByRole("heading", { name: "Entrar em Alert" })).toHaveCount(0);
   }
-
-  const panel = veteran.getByRole("region", { name: "Sua ação da noite" });
-  await panel.getByRole("button", { name: "Confirmar" }).click();
-  await expect(panel.getByText("Confirmado", { exact: true })).toBeVisible();
-  await expect(panel.getByRole("alert")).toHaveText("");
-  await expect(host.getByText("Confirmado pelo jogador")).toBeVisible();
 
   await Promise.all(contexts.map((context) => context.close()));
 });
