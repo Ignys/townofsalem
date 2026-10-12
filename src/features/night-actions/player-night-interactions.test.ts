@@ -84,3 +84,9 @@ test("targets exclude dead players", () => {
   ]).map(({ uid }) => uid);
   assert.deepEqual(targets, ["joao"]);
 });
+
+test("mafia teammates are not offered as targets", () => {
+  const [kill] = getPlayerNightInteractions(viewer, "mafioso", ROLE_DEFINITIONS, 2);
+  const targets = getPlayerNightTargets(kill, roster, undefined, ["viewer", "maria"]);
+  assert.deepEqual(targets.map(({ uid }) => uid), ["joao"]);
+});

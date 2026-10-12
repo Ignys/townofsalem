@@ -194,3 +194,15 @@ test("a lone godfather submitting one target becomes a draft for the host to com
   assert.equal(plan.entries.length, 1);
   assert.equal(plan.entries[0].status, "draft");
 });
+
+test("a skipped submission never becomes an entry", () => {
+  const plan = buildMirrorPlan(
+    [submission(sheriffActionId, [], { skipped: true })],
+    interactions,
+    [],
+    context,
+    1_000,
+  );
+  assert.deepEqual(plan.entries, []);
+  assert.equal(plan.skipped[0]?.reason, "player-skipped");
+});

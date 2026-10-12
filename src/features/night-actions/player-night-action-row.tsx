@@ -20,6 +20,8 @@ interface PlayerNightActionRowProps {
   disabled: boolean;
   exhausted: boolean;
   shareWithMafia?: boolean;
+  /** Quem não aparece como alvo (ex.: parceiros da Máfia). */
+  excludedTargetUids?: readonly string[];
 }
 
 export function PlayerNightActionRow({
@@ -33,9 +35,10 @@ export function PlayerNightActionRow({
   disabled,
   exhausted,
   shareWithMafia = false,
+  excludedTargetUids = [],
 }: PlayerNightActionRowProps) {
   const blocked = disabled || exhausted;
-  const { selectedTargetUids, setTarget, locked, saving, error, chosenCount, confirm, cancel } =
+  const { selectedTargetUids, setTarget, locked, saving, error, chosenCount, confirm, skip, skipped, cancel } =
     usePlayerNightAction({
       gameId,
       nightId,
@@ -45,7 +48,7 @@ export function PlayerNightActionRow({
       disabled: blocked,
       shareWithMafia,
     });
-  const targets = getPlayerNightTargets(interaction, players, variants);
+  const targets = getPlayerNightTargets(interaction, players, variants, excludedTargetUids);
   const { action } = interaction;
   const targetCount = action.targetCount;
   const [confirmingPartial, setConfirmingPartial] = useState(false);
@@ -60,6 +63,11 @@ export function PlayerNightActionRow({
     confirm();
   };
 
+  const handleSkip = () => {
+    setConfirmingPartial(false);
+    skip();
+  };
+
   const handleCancel = () => {
     setConfirmingPartial(false);
     cancel();
@@ -71,13 +79,15 @@ export function PlayerNightActionRow({
         <h3 className="font-serif text-lg font-semibold text-[#fffaf0]">{action.label}</h3>
         {locked && !exhausted && (
           <span className="rounded-full border border-[#6f9b77]/40 bg-[#6f9b77]/10 px-2 py-0.5 text-xs font-bold text-[#bfe0c5]">
-            Confirmado
+            {skipped ? "Pulou" : "Confirmado"}
           </span>
         )}
       </div>
 
       {exhausted ? (
         <p className="mt-2 text-sm text-[#9f9990]">Você já usou todos os usos desta ação.</p>
+      ) : skipped ? (
+        <p className="mt-2 text-sm text-[#9f9990]">Você pulou esta ação nesta noite.</p>
       ) : targetCount === 0 ? (
         <p className="mt-2 text-sm text-[#9f9990]">
           {locked ? "Ação registrada para esta noite." : "Esta ação não tem alvo."}
@@ -148,6 +158,14 @@ export function PlayerNightActionRow({
               {saving ? "Enviando…" : confirmingPartial ? "Confirmar mesmo assim" : "Confirmar"}
             </button>
           </div>
+          <button
+            type="button"
+            disabled={blocked || saving}
+            onClick={handleSkip}
+            className="mt-2 min-h-11 w-full rounded-xl border border-white/10 px-4 text-sm font-bold text-[#bdb7ad] disabled:opacity-50"
+          >
+            Pular esta ação
+          </button>
         </>
       )}
 
