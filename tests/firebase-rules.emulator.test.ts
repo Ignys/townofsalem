@@ -361,6 +361,31 @@ test("only the mafia sees the mafia: team, live picks and reactions", async () =
   await assertFails(set(ref(mafia, `${VOTE}/mafiaReactions/night-current/r4`), { uid: "player", key: "ok", at: 2 }));
 });
 
+test("the pace is set in the lobby; in fast track a living player can pass the night once", async () => {
+  const host = environment.authenticatedContext("host").database();
+  const player = environment.authenticatedContext("player").database();
+  const other = environment.authenticatedContext("other").database();
+
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}/public`), { status: "lobby", phase: "lobby" });
+  });
+  await assertSucceeds(set(ref(host, `${VOTE}/public/gamePace`), "fast"));
+  await assertFails(set(ref(host, `${VOTE}/public/gamePace`), "turbo"));
+  await assertFails(set(ref(player, `${VOTE}/public/gamePace`), "normal"));
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}/public`), { status: "in-progress" });
+    await update(ref(context.database(), `${VOTE}`), { "players/player/alive": true, nightPasses: null });
+  });
+  await assertFails(set(ref(host, `${VOTE}/public/gamePace`), "relaxed"));
+
+  await setPhase("night", { currentNightId: "night-current" });
+  await assertSucceeds(set(ref(player, `${VOTE}/nightPasses/night-current/player`), 1));
+  await assertFails(set(ref(player, `${VOTE}/nightPasses/night-current/player`), 2));
+  await assertFails(set(ref(other, `${VOTE}/nightPasses/night-current/player`), 1));
+  await assertFails(get(ref(other, `${VOTE}/nightPasses/night-current/player`)));
+  await assertFails(set(ref(player, `${VOTE}/nightPasses/night-old/player`), 1));
+});
+
 test("unauthenticated and cross-player secret reads fail", async () => {
   await assertFails(get(ref(environment.unauthenticatedContext().database(), "games/game/public")));
   const player = environment.authenticatedContext("player").database();

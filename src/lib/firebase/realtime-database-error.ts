@@ -25,6 +25,8 @@ export type RealtimeDatabaseOperation =
   | "observe-mafia-team"
   | "observe-mafia-board"
   | "observe-mafia-reactions"
+  | "observe-host-night-passes"
+  | "observe-night-pass"
   | "observe-host-player-night-actions"
   | "observe-verdict-vote"
   | "read-room-code"

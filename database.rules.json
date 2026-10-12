@@ -87,6 +87,9 @@
           "playMode": {
             ".validate": "newData.isString() && (newData.val() === 'hosted' || newData.val() === 'hostless') && (newData.val() === data.val() || root.child('games').child($gameId).child('public').child('status').val() === 'lobby' || !root.child('games').child($gameId).child('public').exists())"
           },
+          "gamePace": {
+            ".validate": "newData.isString() && (newData.val() === 'relaxed' || newData.val() === 'normal' || newData.val() === 'fast') && (newData.val() === data.val() || root.child('games').child($gameId).child('public').child('status').val() === 'lobby' || !root.child('games').child($gameId).child('public').exists())"
+          },
           "$other": {
             ".validate": false
           }
@@ -488,6 +491,17 @@
             "$reactionId": {
               ".write": "!data.exists() && auth !== null && root.child('games').child($gameId).child('mafiaTeam').child(auth.uid).exists() && root.child('games').child($gameId).child('players').child(auth.uid).child('alive').val() === true && root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' && root.child('games').child($gameId).child('public').child('phase').val() === 'night' && root.child('games').child($gameId).child('public').child('currentNightId').val() === $nightId",
               ".validate": "newData.hasChildren(['uid', 'key', 'at']) && newData.child('uid').val() === auth.uid && newData.child('key').isString() && newData.child('key').val().length <= 32 && newData.child('at').isNumber()"
+            }
+          }
+        },
+        "nightPasses": {
+          ".read": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          "$nightId": {
+            "$uid": {
+              ".read": "auth !== null && auth.uid === $uid",
+              ".write": "auth !== null && auth.uid === $uid && !data.exists() && newData.exists() && root.child('games').child($gameId).child('players').child(auth.uid).child('alive').val() === true && root.child('games').child($gameId).child('public').child('phase').val() === 'night' && root.child('games').child($gameId).child('public').child('currentNightId').val() === $nightId",
+              ".validate": "newData.isNumber()"
             }
           }
         },

@@ -100,6 +100,37 @@ test("a lynched jester gets 30s to take revenge before night", () => {
   );
 });
 
+test("each pace has its own timers", () => {
+  const night = { ...base, phase: "night" as const };
+  assert.deepEqual(decideHostlessStep(night, "idle", alive, NOW, null, null, "normal"), { kind: "start-timer", seconds: 60 });
+  assert.deepEqual(decideHostlessStep(night, "idle", alive, NOW, null, null, "fast"), { kind: "start-timer", seconds: 60 });
+  assert.deepEqual(decideHostlessStep(night, "idle", alive, NOW, null, null, "relaxed"), { kind: "start-timer", seconds: 90 });
+});
+
+test("fast track ends the night once everyone acted, and the vote once everyone voted", () => {
+  const night = { ...base, phase: "night" as const };
+  assert.deepEqual(
+    decideHostlessStep(night, "running", alive, NOW, null, null, "fast", { nightComplete: true, allVerdictsIn: false }),
+    { kind: "end-night" },
+  );
+  // Nos outros ritmos, a noite sempre vai até o fim do timer.
+  assert.equal(
+    decideHostlessStep(night, "running", alive, NOW, null, null, "normal", { nightComplete: true, allVerdictsIn: false }),
+    null,
+  );
+  const verdict = { ...base, phase: "verdict" as const, accusedPlayerUid: "ana" };
+  assert.deepEqual(
+    decideHostlessStep(verdict, "running", alive, NOW, null, null, "fast", { nightComplete: false, allVerdictsIn: true }),
+    { kind: "close-verdict" },
+  );
+});
+
+test("fast track skips the preparation before the defense", () => {
+  const trial = { ...base, phase: "trial" as const, accusedPlayerUid: "ana" };
+  assert.deepEqual(decideHostlessStep(trial, "idle", alive, NOW, null, null, "fast"), { kind: "start-verdict" });
+  assert.deepEqual(decideHostlessStep(trial, "idle", alive, NOW, null, null, "normal"), { kind: "start-timer", seconds: 10 });
+});
+
 test("nothing happens outside a running game", () => {
   assert.equal(decideHostlessStep({ ...base, status: "finished", phase: "night" }, "expired", alive, NOW), null);
   assert.equal(decideHostlessStep({ ...base, status: "lobby", phase: "lobby" }, "idle", alive, NOW), null);

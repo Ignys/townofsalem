@@ -56,6 +56,7 @@ export function createEndGameUpdates({
     [firebasePaths.gameMafiaTeam(gameId)]: null,
     [firebasePaths.gameMafiaBoards(gameId)]: null,
     [firebasePaths.gameAllMafiaReactions(gameId)]: null,
+    [firebasePaths.gameAllNightPasses(gameId)]: null,
     [firebasePaths.gameEvent(gameId, eventId)]: {
       type: "GAME_ENDED",
       timestamp: endedAt,

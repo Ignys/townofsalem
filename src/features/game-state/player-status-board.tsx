@@ -71,9 +71,7 @@ export function PlayerStatusBoard({ players, viewerUid, graveyard, mayorReveals 
               )}
             </span>
             {player.alive && mayorReveals?.[uid] && <PlayerRoleTag roleId="mayor" />}
-            {player.disconnected && player.alive && (
-              <span className="text-xs text-[#c18b2f]">desconectado</span>
-            )}
+            {/* Sem "desconectado" aqui: quem passa a noite offline denunciaria que não agiu. */}
             {!player.alive && graveyard?.[uid] && (
               graveyard[uid].cleaned || !graveyard[uid].roleId ? (
                 <span className="shrink-0 rounded-md border border-white/15 bg-white/5 px-2 py-0.5 text-[0.6875rem] font-medium text-[#9f9990] uppercase">

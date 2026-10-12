@@ -1,14 +1,31 @@
 import type { TimerStatus } from "@/features/timer/timer-state";
-import type { GamePublicRecord } from "@/lib/firebase/schema";
+import type { GamePace, GamePublicRecord } from "@/lib/firebase/schema";
 import type { GamePhase } from "@/types";
 
-/** Tempos do modo sem mestre (opção "Relaxed"). */
-export const HOSTLESS_PHASE_SECONDS: Partial<Record<GamePhase, number>> = {
-  night: 90,
-  discussion: 300,
-  trial: 15,
-  verdict: 60,
+/** Tempos do modo sem mestre por ritmo. O rápido usa os tempos do normal e encerra antes. */
+export const HOSTLESS_PACE_SECONDS: Record<GamePace, Partial<Record<GamePhase, number>>> = {
+  relaxed: { night: 90, discussion: 300, trial: 15, verdict: 60 },
+  normal: { night: 60, discussion: 180, trial: 10, verdict: 45 },
+  fast: { night: 60, discussion: 180, verdict: 45 },
 };
+
+/** Tempos do ritmo "Relaxed" (padrão). */
+export const HOSTLESS_PHASE_SECONDS = HOSTLESS_PACE_SECONDS.relaxed;
+
+export const GAME_PACE_LABELS: Record<GamePace, { title: string; description: string }> = {
+  relaxed: { title: "Relaxed", description: "Noite 1m30 · Discussão 5m · Preparação 15s · Defesa e votação 1m" },
+  normal: { title: "Normal", description: "Noite 1m · Discussão 3m · Preparação 10s · Defesa e votação 45s" },
+  fast: {
+    title: "Fast track",
+    description: "Tempos do Normal, mas a noite acaba quando todos agem, a votação quando todos votam, e sem preparação.",
+  },
+};
+
+/** Sinais do ritmo rápido: todo mundo já agiu à noite / já votou no veredito. */
+export interface FastTrackSignals {
+  nightComplete: boolean;
+  allVerdictsIn: boolean;
+}
 
 /** No modo sem mestre a defesa e a votação acontecem juntas, na fase de veredito. */
 export const HOSTLESS_PHASE_LABELS = {
@@ -49,7 +66,10 @@ export function decideHostlessStep(
   now: number,
   winner: { gameOver: boolean; winningFactions: readonly string[]; winningPlayerUids: readonly string[] } | null = null,
   jesterRevenge: PendingJesterRevenge | null = null,
+  pace: GamePace = "relaxed",
+  fast: FastTrackSignals = { nightComplete: false, allVerdictsIn: false },
 ): HostlessStep | null {
+  const seconds = HOSTLESS_PACE_SECONDS[pace];
   if (game.status !== "in-progress") return null;
 
   const showingVerdictResult = game.phase === "verdict"
@@ -84,9 +104,18 @@ export function decideHostlessStep(
     return now - game.verdictClosedAt >= VERDICT_RESULT_DISPLAY_MS ? { kind: "start-night" } : null;
   }
 
+  // Ritmo rápido: sem preparação, e cada fase acaba assim que todos fizeram sua parte.
+  if (pace === "fast") {
+    if (game.phase === "trial") return { kind: "start-verdict" };
+    // Vale com o timer correndo ou pausado: se todos já fizeram sua parte, não há o que esperar.
+    const ticking = timerStatus === "running" || timerStatus === "paused";
+    if (ticking && game.phase === "night" && fast.nightComplete) return { kind: "end-night" };
+    if (ticking && game.phase === "verdict" && !game.verdictClosedAt && fast.allVerdictsIn) return { kind: "close-verdict" };
+  }
+
   if (timerStatus === "idle") {
-    const seconds = HOSTLESS_PHASE_SECONDS[game.phase];
-    return seconds ? { kind: "start-timer", seconds } : null;
+    const phaseSeconds = seconds[game.phase];
+    return phaseSeconds ? { kind: "start-timer", seconds: phaseSeconds } : null;
   }
   if (timerStatus !== "expired") return null;
 

@@ -558,3 +558,26 @@ export function observeMafiaReactions(
 ): Unsubscribe {
   return observePath("observe-mafia-reactions", firebasePaths.gameMafiaReactions(gameId, nightId), observer);
 }
+
+/** Quem passou a noite (ritmo rápido). Só o mestre lê todos. */
+export function observeHostNightPasses(
+  gameId: string,
+  nightId: string,
+  verifiedHostUid: string,
+  observer: RealtimeValueObserver<Record<string, number>>,
+): Unsubscribe {
+  return observeVerifiedHostPath("observe-host-night-passes", firebasePaths.gameNightPasses(gameId, nightId), verifiedHostUid, observer);
+}
+
+/** Se o próprio jogador já passou esta noite (ritmo rápido). */
+export function observeAuthenticatedNightPass(
+  gameId: string,
+  nightId: string,
+  observer: RealtimeValueObserver<number>,
+): Unsubscribe {
+  return observeAuthenticatedPlayerPath(
+    "observe-night-pass",
+    (uid) => firebasePaths.gameNightPass(gameId, nightId, uid),
+    observer,
+  );
+}
