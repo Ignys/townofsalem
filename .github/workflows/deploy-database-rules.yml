@@ -1,0 +1,44 @@
+name: Deploy database rules
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - database.rules.json
+      - firebase.json
+      - .github/workflows/deploy-database-rules.yml
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-database-rules
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      # The database emulator used by the rules tests needs Java.
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - run: npm ci
+      - run: npm install -g firebase-tools
+
+      - name: Test rules against the emulator
+        run: npm run test:rules
+
+      - uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Deploy rules
+        run: firebase deploy --only database --project townofsalem-449f2 --non-interactive
