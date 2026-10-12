@@ -7,6 +7,8 @@ export type JoinGameErrorCode =
   | "invalid-experience"
   | "lookup-failed"
   | "persistence-failed"
+  | "rate-limited"
+  | "rejoin-unavailable"
   | "seat-not-found";
 
 export type JoinGameErrorField = "room-code" | "nickname";
@@ -45,6 +47,10 @@ export function getJoinGameErrorMessage(error: unknown): string {
       return "Não foi possível localizar a partida. Verifique sua conexão e tente novamente.";
     case "persistence-failed":
       return "Não foi possível entrar na partida. Verifique sua conexão e tente novamente.";
+    case "rate-limited":
+      return "Muitas tentativas. Aguarde um minuto e tente de novo.";
+    case "rejoin-unavailable":
+      return "Não foi possível voltar para a partida agora. Tente de novo em instantes.";
     case "seat-not-found":
       return "A partida já começou. Use exatamente o nickname com que você entrou para voltar.";
   }
