@@ -188,7 +188,7 @@ export function PlayerGameView({
                 gameId={gameId}
                 nightId={game.currentNightId}
                 nightNumber={game.nightNumber}
-                viewer={viewer}
+                viewer={{ ...viewer, statuses: Object.values(privateRole.privatePlayer.statuses ?? {}) }}
                 roleId={privateRole.privatePlayer.roleId}
                 players={roster}
                 variants={gameVariants.variants}

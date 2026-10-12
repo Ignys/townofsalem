@@ -8,6 +8,10 @@ import {
   createSeededRandomSource,
   type RandomSource,
 } from "./random";
+import {
+  EXECUTIONER_TARGET_STATUS_PREFIX,
+  getChosenExecutionTarget,
+} from "./role-rules";
 import { resolveRoleTriggers } from "./role-triggers";
 import type {
   EngineEffect,
@@ -199,8 +203,21 @@ export function resolveNight(
         ));
         continue;
       }
+      const choosesExecutionTarget = effect.actionId === "choose-execution-target";
+      // O Executioner escolhe uma vez só; uma segunda escolha é ignorada.
+      if (choosesExecutionTarget && getChosenExecutionTarget(playersByUid.get(effect.actorUid)?.statuses)) {
+        failedActions.add(effect.id);
+        continue;
+      }
       for (const targetUid of effect.targetUids) {
-        const statusType = effect.actionId === "choose-execution-target"
+        if (choosesExecutionTarget) {
+          appliedStatuses.push({
+            targetUid: effect.actorUid,
+            statusType: `${EXECUTIONER_TARGET_STATUS_PREFIX}${targetUid}`,
+            sourceActionId: effect.id,
+          });
+        }
+        const statusType = choosesExecutionTarget
           ? `execution-target:${effect.actorUid}`
           : effect.statusType;
         appliedStatuses.push({ targetUid, statusType, sourceActionId: effect.id });

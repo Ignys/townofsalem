@@ -21,7 +21,6 @@ const chooseExecutionTarget = nightAction({
   id: "choose-execution-target",
   label: "Escolher alvo",
   verb: "marca como alvo",
-  availableOnNight: 1,
   maxUses: 1,
   priority: 6,
   engineEffectType: "status-effect",
@@ -90,7 +89,7 @@ export const NEUTRAL_ROLES = [
     faction: "neutral",
     alignment: "Neutral Evil",
     description:
-      "Na primeira noite, escolha um alvo. Você vence se essa pessoa for enforcada. Se ela morrer durante a noite antes disso, você se transforma em Jester.",
+      "Escolha um alvo à noite (a partir da primeira, até escolher). Você vence se essa pessoa for enforcada. Se ela morrer durante a noite antes disso, você se transforma em Jester.",
     playTip:
       "Convença a Town a enforcar seu alvo. Uma simples morte noturna não cumpre seu objetivo.",
     goal: "Faça seu alvo ser enforcado em um julgamento.",

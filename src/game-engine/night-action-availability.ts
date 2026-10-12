@@ -11,7 +11,6 @@ const ACTION_SCHEDULES: Readonly<Record<string, NightSchedule>> = {
   "serial-killer:attack": { fromNight: 2 },
   "vigilante:shoot": { fromNight: 2 },
   "werewolf:full-moon-attack": { fromNight: 2, evenNightsOnly: true },
-  "executioner:choose-execution-target": { onlyNight: 1 },
   "amnesiac:remember-role": { onlyNight: 3 },
 };
 

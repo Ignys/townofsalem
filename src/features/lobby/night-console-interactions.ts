@@ -1,4 +1,4 @@
-import { canUseActionOnNight } from "@/game-engine/role-rules";
+import { canUseActionOnNight, getChosenExecutionTarget } from "@/game-engine/role-rules";
 import { withDefaultVariants, type GameVariants } from "@/game-engine/variants";
 import type {
   HostNightActionEntry,
@@ -41,6 +41,8 @@ export function getNightConsoleInteractions(
 
     return actions
       .filter((action) => canUseActionOnNight(action, nightNumber))
+      // O Executioner escolhe o alvo em qualquer noite, mas só até escolher.
+      .filter((action) => action.id !== "choose-execution-target" || !getChosenExecutionTarget(actor.statuses))
       .map((action) => ({
         id: `${actor.uid}:${action.id}`,
         actor,

@@ -43,6 +43,22 @@ export function executionerBecomesJester(
   return null;
 }
 
+/** Status que o Executioner recebe ao escolher o alvo; o sufixo é o uid do alvo. */
+export const EXECUTIONER_TARGET_STATUS_PREFIX = "executioner-target:";
+
+/** Alvo já escolhido pelo Executioner, a partir dos próprios status. */
+export function getChosenExecutionTarget(
+  statuses: readonly (string | { type: string })[] | undefined,
+): string | null {
+  for (const status of statuses ?? []) {
+    const type = typeof status === "string" ? status : status.type;
+    if (type.startsWith(EXECUTIONER_TARGET_STATUS_PREFIX)) {
+      return type.slice(EXECUTIONER_TARGET_STATUS_PREFIX.length);
+    }
+  }
+  return null;
+}
+
 export function canUseActionOnNight(
   action: RoleActionDefinition,
   nightNumber: number,

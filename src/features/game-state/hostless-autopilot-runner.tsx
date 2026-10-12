@@ -155,7 +155,7 @@ function useFastTrackSignals(
         .filter(([uid, player]) => {
           const assignment = privateRoles.assignments[uid];
           return assignment && canActTonight(
-            { id: uid, uid, ...player },
+            { id: uid, uid, ...player, statuses: Object.values(assignment.statuses ?? {}) },
             assignment.roleId,
             game.nightNumber ?? 1,
             gameVariants.variants,
