@@ -17,6 +17,15 @@ const RESOURCE_BY_ROLE: Readonly<Record<string, LimitedRoleResource>> = {
   vigilante: "vigilante-shot",
 };
 
+/**
+ * Recurso gasto por uma ação noturna da role. Mayor (voto de dia) e Janitor (gasto pelo
+ * combate, só quando a limpeza acontece) ficam de fora.
+ */
+export function getNightActionResource(roleId: string): LimitedRoleResource | null {
+  const resource = RESOURCE_BY_ROLE[roleId];
+  return resource && resource !== "mayor-vote" && resource !== "janitor" ? resource : null;
+}
+
 function getPlayerCountTier(playerCount: number): 0 | 1 | 2 | null {
   if (!Number.isInteger(playerCount) || playerCount < 1) return null;
   return playerCount >= 15 ? 2 : playerCount >= 10 ? 1 : 0;
