@@ -109,7 +109,17 @@ export function buildPlayerDawnNightResults(
 
   (resolution.survivors ?? []).forEach((survival) => {
     if (deaths.has(survival.targetUid)) return;
-    add(survival.targetUid, resolutionTextMessage("Você foi atacado nesta noite, mas sobreviveu."));
+    // Como no jogo original: quem sobreviveu sabe se foi curado ou protegido, mas não por quem.
+    const protections = new Set(
+      survival.sourceActionIds.map((actionId) => effectsById.get(actionId)?.protectionType),
+    );
+    add(survival.targetUid, resolutionTextMessage(
+      protections.has("doctor")
+        ? "Você foi atacado nesta noite, mas um Doctor te curou!"
+        : protections.has("bodyguard")
+          ? "Você foi atacado nesta noite, mas alguém te protegeu!"
+          : "Você foi atacado nesta noite, mas sobreviveu.",
+    ));
 
     const doctorUids = new Set(
       survival.sourceActionIds
