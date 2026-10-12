@@ -1,7 +1,8 @@
 import "server-only";
 
+import { createSign } from "node:crypto";
+
 import { cert, getApps, initializeApp, type App } from "firebase-admin/app";
-import { getAuth, type Auth } from "firebase-admin/auth";
 import { getDatabase, type Database } from "firebase-admin/database";
 
 import { parseServiceAccount } from "./parse-service-account";
@@ -49,8 +50,48 @@ export function getAdminDatabase(): Database | null {
   return database;
 }
 
-export function getAdminAuth(): Auth | null {
-  const app = getAdminApp();
+const CUSTOM_TOKEN_AUDIENCE =
+  "https://identitytoolkit.googleapis.com/google.identity.identitytoolkit.v1.IdentityToolkit";
 
-  return app ? getAuth(app) : null;
+function base64Url(value: string | Buffer): string {
+  return Buffer.from(value).toString("base64url");
+}
+
+/**
+ * Token para `signInWithCustomToken`, assinado com a chave da service account. Não usa
+ * firebase-admin/auth: na Vercel ele não carrega (jwks-rsa faz require() do jose, que é ESM).
+ */
+export function createCustomToken(uid: string): string | null {
+  const credentials = process.env.SYNC_SERVICE_ACCOUNT;
+
+  if (!credentials) {
+    return null;
+  }
+
+  const account = parseServiceAccount(credentials) as {
+    client_email?: string;
+    private_key?: string;
+  };
+
+  if (!account.client_email || !account.private_key) {
+    return null;
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  const header = base64Url(JSON.stringify({ alg: "RS256", typ: "JWT" }));
+  const payload = base64Url(
+    JSON.stringify({
+      iss: account.client_email,
+      sub: account.client_email,
+      aud: CUSTOM_TOKEN_AUDIENCE,
+      iat: now,
+      exp: now + 3600,
+      uid,
+    }),
+  );
+  const signature = createSign("RSA-SHA256")
+    .update(`${header}.${payload}`)
+    .sign(account.private_key);
+
+  return `${header}.${payload}.${base64Url(signature)}`;
 }

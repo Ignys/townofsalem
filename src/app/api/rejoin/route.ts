@@ -1,5 +1,5 @@
 import { findRejoinSeat } from "@/features/lobby/find-rejoin-seat";
-import { getAdminAuth, getAdminDatabase } from "@/lib/firebase/admin";
+import { createCustomToken, getAdminDatabase } from "@/lib/firebase/admin";
 import { isValidRoomCode, normalizeRoomCode } from "@/lib/utils/room-code";
 
 const attempts = new Map<string, { count: number; resetAt: number }>();
@@ -45,9 +45,8 @@ async function rejoin(request: Request) {
   }
 
   const database = getAdminDatabase();
-  const auth = getAdminAuth();
 
-  if (!database || !auth) {
+  if (!database) {
     return reply(503, { error: "unavailable" });
   }
 
@@ -91,5 +90,11 @@ async function rejoin(request: Request) {
     return reply(404, { error: "seat-not-found" });
   }
 
-  return reply(200, { token: await auth.createCustomToken(uid), gameId });
+  const token = createCustomToken(uid);
+
+  if (!token) {
+    return reply(503, { error: "unavailable" });
+  }
+
+  return reply(200, { token, gameId });
 }
