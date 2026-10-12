@@ -104,7 +104,11 @@ export function adaptHostActions(
     const godfather = mafiaVotes.find(
       (entry) => entry.roleIdSnapshot === "godfather",
     );
-    const targetUid = resolveMafiaVoteTarget(votes, godfather?.actorUid);
+    const targetUid = resolveMafiaVoteTarget(
+      votes,
+      godfather?.actorUid,
+      mafiaVotes[0].nightId,
+    );
 
     if (!targetUid) {
       warnings.push({

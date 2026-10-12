@@ -14,7 +14,7 @@ export interface MafiaKillTally {
 
 /**
  * Placar do ataque da Máfia: o alvo mais votado morre; empate só se resolve pelo voto do
- * Godfather, senão ninguém morre. Mesma regra de `resolveMafiaVoteTarget` no motor.
+ * Godfather, senão o motor sorteia um dos empatados ao fim da noite (aqui fica `tied`).
  */
 export function tallyMafiaKill(
   board: Readonly<Record<string, Readonly<Record<string, MafiaBoardPickRecord>>>>,
