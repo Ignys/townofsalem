@@ -23,6 +23,8 @@ interface PlayerNightActionPanelProps {
   resourceUses?: Readonly<Record<string, number>>;
   /** Ritmo rápido: oferece "Passar a noite" a quem ainda não confirmou nada. */
   fastTrack?: boolean;
+  /** Parceiros da Máfia: não aparecem como alvo. */
+  mafiaTeamUids?: readonly string[];
 }
 
 export function PlayerNightActionPanel({
@@ -36,6 +38,7 @@ export function PlayerNightActionPanel({
   playerCount,
   resourceUses,
   fastTrack = false,
+  mafiaTeamUids = [],
 }: PlayerNightActionPanelProps) {
   const { submissions, loaded, error } = usePlayerNightSubmissions(gameId, nightId);
   const interactions = nightId && nightNumber
@@ -90,6 +93,7 @@ export function PlayerNightActionPanel({
             disabled={false}
             exhausted={exhausted}
             shareWithMafia={getRoleById(roleId)?.faction === "mafia"}
+            excludedTargetUids={mafiaTeamUids}
           />
         ))}
       </ul>

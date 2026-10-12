@@ -20,7 +20,8 @@ export interface PlayerSubmissionRecord {
 export type MirrorSkipReason =
   | "no-matching-interaction"
   | "unchanged"
-  | "host-override";
+  | "host-override"
+  | "player-skipped";
 
 export interface MirrorPlan {
   entries: readonly HostNightActionEntry[];
@@ -53,6 +54,12 @@ export function buildMirrorPlan(
       (candidate) =>
         candidate.actor.uid === actorUid && candidate.action.id === submission.actionId,
     );
+
+    // Pular não vira entrada: não gasta uso nem entra na resolução.
+    if (submission.skipped) {
+      skipped.push({ actorUid, actionId: submission.actionId, reason: "player-skipped" });
+      continue;
+    }
 
     if (!interaction) {
       skipped.push({ actorUid, actionId: submission.actionId, reason: "no-matching-interaction" });

@@ -34,6 +34,8 @@ export interface PlayerNightActionSubmission {
   actionId: string;
   roleIdSnapshot: string;
   targetUids: readonly string[];
+  /** O jogador escolheu não agir com esta ação nesta noite. */
+  skipped?: boolean;
   createdAt: number;
   updatedAt: number;
 }

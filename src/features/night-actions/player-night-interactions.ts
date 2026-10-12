@@ -36,13 +36,23 @@ export function getPlayerNightInteractions(
   );
 }
 
-/** Alvos legais para uma ação do jogador. Usa apenas dados públicos (uid, alive, seat). */
+/**
+ * Alvos legais para uma ação do jogador. Usa apenas dados públicos (uid, alive, seat).
+ *
+ * `excludedUids` tira da lista quem não faz sentido mirar — ex.: os parceiros da Máfia.
+ * O próprio jogador e ações sobre mortos não são afetados.
+ */
 export function getPlayerNightTargets(
   interaction: NightConsoleInteraction,
   players: readonly Player[],
   variants?: Partial<GameVariants>,
+  excludedUids: readonly string[] = [],
 ): readonly Player[] {
-  return getAvailableNightTargets(interaction, players, variants);
+  const targets = getAvailableNightTargets(interaction, players, variants);
+  if (excludedUids.length === 0 || interaction.action.requireDeadTarget) return targets;
+  return targets.filter(
+    ({ uid }) => uid === interaction.actor.uid || !excludedUids.includes(uid),
+  );
 }
 
 export type { NightConsoleInteraction };

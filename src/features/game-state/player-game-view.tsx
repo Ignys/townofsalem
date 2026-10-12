@@ -210,6 +210,7 @@ export function PlayerGameView({
                 playerCount={playerCount}
                 resourceUses={privateRole.privatePlayer.resourceUses}
                 fastTrack={game.playMode === "hostless" && game.gamePace === "fast"}
+                mafiaTeamUids={Object.keys(mafiaTeam)}
               />
             ) : (
               <p className="text-sm leading-6 text-[#a9b3cc]">

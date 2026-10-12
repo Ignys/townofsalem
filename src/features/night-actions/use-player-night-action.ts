@@ -57,7 +57,7 @@ export function usePlayerNightAction({
     void shareMafiaDraftPick(gameId, nightId, interaction.action.id, targetUids).catch(() => undefined);
   };
 
-  const confirm = () => {
+  const submit = (skipped: boolean) => {
     if (disabled || locked || saving) return;
 
     const timestamp = currentTimestamp();
@@ -66,7 +66,8 @@ export function usePlayerNightAction({
       nightNumber,
       actionId: interaction.action.id,
       roleIdSnapshot: interaction.role.id,
-      targetUids: draftTargetUids.filter(Boolean),
+      targetUids: skipped ? [] : draftTargetUids.filter(Boolean),
+      ...(skipped ? { skipped: true } : {}),
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -88,7 +89,10 @@ export function usePlayerNightAction({
     error,
     /** Quantos alvos o jogador escolheu (antes de confirmar). */
     chosenCount,
-    confirm,
+    /** Pular: trava "nenhuma ação" para esta noite. */
+    skipped: Boolean(submission?.skipped),
+    confirm: () => submit(false),
+    skip: () => submit(true),
     cancel: () => {
       setDraftTargetUids([]);
       shareDraft([]);

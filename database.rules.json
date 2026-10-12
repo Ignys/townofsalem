@@ -308,6 +308,9 @@
                 "updatedAt": {
                   ".validate": "newData.isNumber()"
                 },
+                "skipped": {
+                  ".validate": "newData.isBoolean()"
+                },
                 "$other": {
                   ".validate": false
                 }
