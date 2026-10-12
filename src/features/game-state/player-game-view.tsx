@@ -201,6 +201,14 @@ export function PlayerGameView({
                 A noite está em andamento. Aguarde o mestre chamar sua role.
               </p>
             )
+          ) : game.phase === "trial" && game.playMode === "hostless" ? (
+            <>
+              <p className="mb-3 text-sm leading-6 text-[#e6cfa9]">
+                <strong className="text-[#fffaf0]">{accused?.name ?? "Um jogador"}</strong> tem a
+                palavra para se defender. A votação começa em seguida.
+              </p>
+              <GameTimerDisplay game={game} />
+            </>
           ) : game.phase === "trial" ? (
             <p className="text-sm leading-6 text-[#e6cfa9]">
               <strong className="text-[#fffaf0]">{accused?.name ?? "Um jogador"}</strong> está
