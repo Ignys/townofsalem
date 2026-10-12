@@ -67,7 +67,7 @@ export function usePlayerNightAction({
     setError(null);
     savePlayerNightAction(gameId, payload)
       .catch(() => {
-        setError("Não foi possível enviar sua ação. A noite pode já ter sido resolvida pelo mestre.");
+        setError("Não foi possível enviar sua ação. Tente de novo; se continuar, a noite pode já ter acabado.");
       })
       .finally(() => setSaving(false));
   };

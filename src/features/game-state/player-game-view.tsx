@@ -175,6 +175,11 @@ export function PlayerGameView({
         </h1>
 
         <div className="mt-5">
+          {isNight && (
+            <div className="mb-5">
+              <GameTimerDisplay game={game} />
+            </div>
+          )}
           {isNight ? (
             viewer ? (
               <PlayerNightActionPanel

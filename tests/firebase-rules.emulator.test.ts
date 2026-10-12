@@ -301,6 +301,26 @@ test("night results: instant ones reach only their owner, dawn ones wait for the
   await assertFails(get(ref(environment.authenticatedContext("stranger").database(), `${VOTE}/dayAnnouncements`)));
 });
 
+test("actions without a target are accepted: the RTDB drops empty lists", async () => {
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await remove(ref(context.database(), `${VOTE}/playerNightActions`));
+    await update(ref(context.database(), `${VOTE}/nightSessions/night-current`), { resolutionAppliedAt: null });
+  });
+  await setPhase("night");
+  const player = environment.authenticatedContext("player").database();
+  const host = environment.authenticatedContext("host").database();
+  // `targetUids: []` chega ao servidor sem o campo; o alerta do Veteran precisa passar mesmo assim.
+  const alert = { nightId: "night-current", nightNumber: 2, actionId: "alert", roleIdSnapshot: "sheriff", targetUids: [], createdAt: 1, updatedAt: 1 };
+
+  await assertSucceeds(set(ref(player, `${VOTE}/playerNightActions/night-current/player/alert`), alert));
+  await assertSucceeds(set(ref(host, `${VOTE}/hostNightActions/night-current/player-player-alert`), {
+    ...alert,
+    id: "player-player-alert",
+    actorUid: "player",
+    status: "confirmed",
+  }));
+});
+
 test("unauthenticated and cross-player secret reads fail", async () => {
   await assertFails(get(ref(environment.unauthenticatedContext().database(), "games/game/public")));
   const player = environment.authenticatedContext("player").database();
