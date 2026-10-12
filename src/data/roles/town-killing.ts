@@ -8,6 +8,8 @@ const alertAction = nightAction({
   label: "Entrar em Alert",
   verb: "entra em Alert",
   targetCount: 0,
+  // Ninguém mata na primeira noite: um Alert ali só gastaria um uso.
+  availableFromNight: 2,
   priority: 20,
   engineEffectType: "protect",
   engineEffectConfig: { countsAsVisit: false },

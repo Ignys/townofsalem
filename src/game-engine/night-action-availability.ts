@@ -12,6 +12,9 @@ const ACTION_SCHEDULES: Readonly<Record<string, NightSchedule>> = {
   "vigilante:shoot": { fromNight: 2 },
   "werewolf:full-moon-attack": { fromNight: 2, evenNightsOnly: true },
   "amnesiac:remember-role": { onlyNight: 3 },
+  "bodyguard:guard": { fromNight: 2 },
+  "doctor:protect": { fromNight: 2 },
+  "veteran:alert": { fromNight: 2 },
 };
 
 export function isEngineActionAvailableOnNight(

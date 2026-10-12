@@ -7,6 +7,8 @@ const bodyguardProtection = nightAction({
   id: "guard",
   label: "Proteger com sacrifício",
   verb: "protege",
+  // Ninguém mata na primeira noite, então não há o que proteger.
+  availableFromNight: 2,
   priority: 30,
   engineEffectType: "protect",
   engineEffectConfig: { protectionType: "bodyguard" },
@@ -16,6 +18,7 @@ const doctorProtection = nightAction({
   id: "protect",
   label: "Curar",
   verb: "cura",
+  availableFromNight: 2,
   priority: 30,
   engineEffectType: "protect",
   engineEffectConfig: {
