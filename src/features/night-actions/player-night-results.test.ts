@@ -96,7 +96,7 @@ test("dawn results tell each player what happened to them", () => {
   ), {
     eva: ["Você morreu nesta noite."],
     dex: ["Você morreu nesta noite protegendo Ana."],
-    bia: ["Você foi atacado nesta noite, mas sobreviveu."],
+    bia: ["Você foi atacado nesta noite, mas um Doctor te curou!"],
     ana: [
       "Seu alvo Bia foi atacado e você o salvou.",
       "Você foi bloqueado nesta noite e sua ação não teve efeito.",
@@ -123,7 +123,7 @@ test("a bodyguard healed by the doctor learns they intercepted the attack", () =
 
   const results = buildPlayerDawnNightResults(resolution, names);
   assert.deepEqual(results.dex.map(lineText), [
-    "Você foi atacado nesta noite, mas sobreviveu.",
+    "Você foi atacado nesta noite, mas um Doctor te curou!",
     "Você interceptou um ataque contra Bia.",
   ]);
   assert.deepEqual(results.ana.map(lineText), ["Seu alvo Dex foi atacado e você o salvou."]);
@@ -131,4 +131,26 @@ test("a bodyguard healed by the doctor learns they intercepted the attack", () =
 
 test("a quiet night gives nobody a dawn result", () => {
   assert.deepEqual(buildPlayerDawnNightResults(base, names), {});
+});
+
+test("a survivor learns whether a Doctor healed them or someone guarded them", () => {
+  const healed = buildPlayerDawnNightResults({
+    ...base,
+    survivors: [{ targetUid: "bia", reasonCode: "HEALED", sourceActionIds: ["heal"] }],
+    appliedEffects: [effect({ id: "heal", actorUid: "ana", targetUids: ["bia"], protectionType: "doctor" })],
+  }, names);
+  assert.deepEqual(healed.bia.map(lineText), ["Você foi atacado nesta noite, mas um Doctor te curou!"]);
+
+  const guarded = buildPlayerDawnNightResults({
+    ...base,
+    survivors: [{ targetUid: "bia", reasonCode: "GUARDED", sourceActionIds: ["guard"] }],
+    appliedEffects: [effect({ id: "guard", actorUid: "dex", roleId: "bodyguard", targetUids: ["bia"], protectionType: "bodyguard" })],
+  }, names);
+  assert.deepEqual(guarded.bia.map(lineText), ["Você foi atacado nesta noite, mas alguém te protegeu!"]);
+
+  const immune = buildPlayerDawnNightResults({
+    ...base,
+    survivors: [{ targetUid: "bia", reasonCode: "IMMUNE", sourceActionIds: [] }],
+  }, names);
+  assert.deepEqual(immune.bia.map(lineText), ["Você foi atacado nesta noite, mas sobreviveu."]);
 });
