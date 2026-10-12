@@ -9,6 +9,8 @@ interface PlayerStatusBoardProps {
   players: Readonly<Record<string, PublicPlayerRecord>>;
   viewerUid: string;
   graveyard?: Readonly<Record<string, GraveyardEntryRecord>>;
+  /** Mayors que se revelaram: a role deles é pública. */
+  mayorReveals?: Readonly<Record<string, number>>;
 }
 
 function bySeat(
@@ -24,7 +26,7 @@ function bySeat(
  * Living players never show a role — that stays with the host. Dead players do,
  * unless the Janitor cleaned the body, in which case the grave stays anonymous.
  */
-export function PlayerStatusBoard({ players, viewerUid, graveyard }: PlayerStatusBoardProps) {
+export function PlayerStatusBoard({ players, viewerUid, graveyard, mayorReveals }: PlayerStatusBoardProps) {
   const { alive, dead } = useMemo(() => {
     const entries = Object.entries(players).sort(bySeat);
     return {
@@ -34,7 +36,7 @@ export function PlayerStatusBoard({ players, viewerUid, graveyard }: PlayerStatu
   }, [players]);
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-black/15 p-4">
+    <section aria-label="Na partida" className="rounded-2xl border border-white/10 bg-black/15 p-4">
       <div className="flex items-center justify-between gap-4">
         <h2 className="text-xs font-bold tracking-wide text-[#9f9990] uppercase">
           Na partida
@@ -68,6 +70,7 @@ export function PlayerStatusBoard({ players, viewerUid, graveyard }: PlayerStatu
                 <span className="ml-2 text-xs font-normal text-[#d3b88c]">você</span>
               )}
             </span>
+            {player.alive && mayorReveals?.[uid] && <PlayerRoleTag roleId="mayor" />}
             {player.disconnected && player.alive && (
               <span className="text-xs text-[#c18b2f]">desconectado</span>
             )}

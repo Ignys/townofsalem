@@ -11,6 +11,8 @@ const firebaseEnvironment = {
   NEXT_PUBLIC_USE_FIREBASE_EMULATORS: "true",
   NEXT_PUBLIC_FIREBASE_AUTH_EMULATOR_URL: "http://127.0.0.1:9099",
   NEXT_PUBLIC_FIREBASE_DATABASE_EMULATOR_HOST: "127.0.0.1:9000",
+  // Partidas sem mestre com timers de segundos, para os testes não esperarem minutos.
+  NEXT_PUBLIC_HOSTLESS_TIMER_SCALE: "0.1",
 };
 
 export default defineConfig({

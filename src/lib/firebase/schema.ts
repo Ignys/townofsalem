@@ -40,6 +40,15 @@ export interface GamePublicRecord {
   winningFactions?: readonly string[];
   winningPlayerUids?: readonly string[];
   gameEndedAt?: number;
+  /** "hostless": o computador vira só a mesa e o motor resolve tudo. Ausente equivale a "hosted". */
+  playMode?: GamePlayMode;
+}
+
+export const GAME_PLAY_MODES = ["hosted", "hostless"] as const;
+export type GamePlayMode = (typeof GAME_PLAY_MODES)[number];
+
+export function isHostlessGame(game: Pick<GamePublicRecord, "playMode">): boolean {
+  return game.playMode === "hostless";
 }
 
 export interface GameSettingsRecord {

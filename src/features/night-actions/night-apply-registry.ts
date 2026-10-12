@@ -7,7 +7,13 @@
 export type NightApplyOutcome =
   | { kind: "applied" }
   | { kind: "already-applied" }
+  | { kind: "loading" }
   | { kind: "blocked"; reason: string };
+
+/** Quanto esperar o preview da noite ficar pronto (ex.: mestre clicou logo após sortear). */
+const LOADING_WAIT_MS = 5_000;
+const LOADING_POLL_MS = 200;
+const LOADING_REASON = "A resolução da noite ainda está carregando. Tente de novo em instantes.";
 
 type NightApplier = () => Promise<NightApplyOutcome>;
 
@@ -20,10 +26,16 @@ export function registerNightApplier(gameId: string, applier: NightApplier): () 
   };
 }
 
-export async function applyNightBeforeLeaving(gameId: string): Promise<NightApplyOutcome> {
-  const applier = appliers.get(gameId);
-  if (!applier) {
-    return { kind: "blocked", reason: "A resolução da noite ainda está carregando. Tente de novo em instantes." };
+export async function applyNightBeforeLeaving(
+  gameId: string,
+  waitMs: number = LOADING_WAIT_MS,
+): Promise<Exclude<NightApplyOutcome, { kind: "loading" }>> {
+  const deadline = Date.now() + waitMs;
+  for (;;) {
+    const applier = appliers.get(gameId);
+    const outcome: NightApplyOutcome = applier ? await applier() : { kind: "loading" };
+    if (outcome.kind !== "loading") return outcome;
+    if (Date.now() >= deadline) return { kind: "blocked", reason: LOADING_REASON };
+    await new Promise((resolve) => setTimeout(resolve, LOADING_POLL_MS));
   }
-  return applier();
 }

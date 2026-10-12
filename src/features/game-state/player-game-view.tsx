@@ -14,12 +14,15 @@ import { GameTimerDisplay } from "@/features/timer/game-timer-display";
 import { AccusationTallyBoard } from "@/features/voting/accusation-tally-board";
 import { PlayerAccusationVoting } from "@/features/voting/player-accusation-voting";
 import { PlayerVerdictVoting } from "@/features/voting/player-verdict-voting";
+import { PlayerJesterRevenge } from "@/features/voting/player-jester-revenge";
+import { VerdictVotesBoard } from "@/features/voting/verdict-votes-board";
 import { isAccusationPhase } from "@/features/voting/voting-phases";
 import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
 import type { Player } from "@/types";
 
 import { getPlayerEntries } from "./player-roster";
 
+import { GameOverCard } from "./game-over-card";
 import { GAME_PHASE_LABELS } from "./game-phase-presentation";
 import { useSessionSyncKey } from "./use-session-sync";
 
@@ -30,7 +33,9 @@ import { PlayerRoleHoldButton } from "./player-role-hold-button";
 import { PlayerRoleNotice } from "./player-role-notice";
 import { PlayerStatusBoard } from "./player-status-board";
 import { RemainingRolesBoard } from "./remaining-roles-board";
+import { PlayerMayorReveal } from "./player-mayor-reveal";
 import { useGraveyard } from "./use-graveyard";
+import { useMayorReveals } from "./use-mayor-reveals";
 import { usePrivatePlayerRole } from "./use-private-player-role";
 
 interface PlayerGameViewProps {
@@ -64,6 +69,7 @@ export function PlayerGameView({
   const privateRole = usePrivatePlayerRole(gameId);
   const gameVariants = useGameVariants(gameId);
   const { graveyard } = useGraveyard(gameId);
+  const mayorReveals = useMayorReveals(gameId);
   const syncKey = useSessionSyncKey();
   const [syncOpen, setSyncOpen] = useState(false);
   const holdTimer = useRef<number | null>(null);
@@ -208,21 +214,16 @@ export function PlayerGameView({
       {isNight && <PlayerInstantNightResults gameId={gameId} nightId={game.currentNightId} />}
       <PlayerDawnNightResults gameId={gameId} revealed={!isNight && game.phase !== "lobby"} />
 
-      {game.status === "finished" && (
-        <section className="mt-4 rounded-2xl border border-[#d3b88c]/30 bg-[#d3b88c]/10 p-4 text-center">
-          <h2 className="font-serif text-xl font-semibold">Partida encerrada</h2>
-          {game.winningFactions && game.winningFactions.length > 0 && (
-            <p className="mt-2 text-sm text-[#e6cfa9]">
-              Vencedores: {game.winningFactions.join(", ")}
-            </p>
-          )}
-        </section>
-      )}
+      <GameOverCard game={game} players={players} />
 
       {!alive && (
         <p className="mt-4 rounded-xl border border-[#a33843]/30 bg-[#a33843]/10 px-4 py-3 text-center text-sm text-[#f0b9bd]">
           Você está morto, mas continua acompanhando a partida.
         </p>
+      )}
+
+      {role.id === "mayor" && alive && !isNight && game.status === "in-progress" && !mayorReveals[viewerUid] && (
+        <PlayerMayorReveal gameId={gameId} />
       )}
 
       {accusing && (
@@ -257,12 +258,27 @@ export function PlayerGameView({
             accusedPlayerUid={game.accusedPlayerUid}
             verdictClosedAt={game.verdictClosedAt}
             verdictOutcome={game.verdictOutcome}
+            roleId={privateRole.privatePlayer.roleId}
           />
         )
       )}
+      {game.phase === "verdict"
+        && game.verdictClosedAt
+        && privateRole.privatePlayer.statuses?.["jester-revenge-pending"] && (
+        <PlayerJesterRevenge gameId={gameId} dayNumber={game.day} viewerUid={viewerUid} players={players} />
+      )}
+      {game.phase === "verdict" && (
+        <VerdictVotesBoard
+          gameId={gameId}
+          dayNumber={game.day}
+          players={players}
+          accusedUid={game.accusedPlayerUid}
+          closed={Boolean(game.verdictClosedAt)}
+        />
+      )}
 
       <div className="mt-4">
-        <PlayerStatusBoard players={players} viewerUid={viewerUid} graveyard={graveyard} />
+        <PlayerStatusBoard players={players} viewerUid={viewerUid} graveyard={graveyard} mayorReveals={mayorReveals} />
       </div>
 
       <div className="mt-4">

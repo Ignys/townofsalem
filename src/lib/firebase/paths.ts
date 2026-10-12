@@ -99,6 +99,17 @@ export const firebasePaths = {
   gameDayAnnouncement: (gameId: string, nightId: string) =>
     `${gamePath(gameId)}/dayAnnouncements/${nightId}` as const,
 
+  gameJesterRevenges: (gameId: string, dayNumber: number) =>
+    `${gamePath(gameId)}/jesterRevenge/${dayNumber}` as const,
+  gameJesterRevenge: (gameId: string, dayNumber: number, uid: string) =>
+    `${gamePath(gameId)}/jesterRevenge/${dayNumber}/${uid}` as const,
+
+  gameAllPlayerDawnResults: (gameId: string) => `${gamePath(gameId)}/playerDawnResults` as const,
+  gameAllPlayerInstantResults: (gameId: string) => `${gamePath(gameId)}/playerInstantResults` as const,
+  gameAllJesterRevenges: (gameId: string) => `${gamePath(gameId)}/jesterRevenge` as const,
+  gameMayorReveals: (gameId: string) => `${gamePath(gameId)}/mayorReveals` as const,
+  gameMayorReveal: (gameId: string, uid: string) => `${gamePath(gameId)}/mayorReveals/${uid}` as const,
+
   gameHostNotes: (gameId: string, nightId: string) =>
     `${gamePath(gameId)}/hostNotes/${nightId}` as const,
   gameHostNote: (gameId: string, nightId: string, noteId: string) =>

@@ -113,9 +113,49 @@ export const CARD_GAME_STALEMATE_RULES: readonly WinConditionRule[] = [
   },
 ];
 
+/** Neutros que não impedem a vitória de ninguém (o regulamento: "may still win if ... alive"). */
+const BENIGN_NEUTRAL_ROLES = new Set(["jester", "executioner", "amnesiac"]);
+const NEUTRAL_KILLER_ROLES = new Set(["serial-killer", "werewolf", "witch"]);
+
+/** Lado que precisa eliminar os outros para vencer; neutros benignos não têm lado. */
+function getEliminationSide(player: EngineGameState["players"][number]): string | null {
+  if (BENIGN_NEUTRAL_ROLES.has(player.roleId)) return null;
+  if (player.faction === "town" || player.faction === "mafia") return player.faction;
+  return NEUTRAL_KILLER_ROLES.has(player.roleId) ? player.roleId : null;
+}
+
+/**
+ * Vitória por eliminação, do regulamento: a Cidade vence quando não sobra Máfia, Serial
+ * Killer, Werewolf nem Witch; a Máfia, quando não sobra ninguém que não se submeta; cada
+ * neutro assassino, quando sobra só ele. Neutros benignos vivos não impedem a vitória.
+ */
+export const ELIMINATION_RULES: readonly WinConditionRule[] = [
+  {
+    id: "last-side-standing",
+    evaluate: (state) => {
+      const alive = state.players.filter(({ alive: isAlive }) => isAlive);
+      const sides = new Set(alive.map(getEliminationSide).filter((side): side is string => side !== null));
+      if (sides.size > 1) return null;
+      if (sides.size === 0) return result("NO_SIDE_LEFT_DRAW", [], []);
+
+      const [side] = [...sides];
+      const members = state.players.filter((player) => getEliminationSide(player) === side);
+      if (side === "town" || side === "mafia") {
+        return result(`${side.toUpperCase()}_ELIMINATED_OPPOSITION`, [side], members.map(({ uid }) => uid));
+      }
+      return result("NEUTRAL_KILLER_LAST_STANDING", ["neutral"], members.filter(({ alive: isAlive }) => isAlive).map(({ uid }) => uid));
+    },
+  },
+];
+
+export const DEFAULT_WIN_RULES: readonly WinConditionRule[] = [
+  ...CARD_GAME_STALEMATE_RULES,
+  ...ELIMINATION_RULES,
+];
+
 export function checkWinCondition(
   gameState: EngineGameState,
-  confirmedRules: readonly WinConditionRule[] = CARD_GAME_STALEMATE_RULES,
+  confirmedRules: readonly WinConditionRule[] = DEFAULT_WIN_RULES,
 ): WinConditionResult {
   for (const rule of confirmedRules) {
     const result = rule.evaluate(gameState);

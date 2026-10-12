@@ -9,10 +9,15 @@ import { HostHistoryPanel } from "@/features/game-state/host-history-panel";
 import { HostInvestigationCalculator } from "@/features/game-state/host-investigation-calculator";
 import { HostDiagnostics } from "@/features/game-state/host-diagnostics";
 import { HostWinConditionSuggestion } from "@/features/game-state/host-win-condition-suggestion";
+import { HostlessAutopilotRunner } from "@/features/game-state/hostless-autopilot-runner";
+import { HostlessTableControls } from "@/features/game-state/hostless-table-controls";
+import { HostlessTableView } from "@/features/game-state/hostless-table-view";
+import { useMirrorMayorReveals } from "@/features/game-state/use-mayor-reveals";
 import { HostDayAnnouncements } from "@/features/night-actions/host-day-announcements";
 import { HostNightWorkspace } from "@/features/night-actions/host-night-workspace";
 import { HostVotingPanel } from "@/features/voting/host-voting-panel";
 import { HostRoleComposition } from "@/features/roles/host-role-composition";
+import { isHostlessGame } from "@/lib/firebase/schema";
 
 import { HostLobbyHeader } from "./host-lobby-header";
 import { HostPlayerSidebar } from "./host-player-sidebar";
@@ -22,10 +27,17 @@ import type { RestoredHostSession } from "./restore-host-session";
 import { useFirebaseConnection } from "./use-firebase-connection";
 import { useRealtimeLobby } from "./use-realtime-lobby";
 import { HostNightConsole } from "./host-night-console";
+import { PlayModeSelector } from "./play-mode-selector";
 import { scrollToNightConsoleAction } from "@/features/night-actions/night-console-navigation";
 
 interface HostLobbySessionProps {
     roomCode: string;
+}
+
+/** Leva as revelações de Mayor feitas no celular para o status privado, nos dois modos. */
+function MayorRevealMirror({ gameId, hostUid }: Readonly<{ gameId: string; hostUid: string }>) {
+    useMirrorMayorReveals(gameId, hostUid, true);
+    return null;
 }
 
 type HostSessionState = { status: "loading" } | { status: "ready"; session: RestoredHostSession } | { status: "error"; message: string };
@@ -93,6 +105,8 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
     const game = lobby.game ?? sessionState.session.game;
     const playerCount = getPlayerEntries(lobby.players).length;
     const compositionEditable = game.status === "lobby" && game.phase === "lobby";
+    // Sem mestre, depois do sorteio o computador é só a mesa: nada de roles na tela.
+    const tableOnly = isHostlessGame(game) && !compositionEditable;
     const handleComposeAction =
         game.phase === "night"
             ? (playerUid: string) => {
@@ -100,6 +114,55 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                   requestAnimationFrame(() => scrollToNightConsoleAction(playerUid));
               }
             : undefined;
+
+    const gameId = sessionState.session.gameId;
+    const hostUid = sessionState.session.uid;
+    const nightConsole = (
+        <HostNightConsole
+            gameId={gameId}
+            nightId={game.currentNightId}
+            nightNumber={game.nightNumber ?? 1}
+            hostUid={hostUid}
+            players={lobby.players}
+            externalSelectedActorUid={composeActorUid}
+        />
+    );
+    const votingPanel = (
+        <HostVotingPanel gameId={gameId} verifiedHostUid={hostUid} game={game} players={lobby.players} />
+    );
+    const nightWorkspace = game.phase === "night" && game.currentNightId && (
+        <HostNightWorkspace
+            gameId={gameId}
+            nightId={game.currentNightId}
+            nightNumber={game.nightNumber ?? 1}
+            hostUid={hostUid}
+            players={lobby.players}
+        />
+    );
+    const controlPanel = <HostGameControlPanel gameId={gameId} game={game} />;
+
+    if (tableOnly) {
+        return (
+            <div className="grid min-w-0 w-full">
+                <HostLobbyHeader code={sessionState.session.code} game={game} connectionStatus={connectionStatus} updating={lobby.isLoading} />
+                <HostlessTableView
+                    gameId={gameId}
+                    game={game}
+                    players={lobby.players}
+                    controls={<HostlessTableControls gameId={gameId} game={game} />}
+                    engine={
+                        <>
+                            <MayorRevealMirror gameId={gameId} hostUid={hostUid} />
+                            <HostlessAutopilotRunner gameId={gameId} hostUid={hostUid} game={game} players={lobby.players} />
+                            {nightConsole}
+                            {game.phase !== "night" && votingPanel}
+                            {nightWorkspace}
+                        </>
+                    }
+                />
+            </div>
+        );
+    }
 
     return (
         <div className="grid min-w-0 w-full">
@@ -115,27 +178,19 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                 />
                 <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 mt-4">
                     {compositionEditable ? (
-                        <HostRoleComposition gameId={sessionState.session.gameId} playerCount={playerCount} editable />
+                        <>
+                            <PlayModeSelector gameId={gameId} playMode={game.playMode ?? "hosted"} />
+                            <HostRoleComposition gameId={gameId} playerCount={playerCount} editable />
+                        </>
                     ) : (
                         <div className="pr-4 p-1 grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(18rem,0.7fr)]">
                             <div className="space-y-4">
-                                <HostNightConsole
-                                    gameId={sessionState.session.gameId}
-                                    nightId={game.currentNightId}
-                                    nightNumber={game.nightNumber ?? 1}
-                                    hostUid={sessionState.session.uid}
-                                    players={lobby.players}
-                                    externalSelectedActorUid={composeActorUid}
-                                />
+                                <MayorRevealMirror gameId={gameId} hostUid={hostUid} />
+                                {nightConsole}
                                 {game.phase !== "night" && (
                                     <>
                                         <HostDayAnnouncements gameId={sessionState.session.gameId} />
-                                        <HostVotingPanel
-                                            gameId={sessionState.session.gameId}
-                                            verifiedHostUid={sessionState.session.uid}
-                                            game={game}
-                                            players={lobby.players}
-                                        />
+                                        {votingPanel}
                                         <HostDayWorkspace
                                             gameId={sessionState.session.gameId}
                                             hostUid={sessionState.session.uid}
@@ -148,19 +203,11 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                                         />
                                     </>
                                 )}
-                                {game.phase === "night" && game.currentNightId && (
-                                    <HostNightWorkspace
-                                        gameId={sessionState.session.gameId}
-                                        nightId={game.currentNightId}
-                                        nightNumber={game.nightNumber ?? 1}
-                                        hostUid={sessionState.session.uid}
-                                        players={lobby.players}
-                                    />
-                                )}
+                                {nightWorkspace}
                                 <HostHistoryPanel gameId={sessionState.session.gameId} hostUid={sessionState.session.uid} players={lobby.players} />
                             </div>
 
-                            <HostGameControlPanel gameId={sessionState.session.gameId} game={game} />
+                            {controlPanel}
                             <HostWinConditionSuggestion gameId={sessionState.session.gameId} hostUid={sessionState.session.uid} nightId={game.currentNightId} players={lobby.players} />
                         </div>
                     )}

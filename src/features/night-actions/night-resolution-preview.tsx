@@ -177,16 +177,13 @@ export function NightResolutionPreview({
   };
 
   // Sair da noite pelo painel de fases aplica o resultado, se ainda não foi aplicado.
-  const applyBeforeLeavingRef = useRef<() => Promise<NightApplyOutcome>>(async () => ({
-    kind: "blocked",
-    reason: "A resolução da noite ainda está carregando. Tente de novo em instantes.",
-  }));
+  const applyBeforeLeavingRef = useRef<() => Promise<NightApplyOutcome>>(async () => ({ kind: "loading" }));
   useEffect(() => {
     applyBeforeLeavingRef.current = async () => {
       if (applied) return { kind: "already-applied" };
-      if (actionWritesPending) {
-        return { kind: "blocked", reason: "Ainda há ações sendo salvas. Aguarde o preview atualizar." };
-      }
+      // Regras da partida ainda carregando ou ações recém-confirmadas ainda sendo copiadas:
+      // espera em vez de aplicar com dados incompletos.
+      if (!gameVariants.loaded || actionWritesPending) return { kind: "loading" };
       if (!preview) {
         return { kind: "blocked", reason: "Há ações inválidas na noite. Corrija-as antes de iniciar o dia." };
       }

@@ -35,13 +35,12 @@ test("players may only cast their own accusation, while alive and in an accusati
   assert.match(validate, /child\('alive'\)\.val\(\) === true/, "o alvo precisa estar vivo");
 });
 
-test("verdicts are secret until the host closes them", () => {
+test("verdicts are public to the game as they are cast", () => {
   const verdicts = gameRules.votes.$dayNumber.verdicts;
 
-  // Leitura do subnó inteiro só depois de fechado, e sempre restrita ao dia corrente.
-  assert.match(verdicts[".read"], /child\('verdictClosedAt'\)\.exists\(\)/);
-  assert.match(verdicts[".read"], /child\('day'\)\.val\(\) \+ '' === \$dayNumber/);
-  // Antes disso, cada jogador só enxerga o próprio voto.
+  // Todo membro da partida vê os votos ao vivo; quem é de fora, não.
+  assert.match(verdicts[".read"], /child\('players'\)\.child\(auth\.uid\)\.exists\(\)/);
+  assert.doesNotMatch(verdicts[".read"], /verdictClosedAt/);
   assert.equal(verdicts.$uid[".read"], "auth !== null && auth.uid === $uid");
 
   const write = verdicts.$uid[".write"] as string;

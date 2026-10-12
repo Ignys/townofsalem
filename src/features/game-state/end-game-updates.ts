@@ -47,6 +47,12 @@ export function createEndGameUpdates({
     [firebasePaths.gamePrivatePlayers(gameId)]: null,
     [firebasePaths.gameActions(gameId)]: null,
     [firebasePaths.gameVotes(gameId)]: null,
+    // Resultados e anúncios são da partida que acabou; a próxima começa limpa.
+    [firebasePaths.gameDayAnnouncements(gameId)]: null,
+    [firebasePaths.gameAllPlayerDawnResults(gameId)]: null,
+    [firebasePaths.gameAllPlayerInstantResults(gameId)]: null,
+    [firebasePaths.gameMayorReveals(gameId)]: null,
+    [firebasePaths.gameAllJesterRevenges(gameId)]: null,
     [firebasePaths.gameEvent(gameId, eventId)]: {
       type: "GAME_ENDED",
       timestamp: endedAt,
