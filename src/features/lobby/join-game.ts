@@ -26,6 +26,8 @@ import { JoinGameError } from "./join-game-error";
 export interface LocatedGame {
   code: string;
   gameId: string;
+  /** Partida já começou: só dá para voltar a um lugar existente, com o mesmo nickname. */
+  inProgress?: boolean;
 }
 
 export interface JoinGameInput {
@@ -79,6 +81,10 @@ export async function locateJoinableGame(codeInput: string): Promise<LocatedGame
     throw new JoinGameError("game-not-found");
   }
 
+  if (publicGame.status === "in-progress") {
+    return { code, gameId: roomCodeRecord, inProgress: true };
+  }
+
   if (publicGame.status !== "lobby" || publicGame.phase !== "lobby") {
     throw new JoinGameError("game-not-joinable");
   }
@@ -100,6 +106,11 @@ export async function joinGame(input: JoinGameInput): Promise<LocatedGame> {
 
   const locatedGame = await locateJoinableGame(input.code);
 
+  if (locatedGame.inProgress) {
+    await rejoinGame(locatedGame.code, nickname);
+    return locatedGame;
+  }
+
   try {
     await writePublicPlayer(locatedGame.gameId, uid, {
       name: nickname,
@@ -112,4 +123,35 @@ export async function joinGame(input: JoinGameInput): Promise<LocatedGame> {
   }
 
   return locatedGame;
+}
+
+/**
+ * Volta a um lugar de uma partida em andamento: o servidor confere o nickname e devolve
+ * um token do uid antigo, e esta sessão passa a ser aquele jogador.
+ */
+async function rejoinGame(code: string, nickname: string): Promise<void> {
+  let response: Response;
+
+  try {
+    response = await fetch("/api/rejoin", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code, nickname }),
+    });
+  } catch (error: unknown) {
+    throw new JoinGameError("lookup-failed", error);
+  }
+
+  const body = (await response.json().catch(() => ({}))) as { token?: string };
+
+  if (!response.ok || !body.token) {
+    throw new JoinGameError(response.status === 404 ? "seat-not-found" : "lookup-failed");
+  }
+
+  try {
+    const { signInWithCustomToken } = await import("firebase/auth");
+    await signInWithCustomToken(firebaseAuth, body.token);
+  } catch (error: unknown) {
+    throw new JoinGameError("authentication-failed", error);
+  }
 }

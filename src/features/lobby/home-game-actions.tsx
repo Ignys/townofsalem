@@ -100,7 +100,9 @@ export function HomeGameActions({
         setRoomCode(game.code);
         setFeedback({
           kind: "info",
-          text: "Partida encontrada. Complete seus dados para entrar.",
+          text: game.inProgress
+            ? "Esta partida já começou. Se você caiu, digite o mesmo nickname para voltar."
+            : "Partida encontrada. Complete seus dados para entrar.",
         });
         return;
       }

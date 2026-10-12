@@ -6,7 +6,8 @@ export type JoinGameErrorCode =
   | "invalid-nickname"
   | "invalid-experience"
   | "lookup-failed"
-  | "persistence-failed";
+  | "persistence-failed"
+  | "seat-not-found";
 
 export type JoinGameErrorField = "room-code" | "nickname";
 
@@ -44,6 +45,8 @@ export function getJoinGameErrorMessage(error: unknown): string {
       return "Não foi possível localizar a partida. Verifique sua conexão e tente novamente.";
     case "persistence-failed":
       return "Não foi possível entrar na partida. Verifique sua conexão e tente novamente.";
+    case "seat-not-found":
+      return "A partida já começou. Use exatamente o nickname com que você entrou para voltar.";
   }
 }
 
@@ -62,7 +65,9 @@ export function getJoinGameErrorField(
     return "room-code";
   }
 
-  return error.code === "invalid-nickname" ? "nickname" : undefined;
+  return error.code === "invalid-nickname" || error.code === "seat-not-found"
+    ? "nickname"
+    : undefined;
 }
 
 export function shouldResetLocatedGame(error: unknown): boolean {
