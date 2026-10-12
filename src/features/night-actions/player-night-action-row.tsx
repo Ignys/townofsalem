@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import type { NightConsoleInteraction } from "@/features/lobby/night-console-interactions";
 import type { GameVariants } from "@/game-engine/variants";
 import type { Player, PlayerNightActionSubmission } from "@/types";
@@ -31,7 +33,7 @@ export function PlayerNightActionRow({
   exhausted,
 }: PlayerNightActionRowProps) {
   const blocked = disabled || exhausted;
-  const { selectedTargetUids, setTarget, recorded, error, recordNoTargetAction, clear } =
+  const { selectedTargetUids, setTarget, locked, saving, error, chosenCount, confirm, cancel } =
     usePlayerNightAction({
       gameId,
       nightId,
@@ -43,14 +45,30 @@ export function PlayerNightActionRow({
   const targets = getPlayerNightTargets(interaction, players, variants);
   const { action } = interaction;
   const targetCount = action.targetCount;
+  const [confirmingPartial, setConfirmingPartial] = useState(false);
+  const partial = targetCount > 0 && chosenCount < targetCount;
+
+  const handleConfirm = () => {
+    if (partial && !confirmingPartial) {
+      setConfirmingPartial(true);
+      return;
+    }
+    setConfirmingPartial(false);
+    confirm();
+  };
+
+  const handleCancel = () => {
+    setConfirmingPartial(false);
+    cancel();
+  };
 
   return (
     <li className="rounded-2xl border border-[#3b4a6b]/40 bg-black/25 p-4">
       <div className="flex items-baseline justify-between gap-2">
         <h3 className="font-serif text-lg font-semibold text-[#fffaf0]">{action.label}</h3>
-        {recorded && !exhausted && (
+        {locked && !exhausted && (
           <span className="rounded-full border border-[#6f9b77]/40 bg-[#6f9b77]/10 px-2 py-0.5 text-xs font-bold text-[#bfe0c5]">
-            Enviado
+            Confirmado
           </span>
         )}
       </div>
@@ -58,19 +76,12 @@ export function PlayerNightActionRow({
       {exhausted ? (
         <p className="mt-2 text-sm text-[#9f9990]">Você já usou todos os usos desta ação.</p>
       ) : targetCount === 0 ? (
-        <div className="mt-3">
-          <button
-            type="button"
-            disabled={blocked || recorded}
-            onClick={recordNoTargetAction}
-            className="min-h-11 rounded-xl border border-[#d3b88c]/40 bg-[#d3b88c]/15 px-4 text-sm font-bold text-[#fffaf0] disabled:opacity-50"
-          >
-            {recorded ? "Ação registrada" : "Registrar ação"}
-          </button>
-        </div>
+        <p className="mt-2 text-sm text-[#9f9990]">
+          {locked ? "Ação registrada para esta noite." : "Esta ação não tem alvo."}
+        </p>
       ) : (
         Array.from({ length: targetCount }, (_, targetIndex) => (
-          <fieldset key={targetIndex} className="mt-3" disabled={blocked}>
+          <fieldset key={targetIndex} className="mt-3" disabled={blocked || locked || saving}>
             <legend className="text-xs font-bold tracking-[0.15em] text-[#9f9990] uppercase">
               {targetCount > 1 ? `${action.verb} — alvo ${targetIndex + 1}` : action.verb}
             </legend>
@@ -86,8 +97,11 @@ export function PlayerNightActionRow({
                     key={target.uid}
                     type="button"
                     aria-pressed={selected}
-                    disabled={blocked || takenByOtherSlot}
-                    onClick={() => setTarget(targetIndex, target.uid)}
+                    disabled={blocked || locked || saving || takenByOtherSlot}
+                    onClick={() => {
+                      setConfirmingPartial(false);
+                      setTarget(targetIndex, target.uid);
+                    }}
                     className={`min-h-12 rounded-xl border px-4 py-3 text-left font-bold disabled:opacity-40 ${
                       selected
                         ? "border-[#d3b88c] bg-[#d3b88c]/20 text-[#fffaf0]"
@@ -103,15 +117,35 @@ export function PlayerNightActionRow({
         ))
       )}
 
-      {recorded && !exhausted && (
-        <button
-          type="button"
-          disabled={blocked}
-          onClick={clear}
-          className="mt-3 min-h-11 rounded-xl border border-white/10 px-4 text-sm font-bold text-[#bdb7ad] disabled:opacity-50"
-        >
-          Cancelar minha ação
-        </button>
+      {!locked && !exhausted && (
+        <>
+          {confirmingPartial && (
+            <p className="mt-3 text-sm text-[#e6cfa9]">
+              Você escolheu {chosenCount} de {targetCount} alvos. Depois de confirmar, não dá para
+              mudar. Confirmar mesmo assim?
+            </p>
+          )}
+          <div className={`mt-3 grid gap-2 ${targetCount > 0 ? "grid-cols-2" : ""}`}>
+            {targetCount > 0 && (
+              <button
+                type="button"
+                disabled={blocked || saving || chosenCount === 0}
+                onClick={handleCancel}
+                className="min-h-11 rounded-xl border border-white/10 px-4 text-sm font-bold text-[#bdb7ad] disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            )}
+            <button
+              type="button"
+              disabled={blocked || saving || (targetCount > 0 && chosenCount === 0)}
+              onClick={handleConfirm}
+              className="min-h-11 rounded-xl border border-[#d3b88c]/40 bg-[#d3b88c]/15 px-4 text-sm font-bold text-[#fffaf0] disabled:opacity-50"
+            >
+              {saving ? "Enviando…" : confirmingPartial ? "Confirmar mesmo assim" : "Confirmar"}
+            </button>
+          </div>
+        </>
       )}
 
       <p role="alert" className="mt-2 min-h-5 text-sm text-[#f0b9bd]">

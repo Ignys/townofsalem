@@ -16,10 +16,10 @@ function requireAuthenticatedPlayerUid(): string {
 }
 
 /**
- * Grava a submissão do jogador.
+ * Grava a submissão confirmada do jogador.
  *
- * Sem lock no cliente: a regra do RTDB é a autoridade (fase, noite corrente, vivo,
- * noite ainda não resolvida) e o espelhamento no host é idempotente pelo id determinístico.
+ * A regra do RTDB é a autoridade (fase, noite corrente, vivo, noite ainda não resolvida,
+ * escrita única) e o espelhamento no host é idempotente pelo id determinístico.
  */
 export function savePlayerNightAction(
   gameId: string,
@@ -34,17 +34,5 @@ export function savePlayerNightAction(
       uid,
       submission.actionId,
     )]: submission,
-  });
-}
-
-export function clearPlayerNightAction(
-  gameId: string,
-  nightId: string,
-  actionId: string,
-): Promise<void> {
-  const uid = requireAuthenticatedPlayerUid();
-
-  return applyAtomicUpdate({
-    [firebasePaths.gamePlayerNightAction(gameId, nightId, uid, actionId)]: null,
   });
 }

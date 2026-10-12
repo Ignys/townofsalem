@@ -276,8 +276,8 @@
           "$nightId": {
             "$uid": {
               ".read": "auth !== null && auth.uid === $uid",
-              ".write": "auth !== null && auth.uid === $uid && root.child('games').child($gameId).child('players').child(auth.uid).child('alive').val() === true && root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' && root.child('games').child($gameId).child('public').child('phase').val() === 'night' && root.child('games').child($gameId).child('public').child('currentNightId').val() === $nightId && !root.child('games').child($gameId).child('nightSessions').child($nightId).child('resolutionAppliedAt').exists()",
               "$actionId": {
+                ".write": "auth !== null && auth.uid === $uid && root.child('games').child($gameId).child('players').child(auth.uid).child('alive').val() === true && root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' && root.child('games').child($gameId).child('public').child('phase').val() === 'night' && root.child('games').child($gameId).child('public').child('currentNightId').val() === $nightId && !root.child('games').child($gameId).child('nightSessions').child($nightId).child('resolutionAppliedAt').exists() && !data.exists() && newData.exists()",
                 ".validate": "newData.hasChildren(['nightId', 'actionId', 'roleIdSnapshot', 'targetUids', 'createdAt', 'updatedAt']) && newData.child('nightId').val() === $nightId && newData.child('actionId').val() === $actionId && newData.child('roleIdSnapshot').val() === root.child('games').child($gameId).child('privatePlayers').child($uid).child('roleId').val() && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber()",
                 "targetUids": {
                   "$index": {
