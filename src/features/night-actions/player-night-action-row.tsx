@@ -19,6 +19,7 @@ interface PlayerNightActionRowProps {
   variants: GameVariants;
   disabled: boolean;
   exhausted: boolean;
+  shareWithMafia?: boolean;
 }
 
 export function PlayerNightActionRow({
@@ -31,6 +32,7 @@ export function PlayerNightActionRow({
   variants,
   disabled,
   exhausted,
+  shareWithMafia = false,
 }: PlayerNightActionRowProps) {
   const blocked = disabled || exhausted;
   const { selectedTargetUids, setTarget, locked, saving, error, chosenCount, confirm, cancel } =
@@ -41,6 +43,7 @@ export function PlayerNightActionRow({
       interaction,
       submission,
       disabled: blocked,
+      shareWithMafia,
     });
   const targets = getPlayerNightTargets(interaction, players, variants);
   const { action } = interaction;

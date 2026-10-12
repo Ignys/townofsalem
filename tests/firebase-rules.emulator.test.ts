@@ -321,6 +321,46 @@ test("actions without a target are accepted: the RTDB drops empty lists", async 
   }));
 });
 
+test("only the mafia sees the mafia: team, live picks and reactions", async () => {
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}`), {
+      mafiaTeam: { player: { roleId: "godfather" }, third: { roleId: "mafioso" } },
+      mafiaBoard: null,
+      mafiaReactions: null,
+      "players/player/alive": true,
+      "players/other/alive": true,
+    });
+  });
+  await setPhase("night", { currentNightId: "night-current" });
+  const mafia = environment.authenticatedContext("player").database();
+  const town = environment.authenticatedContext("other").database();
+  const pick = `${VOTE}/mafiaBoard/night-current/player/mafia-kill-vote`;
+
+  // Quem é da Máfia: só a Máfia lê; ninguém além do mestre escreve.
+  await assertSucceeds(get(ref(mafia, `${VOTE}/mafiaTeam`)));
+  await assertFails(get(ref(town, `${VOTE}/mafiaTeam`)));
+  await assertFails(set(ref(town, `${VOTE}/mafiaTeam/other`), { roleId: "godfather" }));
+  await assertFails(set(ref(mafia, `${VOTE}/mafiaTeam/other`), { roleId: "mafioso" }));
+
+  // Escolha ao vivo: troca à vontade até confirmar; confirmada, trava.
+  await assertSucceeds(set(ref(mafia, pick), { targetUids: ["other"], locked: false, updatedAt: 1 }));
+  await assertSucceeds(set(ref(mafia, pick), { targetUids: ["third"], locked: false, updatedAt: 2 }));
+  await assertSucceeds(set(ref(mafia, pick), { targetUids: ["other"], locked: true, updatedAt: 3 }));
+  await assertFails(set(ref(mafia, pick), { targetUids: ["third"], locked: false, updatedAt: 4 }));
+  await assertSucceeds(get(ref(mafia, `${VOTE}/mafiaBoard/night-current`)));
+  await assertFails(get(ref(town, `${VOTE}/mafiaBoard/night-current`)));
+  await assertFails(set(ref(town, `${VOTE}/mafiaBoard/night-current/other/x`), { targetUids: ["player"], updatedAt: 1 }));
+
+  // Reações: só membros vivos, em nome próprio, à noite.
+  await assertSucceeds(set(ref(mafia, `${VOTE}/mafiaReactions/night-current/r1`), { uid: "player", key: "trust", at: 1 }));
+  await assertFails(set(ref(mafia, `${VOTE}/mafiaReactions/night-current/r2`), { uid: "third", key: "no", at: 1 }));
+  await assertFails(set(ref(town, `${VOTE}/mafiaReactions/night-current/r3`), { uid: "other", key: "go", at: 1 }));
+  await assertFails(get(ref(town, `${VOTE}/mafiaReactions/night-current`)));
+
+  await setPhase("discussion");
+  await assertFails(set(ref(mafia, `${VOTE}/mafiaReactions/night-current/r4`), { uid: "player", key: "ok", at: 2 }));
+});
+
 test("unauthenticated and cross-player secret reads fail", async () => {
   await assertFails(get(ref(environment.unauthenticatedContext().database(), "games/game/public")));
   const player = environment.authenticatedContext("player").database();

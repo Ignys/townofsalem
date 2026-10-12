@@ -53,6 +53,9 @@ export function createEndGameUpdates({
     [firebasePaths.gameAllPlayerInstantResults(gameId)]: null,
     [firebasePaths.gameMayorReveals(gameId)]: null,
     [firebasePaths.gameAllJesterRevenges(gameId)]: null,
+    [firebasePaths.gameMafiaTeam(gameId)]: null,
+    [firebasePaths.gameMafiaBoards(gameId)]: null,
+    [firebasePaths.gameAllMafiaReactions(gameId)]: null,
     [firebasePaths.gameEvent(gameId, eventId)]: {
       type: "GAME_ENDED",
       timestamp: endedAt,

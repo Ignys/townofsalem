@@ -51,3 +51,22 @@ export interface DayAnnouncementRecord {
   lines: readonly PlayerNightResultLine[];
   createdAt: number;
 }
+
+/** `mafiaTeam/{uid}`: quem é da Máfia, visível só para a Máfia. */
+export interface MafiaTeamMemberRecord {
+  roleId: string;
+}
+
+/** `mafiaBoard/{nightId}/{uid}/{actionId}`: escolha ao vivo de um membro; `locked` = confirmada. */
+export interface MafiaBoardPickRecord {
+  targetUids?: readonly string[];
+  locked?: boolean;
+  updatedAt: number;
+}
+
+/** `mafiaReactions/{nightId}/{id}`: reação rápida enviada à Máfia. */
+export interface MafiaReactionRecord {
+  uid: string;
+  key: string;
+  at: number;
+}

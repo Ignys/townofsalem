@@ -9,6 +9,9 @@ import {
 
 import type {
   DayAnnouncementRecord,
+  MafiaBoardPickRecord,
+  MafiaReactionRecord,
+  MafiaTeamMemberRecord,
   HostNightActionEntry,
   HostNightNote,
   NightSession,
@@ -74,6 +77,9 @@ export type AtomicUpdateValue =
   | PlayerInstantNightResultRecord
   | PlayerDawnNightResultRecord
   | DayAnnouncementRecord
+  | MafiaTeamMemberRecord
+  | MafiaBoardPickRecord
+  | MafiaReactionRecord
   | PlayerStatus
   | GameVariants;
 
@@ -525,4 +531,30 @@ export function observeMayorReveals(
   observer: RealtimeValueObserver<Record<string, number>>,
 ): Unsubscribe {
   return observePath("observe-mayor-reveals", firebasePaths.gameMayorReveals(gameId), observer);
+}
+
+/** Quem é da Máfia (só a Máfia e o mestre leem). */
+export function observeMafiaTeam(
+  gameId: string,
+  observer: RealtimeValueObserver<Record<string, MafiaTeamMemberRecord>>,
+): Unsubscribe {
+  return observePath("observe-mafia-team", firebasePaths.gameMafiaTeam(gameId), observer);
+}
+
+/** Escolhas ao vivo da Máfia nesta noite. */
+export function observeMafiaBoard(
+  gameId: string,
+  nightId: string,
+  observer: RealtimeValueObserver<Record<string, Record<string, MafiaBoardPickRecord>>>,
+): Unsubscribe {
+  return observePath("observe-mafia-board", firebasePaths.gameMafiaBoard(gameId, nightId), observer);
+}
+
+/** Reações da Máfia nesta noite. */
+export function observeMafiaReactions(
+  gameId: string,
+  nightId: string,
+  observer: RealtimeValueObserver<Record<string, MafiaReactionRecord>>,
+): Unsubscribe {
+  return observePath("observe-mafia-reactions", firebasePaths.gameMafiaReactions(gameId, nightId), observer);
 }
