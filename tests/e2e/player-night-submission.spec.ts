@@ -151,3 +151,49 @@ test("investigations arrive on confirm and starting the day applies the night", 
 
   await Promise.all(contexts.map((context) => context.close()));
 });
+
+test("a veteran goes on alert from the phone: actions without a target are accepted", async ({ browser }) => {
+  const contexts = await Promise.all([
+    browser.newContext(),
+    browser.newContext({ viewport: { width: 375, height: 812 } }),
+    browser.newContext({ viewport: { width: 375, height: 812 } }),
+    browser.newContext({ viewport: { width: 375, height: 812 } }),
+  ]);
+  const [host, ana, beto, caio] = await Promise.all(contexts.map((context) => context.newPage()));
+  const players = [ana, beto, caio];
+
+  await host.goto("/");
+  await expect(host.getByText("Acesso seguro pronto")).toBeVisible();
+  await host.getByRole("button", { name: "Criar partida" }).click();
+  await expect(host).toHaveURL(/\/host\/[A-Z0-9]{6}$/);
+  const code = host.url().split("/").pop()!;
+  await joinPlayer(ana, code, "Ana");
+  await joinPlayer(beto, code, "Beto");
+  await joinPlayer(caio, code, "Caio");
+  await expect(host.getByText("Caio", { exact: true })).toBeVisible();
+
+  await host.getByRole("button", { name: /Veteran/ }).click();
+  await host.getByRole("button", { name: /Doctor/ }).click();
+  await host.getByRole("button", { name: /Mafioso/ }).click();
+  await host.getByRole("button", { name: "Sortear roles" }).click();
+  await expect(host.getByRole("heading", { name: "Noite 1" }).first()).toBeVisible();
+
+  await expect.poll(async () => {
+    const counts = await Promise.all(
+      players.map((player) => player.getByRole("heading", { name: "Entrar em Alert" }).count()),
+    );
+    return counts.reduce((total, count) => total + count, 0);
+  }).toBe(1);
+  let veteran = ana;
+  for (const player of players) {
+    if (await player.getByRole("heading", { name: "Entrar em Alert" }).count()) veteran = player;
+  }
+
+  const panel = veteran.getByRole("region", { name: "Sua ação da noite" });
+  await panel.getByRole("button", { name: "Confirmar" }).click();
+  await expect(panel.getByText("Confirmado", { exact: true })).toBeVisible();
+  await expect(panel.getByRole("alert")).toHaveText("");
+  await expect(host.getByText("Confirmado pelo jogador")).toBeVisible();
+
+  await Promise.all(contexts.map((context) => context.close()));
+});

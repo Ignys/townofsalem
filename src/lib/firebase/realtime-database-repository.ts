@@ -216,6 +216,33 @@ export function observeHostDayVotes(
   return observePath("observe-host-day-votes", path, observer);
 }
 
+/**
+ * O RTDB não guarda listas vazias: uma ação sem alvo (alerta do Veteran, colete do Survivor)
+ * volta sem `targetUids`. Quem lê sempre recebe uma lista.
+ */
+function withTargetList<Entry extends { targetUids?: readonly string[] }>(entry: Entry): Entry {
+  return Array.isArray(entry.targetUids) ? entry : { ...entry, targetUids: [] };
+}
+
+function mapRecord<Value>(record: Record<string, Value> | null, map: (value: Value) => Value): Record<string, Value> | null {
+  return record ? Object.fromEntries(Object.entries(record).map(([key, value]) => [key, map(value)])) : record;
+}
+
+function normalizedEntries<Entry extends { targetUids?: readonly string[] }>(
+  observer: RealtimeValueObserver<Record<string, Entry>>,
+): RealtimeValueObserver<Record<string, Entry>> {
+  return { ...observer, onData: (value) => observer.onData(mapRecord(value, withTargetList)) };
+}
+
+function normalizedNestedEntries<Entry extends { targetUids?: readonly string[] }>(
+  observer: RealtimeValueObserver<Record<string, Record<string, Entry>>>,
+): RealtimeValueObserver<Record<string, Record<string, Entry>>> {
+  return {
+    ...observer,
+    onData: (value) => observer.onData(mapRecord(value, (inner) => mapRecord(inner, withTargetList) ?? inner)),
+  };
+}
+
 export function observeHostNightActions(
   gameId: string,
   nightId: string,
@@ -233,7 +260,7 @@ export function observeHostNightActions(
     return () => undefined;
   }
 
-  return observePath("observe-host-night-actions", path, observer);
+  return observePath("observe-host-night-actions", path, normalizedEntries(observer));
 }
 
 export function observeHostNotes(
@@ -302,7 +329,7 @@ export function observeHostNightResolutions(gameId: string, verifiedHostUid: str
 }
 
 export function observeHostAllNightActions(gameId: string, verifiedHostUid: string, observer: RealtimeValueObserver<Record<string, Record<string, HostNightActionEntry>>>): Unsubscribe {
-  return observeVerifiedHostPath("observe-host-all-night-actions", firebasePaths.gameAllHostNightActions(gameId), verifiedHostUid, observer);
+  return observeVerifiedHostPath("observe-host-all-night-actions", firebasePaths.gameAllHostNightActions(gameId), verifiedHostUid, normalizedNestedEntries(observer));
 }
 
 export function observeHostPlayerNightActions(
@@ -315,7 +342,7 @@ export function observeHostPlayerNightActions(
     "observe-host-player-night-actions",
     firebasePaths.gamePlayerNightActions(gameId, nightId),
     verifiedHostUid,
-    observer,
+    normalizedNestedEntries(observer),
   );
 }
 
@@ -354,7 +381,7 @@ export function observeAuthenticatedPlayerNightActions(
     return () => undefined;
   }
 
-  return observePath("observe-player-night-actions", path, observer);
+  return observePath("observe-player-night-actions", path, normalizedEntries(observer));
 }
 
 export function observeAuthenticatedAccusationVote(
