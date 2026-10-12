@@ -16,6 +16,9 @@ export const HOSTLESS_PHASE_LABELS = {
   verdict: "Defesa e votação",
 } as const;
 
+/** Quanto tempo o resultado da votação fica na tela antes da noite começar. */
+export const VERDICT_RESULT_DISPLAY_MS = 10_000;
+
 export type HostlessStep =
   | { kind: "start-timer"; seconds: number }
   | { kind: "end-night" }
@@ -32,6 +35,7 @@ export function decideHostlessStep(
   game: Pick<GamePublicRecord, "status" | "phase" | "accusedPlayerUid" | "verdictClosedAt" | "verdictOutcome">,
   timerStatus: TimerStatus,
   isAlive: (uid: string) => boolean,
+  now: number,
 ): HostlessStep | null {
   if (game.status !== "in-progress") return null;
 
@@ -40,7 +44,8 @@ export function decideHostlessStep(
     if (game.verdictOutcome === "guilty" && game.accusedPlayerUid && isAlive(game.accusedPlayerUid)) {
       return { kind: "apply-lynch", targetUid: game.accusedPlayerUid };
     }
-    return { kind: "start-night" };
+    // Deixa a lista de culpados/inocentes na tela por um momento antes da noite.
+    return now - game.verdictClosedAt >= VERDICT_RESULT_DISPLAY_MS ? { kind: "start-night" } : null;
   }
 
   if (timerStatus === "idle") {

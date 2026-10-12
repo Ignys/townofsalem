@@ -81,7 +81,7 @@ interface HostlessAutopilotRunnerProps {
 export function HostlessAutopilotRunner({ gameId, game, players }: HostlessAutopilotRunnerProps) {
   const timer = useSynchronizedTimer(game);
   const inFlightRef = useRef<string | null>(null);
-  const step = decideHostlessStep(game, timer.status, (uid) => Boolean(players[uid]?.alive));
+  const step = decideHostlessStep(game, timer.status, (uid) => Boolean(players[uid]?.alive), timer.serverAdjustedNow);
   // Um passo por fase/estado: o tick repete a decisão, mas só a primeira execução vale.
   const stepKey = step
     ? `${game.phaseSessionId ?? ""}:${game.phase}:${game.verdictClosedAt ?? ""}:${step.kind}`

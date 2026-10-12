@@ -11,6 +11,7 @@ import { GameTimerDisplay } from "@/features/timer/game-timer-display";
 import { AccusationTallyBoard } from "@/features/voting/accusation-tally-board";
 import { PlayerAccusationVoting } from "@/features/voting/player-accusation-voting";
 import { PlayerVerdictVoting } from "@/features/voting/player-verdict-voting";
+import { VerdictVotesBoard } from "@/features/voting/verdict-votes-board";
 import { isAccusationPhase } from "@/features/voting/voting-phases";
 import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
 import type { Player } from "@/types";
@@ -219,6 +220,15 @@ export function PlayerGameView({
             verdictOutcome={game.verdictOutcome}
           />
         )
+      )}
+      {game.phase === "verdict" && (
+        <VerdictVotesBoard
+          gameId={gameId}
+          dayNumber={game.day}
+          players={players}
+          accusedUid={game.accusedPlayerUid}
+          closed={Boolean(game.verdictClosedAt)}
+        />
       )}
 
       <div className="mt-4">

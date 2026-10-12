@@ -4,6 +4,7 @@ import test from "node:test";
 import { decideHostlessStep } from "./hostless-autopilot";
 
 const alive = () => true;
+const NOW = 1_000_000;
 const base = {
   status: "in-progress" as const,
   accusedPlayerUid: null,
@@ -12,41 +13,46 @@ const base = {
 };
 
 test("every timed phase starts its timer as soon as it begins", () => {
-  assert.deepEqual(decideHostlessStep({ ...base, phase: "night" }, "idle", alive), { kind: "start-timer", seconds: 90 });
-  assert.deepEqual(decideHostlessStep({ ...base, phase: "discussion" }, "idle", alive), { kind: "start-timer", seconds: 300 });
-  assert.deepEqual(decideHostlessStep({ ...base, phase: "trial", accusedPlayerUid: "ana" }, "idle", alive), { kind: "start-timer", seconds: 15 });
-  assert.deepEqual(decideHostlessStep({ ...base, phase: "verdict", accusedPlayerUid: "ana" }, "idle", alive), { kind: "start-timer", seconds: 60 });
+  assert.deepEqual(decideHostlessStep({ ...base, phase: "night" }, "idle", alive, NOW), { kind: "start-timer", seconds: 90 });
+  assert.deepEqual(decideHostlessStep({ ...base, phase: "discussion" }, "idle", alive, NOW), { kind: "start-timer", seconds: 300 });
+  assert.deepEqual(decideHostlessStep({ ...base, phase: "trial", accusedPlayerUid: "ana" }, "idle", alive, NOW), { kind: "start-timer", seconds: 15 });
+  assert.deepEqual(decideHostlessStep({ ...base, phase: "verdict", accusedPlayerUid: "ana" }, "idle", alive, NOW), { kind: "start-timer", seconds: 60 });
 });
 
 test("a running or paused timer is left alone", () => {
-  assert.equal(decideHostlessStep({ ...base, phase: "night" }, "running", alive), null);
-  assert.equal(decideHostlessStep({ ...base, phase: "verdict", accusedPlayerUid: "ana" }, "paused", alive), null);
+  assert.equal(decideHostlessStep({ ...base, phase: "night" }, "running", alive, NOW), null);
+  assert.equal(decideHostlessStep({ ...base, phase: "verdict", accusedPlayerUid: "ana" }, "paused", alive, NOW), null);
 });
 
 test("expired timers move the day along", () => {
-  assert.deepEqual(decideHostlessStep({ ...base, phase: "night" }, "expired", alive), { kind: "end-night" });
-  assert.deepEqual(decideHostlessStep({ ...base, phase: "discussion" }, "expired", alive), { kind: "start-night" });
-  assert.deepEqual(decideHostlessStep({ ...base, phase: "trial", accusedPlayerUid: "ana" }, "expired", alive), { kind: "start-verdict" });
-  assert.deepEqual(decideHostlessStep({ ...base, phase: "verdict", accusedPlayerUid: "ana" }, "expired", alive), { kind: "close-verdict" });
+  assert.deepEqual(decideHostlessStep({ ...base, phase: "night" }, "expired", alive, NOW), { kind: "end-night" });
+  assert.deepEqual(decideHostlessStep({ ...base, phase: "discussion" }, "expired", alive, NOW), { kind: "start-night" });
+  assert.deepEqual(decideHostlessStep({ ...base, phase: "trial", accusedPlayerUid: "ana" }, "expired", alive, NOW), { kind: "start-verdict" });
+  assert.deepEqual(decideHostlessStep({ ...base, phase: "verdict", accusedPlayerUid: "ana" }, "expired", alive, NOW), { kind: "close-verdict" });
 });
 
 test("a closed verdict lynches the guilty and then goes to night", () => {
-  const closed = { ...base, phase: "verdict" as const, accusedPlayerUid: "ana", verdictClosedAt: 1 };
+  const closed = { ...base, phase: "verdict" as const, accusedPlayerUid: "ana", verdictClosedAt: NOW - 10_000 };
   assert.deepEqual(
-    decideHostlessStep({ ...closed, verdictOutcome: "guilty" }, "expired", alive),
+    decideHostlessStep({ ...closed, verdictOutcome: "guilty" }, "expired", alive, NOW),
     { kind: "apply-lynch", targetUid: "ana" },
   );
   assert.deepEqual(
-    decideHostlessStep({ ...closed, verdictOutcome: "guilty" }, "expired", () => false),
+    decideHostlessStep({ ...closed, verdictOutcome: "guilty" }, "expired", () => false, NOW),
     { kind: "start-night" },
   );
   assert.deepEqual(
-    decideHostlessStep({ ...closed, verdictOutcome: "innocent" }, "expired", alive),
+    decideHostlessStep({ ...closed, verdictOutcome: "innocent" }, "expired", alive, NOW),
     { kind: "start-night" },
   );
 });
 
+test("the verdict result stays on screen for a moment before night", () => {
+  const justClosed = { ...base, phase: "verdict" as const, accusedPlayerUid: "ana", verdictClosedAt: NOW - 2_000, verdictOutcome: "innocent" as const };
+  assert.equal(decideHostlessStep(justClosed, "expired", alive, NOW), null);
+});
+
 test("nothing happens outside a running game", () => {
-  assert.equal(decideHostlessStep({ ...base, status: "finished", phase: "night" }, "expired", alive), null);
-  assert.equal(decideHostlessStep({ ...base, status: "lobby", phase: "lobby" }, "idle", alive), null);
+  assert.equal(decideHostlessStep({ ...base, status: "finished", phase: "night" }, "expired", alive, NOW), null);
+  assert.equal(decideHostlessStep({ ...base, status: "lobby", phase: "lobby" }, "idle", alive, NOW), null);
 });

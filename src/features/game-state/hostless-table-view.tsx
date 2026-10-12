@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
 import { HostDayAnnouncements } from "@/features/night-actions/host-day-announcements";
 import { AccusationTallyBoard } from "@/features/voting/accusation-tally-board";
+import { VerdictVotesBoard } from "@/features/voting/verdict-votes-board";
 import { isAccusationPhase } from "@/features/voting/voting-phases";
 import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
 
@@ -46,6 +47,15 @@ export function HostlessTableView({ gameId, game, players, controls, engine }: H
         )}
         {isAccusationPhase(game.phase) && !game.accusedPlayerUid && (
           <AccusationTallyBoard gameId={gameId} dayNumber={game.day} players={players} />
+        )}
+        {game.phase === "verdict" && (
+          <VerdictVotesBoard
+            gameId={gameId}
+            dayNumber={game.day}
+            players={players}
+            accusedUid={game.accusedPlayerUid}
+            closed={Boolean(game.verdictClosedAt)}
+          />
         )}
         <PlayerStatusBoard players={players} viewerUid="" graveyard={graveyard} />
         <RemainingRolesBoard roleComposition={gameVariants.roleComposition} graveyard={graveyard} />

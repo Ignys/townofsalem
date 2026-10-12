@@ -59,6 +59,15 @@ test("a hostless game runs night, trial, verdict and lynch without anyone at the
   await ana.getByRole("button", { name: "Culpado" }).click();
   await beto.getByRole("button", { name: "Culpado" }).click();
 
+  // Os votos aparecem ao vivo para todos, inclusive na mesa e para o acusado.
+  for (const viewer of [table, caio]) {
+    const guilty = viewer.getByRole("region", { name: "Votos do veredito" }).locator('[data-verdict-column="guilty"]');
+    await expect(guilty).toContainText("Culpado · 2");
+    await expect(guilty).toContainText("Ana");
+    await expect(guilty).toContainText("Beto");
+  }
+  await expect(table.getByRole("heading", { name: "Resultado da votação" })).toBeVisible({ timeout: 30_000 });
+
   // O veredito fecha no timer, Caio é linchado e começa a Noite 2.
   await expect(caio.getByText("Morto", { exact: true })).toBeVisible({ timeout: 30_000 });
   for (const player of players) {

@@ -467,3 +467,12 @@ export function observeDayAnnouncements(
 ): Unsubscribe {
   return observePath("observe-day-announcements", firebasePaths.gameDayAnnouncements(gameId), observer);
 }
+
+/** Votos de veredito ao vivo. Públicos para todos os membros da partida. */
+export function observePublicVerdicts(
+  gameId: string,
+  dayNumber: number,
+  observer: RealtimeValueObserver<Record<string, VerdictVote>>,
+): Unsubscribe {
+  return observePath("observe-public-verdicts", firebasePaths.gameVerdicts(gameId, dayNumber), observer);
+}

@@ -370,7 +370,7 @@
               }
             },
             "verdicts": {
-              ".read": "auth !== null && (root.child('games').child($gameId).child('hostUid').val() === auth.uid || (root.child('games').child($gameId).child('players').child(auth.uid).exists() && root.child('games').child($gameId).child('public').child('verdictClosedAt').exists() && root.child('games').child($gameId).child('public').child('day').val() + '' === $dayNumber))",
+              ".read": "auth !== null && (root.child('games').child($gameId).child('hostUid').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).exists())",
               "$uid": {
                 ".read": "auth !== null && auth.uid === $uid",
                 ".write": "auth !== null && auth.uid === $uid && root.child('games').child($gameId).child('players').child(auth.uid).child('alive').val() === true && root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' && root.child('games').child($gameId).child('public').child('phase').val() === 'verdict' && root.child('games').child($gameId).child('public').child('accusedPlayerUid').val() !== auth.uid && !root.child('games').child($gameId).child('public').child('verdictClosedAt').exists() && root.child('games').child($gameId).child('public').child('day').val() + '' === $dayNumber",

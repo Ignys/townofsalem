@@ -167,18 +167,19 @@ test("the live accusation tally is readable by members only", async () => {
   await assertFails(get(ref(stranger, `${VOTE}/votes/3/accusations`)));
 });
 
-test("verdicts stay secret until the host closes the vote", async () => {
+test("verdict votes are public to the game while they are cast", async () => {
   await setPhase("verdict", { accusedPlayerUid: "third", verdictClosedAt: null, verdictOutcome: null });
   const player = environment.authenticatedContext("player").database();
+  const other = environment.authenticatedContext("other").database();
 
   await assertSucceeds(set(ref(player, `${VOTE}/votes/3/verdicts/player`), "guilty"));
-  await assertSucceeds(get(ref(player, `${VOTE}/votes/3/verdicts/player`)));
-  // O ponto do voto digital: ninguém espelha o voto de ninguém.
-  await assertFails(get(ref(player, `${VOTE}/votes/3/verdicts/other`)));
-  await assertFails(get(ref(player, `${VOTE}/votes/3/verdicts`)));
-
-  await setPhase("verdict", { verdictClosedAt: 123, verdictOutcome: "guilty" });
+  // Todo mundo na partida vê cada voto (e cada troca) na hora.
+  await assertSucceeds(get(ref(other, `${VOTE}/votes/3/verdicts`)));
   await assertSucceeds(get(ref(player, `${VOTE}/votes/3/verdicts`)));
+  // Quem não está na partida, não.
+  await assertFails(get(ref(environment.authenticatedContext("stranger").database(), `${VOTE}/votes/3/verdicts`)));
+  // E ninguém vota no lugar de outro.
+  await assertFails(set(ref(other, `${VOTE}/votes/3/verdicts/player`), "innocent"));
 });
 
 test("the accused cannot vote, and nobody votes after the verdict closes", async () => {
