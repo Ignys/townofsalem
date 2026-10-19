@@ -65,6 +65,8 @@ export interface GameSettingsRecord {
   revealRolesAtGameOver?: boolean;
   gameVariants?: GameVariants;
   amnesiacRolePool?: readonly string[];
+  /** Roles que nunca saem de um slot aleatório, separadas por vírgula. Ver parseRandomRoleExclusions. */
+  randomRoleExclusions?: string;
 }
 
 export interface RoomCodeReservation {

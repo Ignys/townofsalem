@@ -11,7 +11,7 @@ import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema
 
 import { GameOverCard } from "./game-over-card";
 import { PlayerStatusBoard } from "./player-status-board";
-import { RemainingRolesBoard } from "./remaining-roles-board";
+import { GameCompositionBoard } from "./game-composition-board";
 import { useGraveyard } from "./use-graveyard";
 import { useMayorReveals } from "./use-mayor-reveals";
 
@@ -62,7 +62,7 @@ export function HostlessTableView({ gameId, game, players, controls, engine }: H
           />
         )}
         <PlayerStatusBoard players={players} viewerUid="" graveyard={graveyard} mayorReveals={mayorReveals} />
-        <RemainingRolesBoard roleComposition={gameVariants.roleComposition} graveyard={graveyard} />
+        <GameCompositionBoard roleComposition={gameVariants.roleComposition} />
         <div hidden aria-hidden="true">
           {engine}
         </div>

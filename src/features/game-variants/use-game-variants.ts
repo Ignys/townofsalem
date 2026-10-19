@@ -7,6 +7,7 @@ import {
   withDefaultVariants,
   type GameVariants,
 } from "@/game-engine/variants";
+import { DEFAULT_RANDOM_ROLE_EXCLUSIONS, parseRandomRoleExclusions } from "@/features/roles/random-role-slots";
 import type { GameSettingsRecord } from "@/lib/firebase/schema";
 
 import { saveGameVariants } from "./game-variants-repository";
@@ -14,6 +15,7 @@ import { saveGameVariants } from "./game-variants-repository";
 export function useGameVariants(gameId: string | null) {
   const [variants, setVariants] = useState<GameVariants>({ ...DEFAULT_GAME_VARIANTS });
   const [amnesiacRolePool, setAmnesiacRolePool] = useState<readonly string[]>([]);
+  const [randomRoleExclusions, setRandomRoleExclusions] = useState<readonly string[]>(DEFAULT_RANDOM_ROLE_EXCLUSIONS);
   const [roleCount, setRoleCount] = useState<number | null>(null);
   const [roleComposition, setRoleComposition] = useState<Record<string, number> | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -31,6 +33,7 @@ export function useGameVariants(gameId: string | null) {
           if (!active) return;
           setVariants(withDefaultVariants(settings?.gameVariants));
           setAmnesiacRolePool(settings?.amnesiacRolePool ?? []);
+          setRandomRoleExclusions(parseRandomRoleExclusions(settings?.randomRoleExclusions));
           setRoleComposition(settings?.roleComposition ?? null);
           setRoleCount(settings?.roleComposition
             ? Object.values(settings.roleComposition).reduce(
@@ -61,30 +64,35 @@ export function useGameVariants(gameId: string | null) {
   const updateVariants = useCallback(async (
     next: GameVariants,
     nextAmnesiacRolePool: readonly string[] = amnesiacRolePool,
+    nextRandomRoleExclusions: readonly string[] = randomRoleExclusions,
   ) => {
     if (!gameId || saving) return false;
     const previous = variants;
     const previousAmnesiacRolePool = amnesiacRolePool;
+    const previousRandomRoleExclusions = randomRoleExclusions;
     setVariants(next);
     setAmnesiacRolePool(nextAmnesiacRolePool);
+    setRandomRoleExclusions(nextRandomRoleExclusions);
     setSaving(true);
     setError(null);
     try {
-      await saveGameVariants(gameId, next, nextAmnesiacRolePool);
+      await saveGameVariants(gameId, next, nextAmnesiacRolePool, nextRandomRoleExclusions);
       setSaving(false);
       return true;
     } catch (reason: unknown) {
       setVariants(previous);
       setAmnesiacRolePool(previousAmnesiacRolePool);
+      setRandomRoleExclusions(previousRandomRoleExclusions);
       setSaving(false);
       setError(reason instanceof Error ? reason : new Error("variant-save-failed"));
       return false;
     }
-  }, [amnesiacRolePool, gameId, saving, variants]);
+  }, [amnesiacRolePool, gameId, randomRoleExclusions, saving, variants]);
 
   return {
     variants,
     amnesiacRolePool,
+    randomRoleExclusions,
     roleCount,
     roleComposition,
     loaded,

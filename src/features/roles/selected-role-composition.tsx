@@ -5,18 +5,21 @@ import { X } from "lucide-react";
 
 import { getRoleById } from "@/data/roles";
 
+import { getRandomRoleSlot } from "./random-role-slots";
 import { FACTION_LABELS } from "./role-presentation";
 import { orderSelectedRoles, type RoleCompositionOrder } from "./role-composition-order";
 import { FACTION_STYLES } from "./role-selection-options";
 
 interface SelectedRoleCompositionProps {
     roleIds: readonly string[];
+    /** Pool average per random slot id; null when nothing can be rolled. */
+    slotVirtues: Readonly<Record<string, number | null>>;
     order: RoleCompositionOrder;
     disabled: boolean;
     onRemove: (index: number) => void;
 }
 
-export function SelectedRoleComposition({ roleIds, order, disabled, onRemove }: SelectedRoleCompositionProps) {
+export function SelectedRoleComposition({ roleIds, slotVirtues, order, disabled, onRemove }: SelectedRoleCompositionProps) {
     const orderedRoles = useMemo(() => orderSelectedRoles(roleIds, order), [order, roleIds]);
     const virtueStyle = (virtueValue: number) => {
       if (virtueValue > 0) {
@@ -37,25 +40,29 @@ export function SelectedRoleComposition({ roleIds, order, disabled, onRemove }: 
                 <ol className="grid grid-cols-[repeat(auto-fill,minmax(10rem,1fr))] gap-2">
                     {orderedRoles.map(({ roleId, originalIndex }) => {
                         const role = getRoleById(roleId);
-                        const style = role ? FACTION_STYLES[role.faction] : FACTION_STYLES.neutral;
-                        const roleName = role?.name ?? roleId;
+                        const slot = getRandomRoleSlot(roleId);
+                        const faction = role?.faction ?? slot?.faction ?? null;
+                        const style = FACTION_STYLES[faction ?? "neutral"];
+                        const roleName = role?.name ?? slot?.name ?? roleId;
+                        const virtueValue = role?.virtueValue ?? slotVirtues[roleId] ?? null;
 
                         return (
                             <li key={`${roleId}-${originalIndex}`} className={`flex min-h-20 flex-col justify-between rounded-xl border p-3 transition ${style.card}`}>
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex items-center h-full gap-1">
-                                        {role ? (
+                                        {virtueValue !== null ? (
                                             <span
-                                                aria-label={`Virtue Value ${role.virtueValue}`}
-                                                title="Virtue Value"
-                                                className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase text-xs ${virtueStyle(role.virtueValue)}`}
+                                                aria-label={`Virtue Value ${slot ? "médio " : ""}${virtueValue}`}
+                                                title={slot ? "Virtue Value médio das roles possíveis" : "Virtue Value"}
+                                                className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase text-xs ${virtueStyle(virtueValue)}`}
                                             >
-                                                {role.virtueValue > 0 ? "+" : ""}
-                                                {role.virtueValue}
+                                                {slot ? "≈" : ""}
+                                                {virtueValue > 0 ? "+" : ""}
+                                                {virtueValue}
                                             </span>
                                         ) : null}
                                         <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${style.tag}`}>
-                                            {role ? FACTION_LABELS[role.faction] : "Desconhecida"}
+                                            {faction ? FACTION_LABELS[faction] : slot ? "Qualquer" : "Desconhecida"}
                                         </span>
                                     </div>
                                     <button

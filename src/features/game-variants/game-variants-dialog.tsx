@@ -10,15 +10,21 @@ import { BOOLEAN_GAME_VARIANT_OPTIONS } from "./game-variant-options";
 interface GameVariantsDialogProps {
   initialVariants: GameVariants;
   initialAmnesiacRolePool: readonly string[];
+  initialRandomRoleExclusions: readonly string[];
   roles: readonly RoleDefinition[];
   saving: boolean;
   onCancel: () => void;
-  onConfirm: (variants: GameVariants, amnesiacRolePool: readonly string[]) => void;
+  onConfirm: (
+    variants: GameVariants,
+    amnesiacRolePool: readonly string[],
+    randomRoleExclusions: readonly string[],
+  ) => void;
 }
 
 export function GameVariantsDialog({
   initialVariants,
   initialAmnesiacRolePool,
+  initialRandomRoleExclusions,
   roles,
   saving,
   onCancel,
@@ -27,6 +33,9 @@ export function GameVariantsDialog({
   const [draft, setDraft] = useState(initialVariants);
   const [amnesiacRolePool, setAmnesiacRolePool] = useState(
     initialAmnesiacRolePool,
+  );
+  const [randomRoleExclusions, setRandomRoleExclusions] = useState(
+    initialRandomRoleExclusions,
   );
 
   return (
@@ -92,9 +101,39 @@ export function GameVariantsDialog({
           </div>
         </fieldset>
 
+        <fieldset className="mt-5 rounded-xl border border-white/10 p-4">
+          <legend className="px-1 text-sm font-semibold text-[#f4dfbd]">
+            Roles fora dos slots aleatórios
+          </legend>
+          <p className="mb-3 text-xs leading-5 text-[#aaa49b]">
+            Roles marcadas nunca saem de um slot aleatório, mas ainda podem entrar como role fixa.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {roles.map((role) => {
+              const checked = randomRoleExclusions.includes(role.id);
+              return (
+                <label key={role.id} className="flex items-center gap-2 text-sm text-[#e5ded2]">
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    disabled={saving}
+                    onChange={() => setRandomRoleExclusions((current) =>
+                      checked
+                        ? current.filter((roleId) => roleId !== role.id)
+                        : [...current, role.id].sort()
+                    )}
+                    className="size-4 accent-[#7d2330]"
+                  />
+                  {role.name}
+                </label>
+              );
+            })}
+          </div>
+        </fieldset>
+
         <div className="mt-6 flex justify-end gap-3">
           <button type="button" disabled={saving} onClick={onCancel} className="min-h-11 rounded-xl border border-white/15 px-4 font-semibold text-[#d8d2c8]">Cancelar</button>
-          <button type="button" disabled={saving} onClick={() => onConfirm(draft, amnesiacRolePool)} className="min-h-11 rounded-xl bg-[#7d2330] px-4 font-bold text-white disabled:opacity-50">{saving ? "Salvando…" : "Salvar variantes"}</button>
+          <button type="button" disabled={saving} onClick={() => onConfirm(draft, amnesiacRolePool, randomRoleExclusions)} className="min-h-11 rounded-xl bg-[#7d2330] px-4 font-bold text-white disabled:opacity-50">{saving ? "Salvando…" : "Salvar variantes"}</button>
         </div>
       </section>
     </div>

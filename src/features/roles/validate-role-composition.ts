@@ -1,5 +1,6 @@
 import { getRoleById, isValidRoleId } from "@/data/roles";
 
+import { getRandomRoleSlot } from "./random-role-slots";
 import {
   ROLE_COMPOSITION_RULES,
   type RoleCompositionRules,
@@ -26,6 +27,11 @@ export type RoleCompositionValidationError =
       message: string;
       roleId: string;
       occurrences: number;
+    }
+  | {
+      code: "random-pool-exhausted";
+      message: string;
+      roleId: string;
     }
   | {
       code: "card-count-exceeded";
@@ -82,6 +88,8 @@ export function validateRoleComposition({
   const counts = countRoleIds(roleIds);
 
   counts.forEach((occurrences, roleId) => {
+    if (getRandomRoleSlot(roleId)) return;
+
     if (!isValidRoleId(roleId)) {
       errors.push({
         code: "invalid-role-id",

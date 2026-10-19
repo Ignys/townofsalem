@@ -35,7 +35,7 @@ const SessionSyncSheet = dynamic(() => import("./session-sync-sheet"), {
 import { PlayerRoleHoldButton } from "./player-role-hold-button";
 import { PlayerRoleNotice } from "./player-role-notice";
 import { PlayerStatusBoard } from "./player-status-board";
-import { RemainingRolesBoard } from "./remaining-roles-board";
+import { GameCompositionBoard } from "./game-composition-board";
 import { PlayerMayorReveal } from "./player-mayor-reveal";
 import { useGraveyard } from "./use-graveyard";
 import { useMayorReveals } from "./use-mayor-reveals";
@@ -339,10 +339,7 @@ export function PlayerGameView({
       </div>
 
       <div className="mt-4">
-        <RemainingRolesBoard
-          roleComposition={gameVariants.roleComposition}
-          graveyard={graveyard}
-        />
+        <GameCompositionBoard roleComposition={gameVariants.roleComposition} />
       </div>
 
       <PlayerRoleHoldButton

@@ -1,9 +1,9 @@
-import type { BalanceScoreResult } from "./balance-score";
+import type { RandomVirtueEstimate } from "./random-role-slots";
 
 interface RoleCompositionSummaryProps {
     roleCount: number;
     playerCount: number;
-    balance: BalanceScoreResult;
+    virtue: RandomVirtueEstimate;
 }
 
 function getRoleCountStatus(roleCount: number, playerCount: number) {
@@ -11,6 +11,8 @@ function getRoleCountStatus(roleCount: number, playerCount: number) {
         ? { className: "bg-[#6f9b77]/15 text-[#bfe0c5]", label: "quantidade correta" }
         : { className: "bg-red-500/15 text-[#f0b9bd]", label: "quantidade incorreta" };
 }
+
+const signed = (value: number) => (value > 0 ? `+${value}` : `${value}`);
 
 function getVirtueStatus(total: number) {
     if (total === 0) {
@@ -24,10 +26,13 @@ function getVirtueStatus(total: number) {
     return { className: "bg-red-500/15 text-[#f0b9bd]", label: "desbalanceado" };
 }
 
-export function RoleCompositionSummary({ roleCount, playerCount, balance }: RoleCompositionSummaryProps) {
-    const signedTotal = balance.total > 0 ? `+${balance.total}` : balance.total;
+export function RoleCompositionSummary({ roleCount, playerCount, virtue }: RoleCompositionSummaryProps) {
+    // Random slots count at their pool's average; the range is every possible roll.
+    const hasRange = virtue.min !== virtue.max;
+    const expected = Math.round(virtue.expected * 10) / 10;
+    const signedTotal = `${hasRange ? "≈ " : ""}${signed(expected)}`;
     const roleCountStatus = getRoleCountStatus(roleCount, playerCount);
-    const virtueStatus = getVirtueStatus(balance.total);
+    const virtueStatus = getVirtueStatus(Math.round(virtue.expected));
 
     return (
         <aside aria-label="Resumo da composição" className="flex items-center rounded-2xl border border-[#d3b88c]/20 bg-black/20 px-5 py-4 sm:min-w-80">
@@ -49,6 +54,11 @@ export function RoleCompositionSummary({ roleCount, playerCount, balance }: Role
                 >
                     {signedTotal}
                 </p>
+                {hasRange && (
+                    <p className="text-xs text-white/50">
+                        de {signed(virtue.min)} a {signed(virtue.max)}
+                    </p>
+                )}
             </div>
         </aside>
     );

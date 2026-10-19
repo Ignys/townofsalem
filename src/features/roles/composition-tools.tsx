@@ -187,11 +187,12 @@ export function CompositionTools({
         <GameVariantsDialog
           initialVariants={gameVariants.variants}
           initialAmnesiacRolePool={gameVariants.amnesiacRolePool}
+          initialRandomRoleExclusions={gameVariants.randomRoleExclusions}
           roles={ROLE_DEFINITIONS}
           saving={gameVariants.saving}
           onCancel={() => setVariantsOpen(false)}
-          onConfirm={(variants, amnesiacRolePool) => {
-            void gameVariants.updateVariants(variants, amnesiacRolePool).then((saved) => {
+          onConfirm={(variants, amnesiacRolePool, randomRoleExclusions) => {
+            void gameVariants.updateVariants(variants, amnesiacRolePool, randomRoleExclusions).then((saved) => {
               if (saved) {
                 setVariantsOpen(false);
                 setFeedback("Variantes da partida salvas.");

@@ -12,6 +12,10 @@ export interface GameVariants {
   executionerWinEndsGame: boolean;
   /** Onde tocam os sons de anúncio (noite e julgamento). */
   announcementSounds: "players" | "host" | "both";
+  /** Desativado, a composição pode ter mais cópias de uma role do que há cartas no baralho. */
+  compositionRespectsCardCount: boolean;
+  /** Slots aleatórios não usam mais cópias de uma role do que há cartas no baralho. */
+  randomRolesRespectCardCount: boolean;
 }
 
 export const DEFAULT_GAME_VARIANTS: Readonly<GameVariants> = {
@@ -27,6 +31,8 @@ export const DEFAULT_GAME_VARIANTS: Readonly<GameVariants> = {
   jesterWinEndsGame: false,
   executionerWinEndsGame: false,
   announcementSounds: "both",
+  compositionRespectsCardCount: true,
+  randomRolesRespectCardCount: true,
 };
 
 export function withDefaultVariants(

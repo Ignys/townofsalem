@@ -6,6 +6,7 @@ interface RoleSelectionOptionsProps {
     roles: readonly RoleDefinition[];
     selectedRoleCounts: Readonly<Record<string, number>>;
     allowDuplicateRoleIds: boolean;
+    respectCardCount: boolean;
     disabled: boolean;
     onAdd: (roleId: string) => void;
 }
@@ -27,12 +28,12 @@ export const FACTION_STYLES: Record<string, { tag: string; card: string }> = {
 
 const DEFAULT_STYLE = FACTION_STYLES.neutral;
 
-export function RoleSelectionOptions({ roles, selectedRoleCounts, allowDuplicateRoleIds, disabled, onAdd }: RoleSelectionOptionsProps) {
+export function RoleSelectionOptions({ roles, selectedRoleCounts, allowDuplicateRoleIds, respectCardCount, disabled, onAdd }: RoleSelectionOptionsProps) {
     return (
         <ul className="grid gap-2 sm:grid-cols-3">
             {roles.map((role) => {
                 const selectedCount = selectedRoleCounts[role.id] ?? 0;
-                const unavailable = (!allowDuplicateRoleIds && selectedCount > 0) || selectedCount >= role.cardCount;
+                const unavailable = (!allowDuplicateRoleIds && selectedCount > 0) || (respectCardCount && selectedCount >= role.cardCount);
                 const style = FACTION_STYLES[role.faction] ?? DEFAULT_STYLE;
 
                 return (
@@ -48,7 +49,7 @@ export function RoleSelectionOptions({ roles, selectedRoleCounts, allowDuplicate
                                 <span>
                                     {role.name}
                                     <span className="ml-2 text-xs font-normal text-[#9f9990]">
-                                        {role.cardCount - selectedCount > 0 && (
+                                        {respectCardCount && role.cardCount - selectedCount > 0 && (
                                             <span className="">
                                                 {role.cardCount - selectedCount} {role.cardCount === 1 ? "carta" : "cartas"}
                                             </span>

@@ -3,15 +3,16 @@
 import { useMemo, useState } from "react";
 
 import { ROLE_DEFINITIONS } from "@/data/roles";
+import { useGameVariants } from "@/features/game-variants/use-game-variants";
 
-import { calculateRoleBalance } from "./balance-score";
 import { CompositionTools } from "./composition-tools";
+import { averageSlotVirtue, estimateVirtue, getRandomRoleSlot, RANDOM_ROLE_SLOTS } from "./random-role-slots";
 import type { RoleCompositionOrder } from "./role-composition-order";
 import { RoleCompositionOrderToggle } from "./role-composition-order-toggle";
 import { ROLE_COMPOSITION_RULES } from "./role-composition-rules";
 import { RoleCompositionSummary } from "./role-composition-summary";
 import { RoleCompositionValidation } from "./role-composition-validation";
-import { RoleSelectionOptions } from "./role-selection-options";
+import { FACTION_STYLES, RoleSelectionOptions } from "./role-selection-options";
 import { SelectedRoleComposition } from "./selected-role-composition";
 import { useRoleComposition } from "./use-role-composition";
 import { useRoleDraw } from "./use-role-draw";
@@ -35,11 +36,22 @@ export function HostRoleComposition({ gameId, playerCount, editable }: HostRoleC
             }, {}),
         [composition.roleIds],
     );
+    const gameVariants = useGameVariants(gameId);
+    const respectCardCount = gameVariants.variants.compositionRespectsCardCount;
     const validation = validateRoleComposition({
         roleIds: composition.roleIds,
         playerCount,
+        rules: { ...ROLE_COMPOSITION_RULES, enforceCardCounts: respectCardCount },
     });
-    const balance = calculateRoleBalance(composition.roleIds, ROLE_DEFINITIONS);
+    const randomOptions = {
+        excludedRoleIds: gameVariants.randomRoleExclusions,
+        respectCardCount: respectCardCount && gameVariants.variants.randomRolesRespectCardCount,
+    };
+    const virtue = estimateVirtue(composition.roleIds, randomOptions);
+    const slotVirtues = Object.fromEntries(RANDOM_ROLE_SLOTS.map((slot) => {
+        const average = averageSlotVirtue(slot.id, composition.roleIds, randomOptions);
+        return [slot.id, average === null ? null : Math.round(average * 10) / 10];
+    }));
     const controlsDisabled = !editable || !composition.loaded || composition.saving || roleDraw.drawing;
 
     const persistRoleIds = async (roleIds: readonly string[]) => {
@@ -48,7 +60,7 @@ export function HostRoleComposition({ gameId, playerCount, editable }: HostRoleC
     };
 
     const handleAdd = (roleId: string) => {
-        if ((selectedRoleCounts[roleId] ?? 0) >= (ROLE_DEFINITIONS.find((role) => role.id === roleId)?.cardCount ?? 0)) {
+        if (respectCardCount && !getRandomRoleSlot(roleId) && (selectedRoleCounts[roleId] ?? 0) >= (ROLE_DEFINITIONS.find((role) => role.id === roleId)?.cardCount ?? 0)) {
             return;
         }
 
@@ -83,22 +95,42 @@ export function HostRoleComposition({ gameId, playerCount, editable }: HostRoleC
                             <h4 className="text-sm font-semibold text-[#d8d2c8]">Roles selecionadas</h4>
                             <RoleCompositionOrderToggle order={order} onChange={setOrder} />
                         </section>
-                        <SelectedRoleComposition roleIds={composition.roleIds} order={order} disabled={controlsDisabled} onRemove={handleRemove} />
+                        <SelectedRoleComposition roleIds={composition.roleIds} slotVirtues={slotVirtues} order={order} disabled={controlsDisabled} onRemove={handleRemove} />
                     </div>
 
                     <div className="mt-6 border-t border-white/10 pt-6">
                         <h4 className="mb-4 text-sm font-semibold text-[#d8d2c8]">Selecionar roles</h4>
+                        <ul className="mb-2 grid gap-2 sm:grid-cols-4">
+                            {RANDOM_ROLE_SLOTS.map((slot) => (
+                                <li key={slot.id}>
+                                    <button
+                                        type="button"
+                                        onClick={() => handleAdd(slot.id)}
+                                        disabled={controlsDisabled}
+                                        className={`flex min-h-11 w-full items-center justify-between gap-2 rounded-xl border border-dashed px-2 py-2 font-semibold text-[#f8f1e5] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-50 ${(FACTION_STYLES[slot.faction ?? "neutral"]).card}`}
+                                    >
+                                        <span>{slot.name}</span>
+                                        {slotVirtues[slot.id] !== null && (
+                                            <span className="text-xs text-white/50" title="Média das roles possíveis">
+                                                ≈ {slotVirtues[slot.id]! > 0 ? "+" : ""}{slotVirtues[slot.id]}
+                                            </span>
+                                        )}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
                         <RoleSelectionOptions
                             roles={ROLE_DEFINITIONS}
                             selectedRoleCounts={selectedRoleCounts}
                             allowDuplicateRoleIds={ROLE_COMPOSITION_RULES.allowDuplicateRoleIds}
+                            respectCardCount={respectCardCount}
                             disabled={controlsDisabled}
                             onAdd={handleAdd}
                         />
                     </div>
                 </section>
                 <section className="space-y-2">
-                    <RoleCompositionSummary roleCount={composition.roleIds.length} playerCount={playerCount} balance={balance} />
+                    <RoleCompositionSummary roleCount={composition.roleIds.length} playerCount={playerCount} virtue={virtue} />
                     <CompositionTools gameId={gameId} playerCount={playerCount} disabled={controlsDisabled} onApply={(roleIds) => void persistRoleIds(roleIds)} />
                     <div className=" border-white/10">
                         {!composition.loaded ? (

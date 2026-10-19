@@ -8,9 +8,11 @@ export async function saveGameVariants(
   gameId: string,
   variants: GameVariants,
   amnesiacRolePool: readonly string[],
+  randomRoleExclusions: readonly string[],
 ): Promise<void> {
   await applyAtomicUpdate({
     [firebasePaths.gameSettingsField(gameId, "gameVariants")]: variants,
     [firebasePaths.gameSettingsField(gameId, "amnesiacRolePool")]: [...amnesiacRolePool],
+    [firebasePaths.gameSettingsField(gameId, "randomRoleExclusions")]: randomRoleExclusions.join(","),
   });
 }

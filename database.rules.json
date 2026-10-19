@@ -106,7 +106,7 @@
           },
           "roleComposition": {
             "$roleId": {
-              ".validate": "newData.isNumber() && newData.val() >= 1 && ((($roleId === 'townie') && newData.val() <= 8) || (($roleId === 'mafioso') && newData.val() <= 5) || (($roleId === 'politician' || $roleId === 'survivor' || $roleId === 'jester') && newData.val() <= 2) || (($roleId === 'bodyguard' || $roleId === 'deputy' || $roleId === 'doctor' || $roleId === 'investigator' || $roleId === 'mayor' || $roleId === 'medium' || $roleId === 'peaceful-townie' || $roleId === 'sheriff' || $roleId === 'spiteful-townie' || $roleId === 'veteran' || $roleId === 'vigilante' || $roleId === 'blackmailer' || $roleId === 'consigliere' || $roleId === 'godfather' || $roleId === 'janitor' || $roleId === 'amnesiac' || $roleId === 'executioner' || $roleId === 'serial-killer' || $roleId === 'werewolf' || $roleId === 'witch') && newData.val() === 1))"
+              ".validate": "newData.isNumber() && newData.val() >= 1 && ((root.child('games').child($gameId).child('settings').child('gameVariants').child('compositionRespectsCardCount').val() === false && newData.val() <= 30) || (($roleId === 'random-town' || $roleId === 'random-mafia' || $roleId === 'random-neutral' || $roleId === 'random-any') && newData.val() <= 30) || (($roleId === 'townie') && newData.val() <= 8) || (($roleId === 'mafioso') && newData.val() <= 5) || (($roleId === 'politician' || $roleId === 'survivor' || $roleId === 'jester') && newData.val() <= 2) || (($roleId === 'bodyguard' || $roleId === 'deputy' || $roleId === 'doctor' || $roleId === 'investigator' || $roleId === 'mayor' || $roleId === 'medium' || $roleId === 'peaceful-townie' || $roleId === 'sheriff' || $roleId === 'spiteful-townie' || $roleId === 'veteran' || $roleId === 'vigilante' || $roleId === 'blackmailer' || $roleId === 'consigliere' || $roleId === 'godfather' || $roleId === 'janitor' || $roleId === 'amnesiac' || $roleId === 'executioner' || $roleId === 'serial-killer' || $roleId === 'werewolf' || $roleId === 'witch') && newData.val() === 1))"
             }
           },
           "gameVariants": {
@@ -144,7 +144,13 @@
             "executionerWinEndsGame": {
               ".validate": "newData.isBoolean()"
             },
-            "announcementSounds": {
+            "compositionRespectsCardCount": {
+            ".validate": "newData.isBoolean()"
+          },
+          "randomRolesRespectCardCount": {
+            ".validate": "newData.isBoolean()"
+          },
+          "announcementSounds": {
               ".validate": "newData.isString() && (newData.val() === 'players' || newData.val() === 'host' || newData.val() === 'both')"
             },
             "$other": {
@@ -155,6 +161,9 @@
             "$index": {
               ".validate": "newData.isString() && (newData.val() === 'bodyguard' || newData.val() === 'deputy' || newData.val() === 'doctor' || newData.val() === 'investigator' || newData.val() === 'mayor' || newData.val() === 'medium' || newData.val() === 'peaceful-townie' || newData.val() === 'politician' || newData.val() === 'sheriff' || newData.val() === 'spiteful-townie' || newData.val() === 'survivor' || newData.val() === 'townie' || newData.val() === 'veteran' || newData.val() === 'vigilante' || newData.val() === 'blackmailer' || newData.val() === 'consigliere' || newData.val() === 'godfather' || newData.val() === 'janitor' || newData.val() === 'mafioso' || newData.val() === 'executioner' || newData.val() === 'jester' || newData.val() === 'serial-killer' || newData.val() === 'werewolf' || newData.val() === 'witch')"
             }
+          },
+          "randomRoleExclusions": {
+            ".validate": "newData.isString() && newData.val().length <= 1000"
           },
           "rolesAssignedAt": {
             ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid && !newData.exists()",

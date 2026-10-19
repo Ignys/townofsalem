@@ -8,8 +8,16 @@ import {
 } from "@/lib/firebase/game-access-repository";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 import { drawRoles, type RandomSource } from "@/game-engine/draw-roles";
+import { withDefaultVariants } from "@/game-engine/variants";
 
+import {
+  getRandomRoleSlot,
+  parseRandomRoleExclusions,
+  RandomRoleResolutionError,
+  resolveRandomRoles,
+} from "./random-role-slots";
 import { compositionRecordToRoleIds } from "./role-composition";
+import { ROLE_COMPOSITION_RULES } from "./role-composition-rules";
 import { RoleAssignmentError } from "./role-assignment-error";
 import { createRoleAssignmentUpdates } from "./role-assignment-updates";
 import { validateRoleComposition } from "./validate-role-composition";
@@ -63,9 +71,11 @@ export async function drawAndPersistRoles(
   // still sitting at the table waiting for a role.
   const participantUids = Object.keys(players ?? {});
   const roleIds = compositionRecordToRoleIds(settings?.roleComposition);
+  const variants = withDefaultVariants(settings?.gameVariants);
   const validation = validateRoleComposition({
     roleIds,
     playerCount: participantUids.length,
+    rules: { ...ROLE_COMPOSITION_RULES, enforceCardCounts: variants.compositionRespectsCardCount },
   });
 
   if (!validation.valid) {
@@ -74,9 +84,29 @@ export async function drawAndPersistRoles(
     });
   }
 
+  // Random slots resolve here, on Play, and are only written as each player's
+  // private role — the public composition keeps showing the slot.
+  let resolvedRoleIds: string[];
+  try {
+    resolvedRoleIds = resolveRandomRoles(roleIds, {
+      excludedRoleIds: parseRandomRoleExclusions(settings?.randomRoleExclusions),
+      respectCardCount: variants.compositionRespectsCardCount && variants.randomRolesRespectCardCount,
+      random: options.random,
+    });
+  } catch (error: unknown) {
+    if (!(error instanceof RandomRoleResolutionError)) throw error;
+    throw new RoleAssignmentError("invalid-composition", {
+      validationErrors: [{
+        code: "random-pool-exhausted",
+        message: `Não há roles suficientes para preencher todos os slots “${getRandomRoleSlot(error.slotId)?.name ?? error.slotId}”. Remova exclusões ou desative o limite de cartas.`,
+        roleId: error.slotId,
+      }],
+    });
+  }
+
   const assignments = drawRoles(
     participantUids,
-    roleIds,
+    resolvedRoleIds,
     options.random,
   );
   const updates = createRoleAssignmentUpdates(
