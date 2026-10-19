@@ -1,7 +1,7 @@
 import type { GameVariants } from "@/game-engine/variants";
 
 export const BOOLEAN_GAME_VARIANT_OPTIONS: readonly {
-  key: Exclude<keyof GameVariants, "sheriffWerewolfDetection">;
+  key: Exclude<keyof GameVariants, "sheriffWerewolfDetection" | "announcementSounds">;
   label: string;
   description: string;
 }[] = [

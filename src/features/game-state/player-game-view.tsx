@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 
 import { getRoleById } from "@/data/roles";
 import { getChosenExecutionTarget } from "@/game-engine/role-rules";
+import { useAnnouncementSounds } from "@/features/game-state/announcement-sounds";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
 import { MafiaTeamPanel, useMafiaTeam } from "@/features/mafia/mafia-team-panel";
 import { PlayerNightActionPanel } from "@/features/night-actions/player-night-action-panel";
@@ -70,6 +71,7 @@ export function PlayerGameView({
 }: PlayerGameViewProps) {
   const privateRole = usePrivatePlayerRole(gameId);
   const gameVariants = useGameVariants(gameId);
+  useAnnouncementSounds(game, gameVariants.variants.announcementSounds, "players");
   const { graveyard } = useGraveyard(gameId);
   const mayorReveals = useMayorReveals(gameId);
   const mafiaTeam = useMafiaTeam(gameId, privateRole.privatePlayer?.faction === "mafia");

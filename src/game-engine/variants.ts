@@ -10,6 +10,8 @@ export interface GameVariants {
   witchDeathKillsCursedPlayers: boolean;
   jesterWinEndsGame: boolean;
   executionerWinEndsGame: boolean;
+  /** Onde tocam os sons de anúncio (noite e julgamento). */
+  announcementSounds: "players" | "host" | "both";
 }
 
 export const DEFAULT_GAME_VARIANTS: Readonly<GameVariants> = {
@@ -24,6 +26,7 @@ export const DEFAULT_GAME_VARIANTS: Readonly<GameVariants> = {
   witchDeathKillsCursedPlayers: false,
   jesterWinEndsGame: false,
   executionerWinEndsGame: false,
+  announcementSounds: "both",
 };
 
 export function withDefaultVariants(

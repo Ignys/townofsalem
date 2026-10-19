@@ -44,6 +44,15 @@ export function GameVariantsDialog({
           </select>
         </label>
 
+        <label className="mt-5 grid gap-2 text-sm text-[#f4dfbd]">
+          Sons de anúncio (noite e julgamento)
+          <select value={draft.announcementSounds} onChange={(event) => setDraft((current) => ({ ...current, announcementSounds: event.target.value as GameVariants["announcementSounds"] }))} className="min-h-11 rounded-xl border border-white/15 bg-[#0f1011] px-3 text-[#fffaf0]">
+            <option value="both">Celulares dos jogadores e dispositivo do host</option>
+            <option value="players">Só nos celulares dos jogadores</option>
+            <option value="host">Só no dispositivo do host</option>
+          </select>
+        </label>
+
         <div className="mt-5 grid gap-3">
           {BOOLEAN_GAME_VARIANT_OPTIONS.map((option) => (
             <label key={option.key} className="flex gap-3 rounded-xl border border-white/10 p-3">

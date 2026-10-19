@@ -144,6 +144,9 @@
             "executionerWinEndsGame": {
               ".validate": "newData.isBoolean()"
             },
+            "announcementSounds": {
+              ".validate": "newData.isString() && (newData.val() === 'players' || newData.val() === 'host' || newData.val() === 'both')"
+            },
             "$other": {
               ".validate": false
             }

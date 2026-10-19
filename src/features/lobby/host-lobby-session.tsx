@@ -11,6 +11,7 @@ import { HostDiagnostics } from "@/features/game-state/host-diagnostics";
 import { HostWinConditionSuggestion } from "@/features/game-state/host-win-condition-suggestion";
 import { HostlessAutopilotRunner } from "@/features/game-state/hostless-autopilot-runner";
 import { HostlessTableControls } from "@/features/game-state/hostless-table-controls";
+import { HostAnnouncementSounds } from "@/features/game-state/announcement-sounds";
 import { HostlessTableView } from "@/features/game-state/hostless-table-view";
 import { useMirrorMayorReveals } from "@/features/game-state/use-mayor-reveals";
 import { useMirrorMafiaTeam } from "@/features/mafia/use-mirror-mafia-team";
@@ -156,6 +157,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                     engine={
                         <>
                             <MayorRevealMirror gameId={gameId} hostUid={hostUid} />
+                            <HostAnnouncementSounds gameId={gameId} game={game} />
                             <HostlessAutopilotRunner gameId={gameId} hostUid={hostUid} game={game} players={lobby.players} />
                             {nightConsole}
                             {game.phase !== "night" && votingPanel}
@@ -189,6 +191,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                         <div className="pr-4 p-1 grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(18rem,0.7fr)]">
                             <div className="space-y-4">
                                 <MayorRevealMirror gameId={gameId} hostUid={hostUid} />
+                                <HostAnnouncementSounds gameId={gameId} game={game} />
                                 {nightConsole}
                                 {game.phase !== "night" && (
                                     <>
