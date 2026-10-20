@@ -16,6 +16,10 @@ export type BalancedCompositionResult =
       faction?: Faction;
     };
 
+// Deputy becomes a Sheriff, so it is only worth drawing alongside one.
+const hasOrphanDeputy = (roleIds: readonly string[]) =>
+  roleIds.includes("deputy") && !roleIds.includes("sheriff");
+
 interface Candidate {
   roleIds: readonly string[];
   score: number;
@@ -59,7 +63,8 @@ function buildFactionCandidates(
           ...Array<string>(copies).fill(role.id),
         ];
         const score = candidate.score + copies * role.virtueValue;
-        const key = `${roleIds.length}:${score}`;
+        // Orphan state is in the key so a valid list isn't dropped for an invalid twin.
+        const key = `${roleIds.length}:${score}:${hasOrphanDeputy(roleIds)}`;
 
         if (!next.has(key)) next.set(key, { roleIds, score });
       }
@@ -69,12 +74,19 @@ function buildFactionCandidates(
   }
 
   return [...states.values()].filter(
-    (candidate) => candidate.roleIds.length === count,
+    (candidate) =>
+      candidate.roleIds.length === count &&
+      (!hasOrphanDeputy(candidate.roleIds) || hasOrphanDeputy(requiredRoleIds)),
   );
 }
 
-function compareRoleLists(left: readonly string[], right: readonly string[]) {
-  return left.join("|").localeCompare(right.join("|"));
+function shuffled<T>(items: readonly T[], random: () => number): T[] {
+  const copy = [...items];
+  for (let i = copy.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(random() * (i + 1));
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
 }
 
 export function generateBalancedRoleComposition(
@@ -82,6 +94,7 @@ export function generateBalancedRoleComposition(
   factionCounts: FactionCounts,
   catalog: readonly RoleDefinition[],
   requiredRoleIds: readonly string[] = [],
+  random: () => number = Math.random,
 ): BalancedCompositionResult {
   const requested = Object.values(factionCounts).reduce(
     (total, count) => total + count,
@@ -114,7 +127,10 @@ export function generateBalancedRoleComposition(
 
   for (const faction of ["town", "mafia", "neutral"] as const) {
     const count = factionCounts[faction];
-    const available = catalog.filter((role) => role.faction === faction);
+    const available = shuffled(
+      catalog.filter((role) => role.faction === faction),
+      random,
+    );
     const required = requiredRoleIds.filter(
       (roleId) => catalogById.get(roleId)?.faction === faction,
     );
@@ -129,6 +145,7 @@ export function generateBalancedRoleComposition(
 
   let bestRoleIds: readonly string[] | null = null;
   let bestDistance = Number.POSITIVE_INFINITY;
+  let ties = 0;
 
   for (const town of candidatesByFaction.town) {
     for (const mafia of candidatesByFaction.mafia) {
@@ -140,14 +157,13 @@ export function generateBalancedRoleComposition(
         ];
         const distance = Math.abs(town.score + mafia.score + neutral.score);
 
-        if (
-          distance < bestDistance ||
-          (distance === bestDistance &&
-            bestRoleIds &&
-            compareRoleLists(roleIds, bestRoleIds) < 0)
-        ) {
+        // Reservoir-sample among equally balanced lists.
+        if (distance < bestDistance) {
           bestRoleIds = roleIds;
           bestDistance = distance;
+          ties = 1;
+        } else if (distance === bestDistance && random() * ++ties < 1) {
+          bestRoleIds = roleIds;
         }
       }
     }

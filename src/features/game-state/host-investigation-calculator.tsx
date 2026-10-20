@@ -25,7 +25,7 @@ export function HostInvestigationCalculator() {
     : null;
 
   return (
-    <details className="rounded-3xl border border-white/10 bg-[#1a1c1e] p-5 sm:p-7">
+    <details className="panel-private">
       <summary className="cursor-pointer font-serif text-xl font-semibold">
         Calculadora de investigação
       </summary>

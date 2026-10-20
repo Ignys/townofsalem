@@ -37,25 +37,21 @@ export function CurrentGamePhase({ game }: CurrentGamePhaseProps) {
   const isFullMoon =
     game.phase === "night" && Boolean(game.nightNumber && game.nightNumber % 2 === 0);
 
-  return (
-    <header className="flex items-center gap-3">
-      <span
-        className="grid size-12 shrink-0 place-items-center rounded-xl border border-[#d3b88c]/30 bg-[#d3b88c]/10 text-[#e6cfa9] shadow-[inset_0_0_18px_rgba(211,184,140,0.08)]"
-        aria-hidden="true"
-      >
-        <PhaseIcon size={26} strokeWidth={1.8} />
-      </span>
+  const night = game.phase === "night";
+  const cycle = night
+    ? game.nightNumber ? `Noite ${game.nightNumber}${isFullMoon ? ", lua cheia" : ""}` : null
+    : game.day ? `Dia ${game.day}` : null;
 
-      <div className="min-w-0">
-        <p className="text-xs font-bold tracking-[0.18em] text-[#d3b88c] uppercase">
-          Fase atual
-        </p>
-        <h2 className="mt-0.5 text-2xl leading-tight font-semibold text-[#fffaf0] uppercase">
-          {game.phaseLabel ?? GAME_PHASE_LABELS[game.phase]}
-          {game.phase === "night" && game.nightNumber ? ` ${game.nightNumber}` : ""}
-          {isFullMoon ? " - Lua cheia" : ""}
-        </h2>
-      </div>
+  // Mesma voz do herói dos jogadores: ciclo pequeno, nome da fase em serif.
+  return (
+    <header>
+      <p className={`flex items-center gap-2 text-sm font-semibold ${night ? "text-[#c9d4ef]" : "text-[#f2c879]"}`}>
+        <PhaseIcon aria-hidden="true" size={20} strokeWidth={1.8} />
+        {cycle ?? "Fase atual"}
+      </p>
+      <h2 className="mt-1 font-serif text-3xl leading-tight font-semibold tracking-[-0.02em] text-[#fffaf0]">
+        {game.phaseLabel ?? GAME_PHASE_LABELS[game.phase]}
+      </h2>
     </header>
   );
 }

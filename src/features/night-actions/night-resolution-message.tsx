@@ -35,7 +35,7 @@ export function NightResolutionMessage({
           key={key}
           type="button"
           onClick={() => onPlayerClick(part.playerUid)}
-          className={`rounded-sm font-semibold underline decoration-dotted underline-offset-4 hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-amber-400 ${part.tone === "danger" ? "text-red-400" : "text-sky-100"}`}
+          className={`rounded-sm font-semibold underline decoration-dotted underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 ${light ? "hover:text-black focus-visible:outline-[#7d2330]" : "hover:text-white focus-visible:outline-amber-400"} ${part.tone === "danger" ? (light ? "text-[#7d2330]" : "text-red-400") : (light ? "text-[#34405e]" : "text-sky-100")}`}
           title={part.tone === "danger" ? "Suspeito verdadeiro" : `Abrir detalhes de ${part.text}`}
         >
           {part.text}

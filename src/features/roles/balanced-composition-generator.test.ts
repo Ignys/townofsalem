@@ -3,6 +3,7 @@ import test from "node:test";
 
 import { ROLE_DEFINITIONS } from "@/data/roles";
 import { generateBalancedRoleComposition } from "./balanced-composition-generator";
+import { getSuggestedFactionCounts } from "./suggested-faction-counts";
 
 test("finds the composition closest to zero while respecting faction slots", () => {
   const result = generateBalancedRoleComposition(
@@ -68,4 +69,14 @@ test("rejects required copies that do not exist in the physical deck", () => {
     ),
     { ok: false, code: "INSUFFICIENT_CARDS", faction: "town" },
   );
+});
+
+test("never adds a Deputy without a Sheriff", () => {
+  for (let players = 4; players <= 20; players += 1) {
+    const counts = getSuggestedFactionCounts(players);
+    if (!counts) continue;
+    const result = generateBalancedRoleComposition(players, counts, ROLE_DEFINITIONS);
+    if (!result.ok) continue;
+    assert.ok(!result.roleIds.includes("deputy") || result.roleIds.includes("sheriff"), `${players}: ${result.roleIds}`);
+  }
 });

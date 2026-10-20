@@ -54,7 +54,7 @@ export function PhaseChangeConfirmationDialog({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={descriptionId}
-        className="w-full max-w-sm rounded-2xl border border-[#d3b88c]/25 bg-[#1a1c1e] p-5 shadow-2xl"
+        className="w-full max-w-sm rounded-2xl border border-[#2e3136] bg-[#1b1d20] p-5 shadow-2xl"
       >
         <div className="flex items-start gap-3">
           <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#d3b88c]/15 text-[#e6cfa9]">

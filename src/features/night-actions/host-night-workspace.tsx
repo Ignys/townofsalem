@@ -40,7 +40,7 @@ export function HostNightWorkspace({ gameId, nightId, nightNumber, hostUid, play
   );
 
   if (!privateRoles.loaded || !nightLog.loaded) {
-    return <section className="rounded-3xl border border-white/10 bg-[#1a1c1e] p-6"><p role="status">Carregando condução da noite…</p></section>;
+    return <section className="panel-private"><p role="status">Carregando condução da noite…</p></section>;
   }
 
   if (privateRoles.error || nightLog.error) {

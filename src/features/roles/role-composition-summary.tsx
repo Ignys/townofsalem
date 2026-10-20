@@ -35,9 +35,9 @@ export function RoleCompositionSummary({ roleCount, playerCount, virtue }: RoleC
     const virtueStatus = getVirtueStatus(Math.round(virtue.expected));
 
     return (
-        <aside aria-label="Resumo da composição" className="flex items-center rounded-2xl border border-[#d3b88c]/20 bg-black/20 px-5 py-4 sm:min-w-80">
+        <aside aria-label="Resumo da composição" className="flex items-center">
             <div className="flex w-1/2 flex-col items-center justify-center gap-x-4 gap-y-1">
-                <p className="uppercase text-xs text-white/50">Roles/Jogadores</p>
+                <p className="text-xs text-white/50">Roles por jogadores</p>
                 <p
                     aria-label={`${roleCount} roles para ${playerCount} jogadores: ${roleCountStatus.label}`}
                     className={`rounded-lg px-2 py-0.5 text-xl font-semibold ${roleCountStatus.className}`}
@@ -47,7 +47,7 @@ export function RoleCompositionSummary({ roleCount, playerCount, virtue }: RoleC
             </div>
             <span className="mx-4 h-8 w-px bg-[#d3b88c]/20" />
             <div className="flex w-1/2 flex-col items-center justify-center gap-x-4 gap-y-1">
-                <p className="uppercase text-xs text-white/50">Virtue Value</p>
+                <p className="text-xs text-white/50">Virtue Value</p>
                 <p
                     aria-label={`Virtue Value ${signedTotal}: ${virtueStatus.label}`}
                     className={`rounded-lg px-2 py-0.5 text-xl font-semibold ${virtueStatus.className}`}
@@ -66,7 +66,7 @@ export function RoleCompositionSummary({ roleCount, playerCount, virtue }: RoleC
 
 // <aside
 //   aria-label="Resumo da composição"
-//   className="min-w-0 rounded-2xl border border-[#d3b88c]/20 bg-black/20 px-5 py-4 sm:min-w-80"
+//   className="min-w-0 rounded-2xl border border-[#d3b88c]/20 bg-black/20 px-5 py-4"
 // >
 //   <p className="text-xs font-semibold tracking-wide text-[#bdb7ad] uppercase">
 //     {roleCount} roles selecionadas / {playerCount} jogadores conectados

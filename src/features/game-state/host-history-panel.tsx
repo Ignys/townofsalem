@@ -86,14 +86,14 @@ export function HostHistoryPanel({ gameId, hostUid, players: playerRecords }: Ho
             type="button"
             disabled={!history.loaded}
             onClick={exportHistory}
-            className="min-h-9 rounded-lg border border-zinc-700 px-3 text-xs font-semibold text-zinc-300 hover:bg-white/[0.04] disabled:opacity-50"
+            className="min-h-9 rounded-lg border border-white/15 px-3 text-xs font-semibold text-[#d7d0c4] hover:bg-white/[0.04] disabled:opacity-50"
           >
             Exportar JSON
           </button>
         )}
       >
         {!loaded && !error && (
-          <p role="status" className="py-5 text-center text-sm text-zinc-500">
+          <p role="status" className="py-5 text-center text-sm text-[#a9a297]">
             Carregando histórico…
           </p>
         )}
@@ -107,7 +107,7 @@ export function HostHistoryPanel({ gameId, hostUid, players: playerRecords }: Ho
         {loaded && !error && (
           <div className="grid gap-3">
             {sessions.length === 0 ? (
-              <p className="rounded-lg border border-dashed border-zinc-700 p-4 text-center text-sm text-zinc-500">
+              <p className="rounded-lg border border-dashed border-white/15 p-4 text-center text-sm text-[#a9a297]">
                 Nenhuma noite registrada.
               </p>
             ) : (

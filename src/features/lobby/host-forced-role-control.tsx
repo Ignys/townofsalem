@@ -72,7 +72,7 @@ export function HostForcedRoleControl({ gameId, playerUid }: HostForcedRoleContr
     <section className="rounded-xl border border-white/8 bg-black/15 p-4">
       <label
         htmlFor={selectId}
-        className="flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-[#9f9990] uppercase"
+        className="flex items-center gap-2 text-xs font-semibold text-[#9f9990] "
       >
         {current ? <Pin aria-hidden="true" size={14} /> : <Dices aria-hidden="true" size={14} />}
         Role no sorteio

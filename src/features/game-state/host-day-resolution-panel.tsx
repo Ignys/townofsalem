@@ -145,7 +145,7 @@ export function HostDayResolutionPanel({
   return (
     <HostConsoleFrame title="Resolução do dia" contentClassName="mt-3 grid gap-4">
       <div className="grid gap-2">
-        <span className="text-xs font-semibold tracking-wide text-[#aaa49b] uppercase">
+        <span className="text-sm font-semibold text-[#bdb7ad]">
           Quem morreu
         </span>
         {lockedTarget ? (
@@ -170,7 +170,7 @@ export function HostDayResolutionPanel({
       </div>
 
       <fieldset className="grid gap-2" disabled={busy || !targetUid || lockedTarget}>
-        <legend className="text-xs font-semibold tracking-wide text-[#aaa49b] uppercase">
+        <legend className="text-sm font-semibold text-[#bdb7ad]">
           Como morreu
         </legend>
         {DEATH_KIND_OPTIONS.map((option) => (
@@ -198,7 +198,7 @@ export function HostDayResolutionPanel({
 
       {needsRevengeTarget && (
         <div className="grid gap-2">
-          <span className="text-xs font-semibold tracking-wide text-[#f4dfbd] uppercase">
+          <span className="text-sm font-semibold text-[#f4dfbd]">
             Vingança do Jester
           </span>
           <p className="text-xs leading-5 text-[#aaa49b]">
@@ -256,7 +256,7 @@ export function HostDayResolutionPanel({
 
       {preview && (
         <div className="grid gap-2 rounded-xl border border-white/10 p-3">
-          <span className="text-xs font-semibold tracking-wide text-[#aaa49b] uppercase">
+          <span className="text-sm font-semibold text-[#bdb7ad]">
             Efeitos
           </span>
           <ul className="grid gap-1 text-sm text-[#e5ded2]">

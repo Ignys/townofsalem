@@ -1,22 +1,26 @@
 "use client";
 
+import { ChessQueen, Smartphone, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
+import { GameSettingsButton } from "@/features/game-variants/game-settings-button";
 import { GAME_PACE_LABELS } from "@/features/game-state/hostless-autopilot";
 import { GAME_PACES, type GamePace, type GamePlayMode } from "@/lib/firebase/schema";
 
-const OPTIONS: readonly { mode: GamePlayMode; title: string; description: string }[] = [
+const OPTIONS: readonly { mode: GamePlayMode; title: string; description: string; icon: LucideIcon }[] = [
   {
     mode: "hosted",
     title: "Com mestre",
-    description: "Alguém conduz a partida pelo computador: vê as roles, revisa as ações e decide os casos especiais.",
+    description: "Alguém conduz pelo computador e vê as roles.",
+    icon: ChessQueen,
   },
   {
     mode: "hostless",
     title: "Sem mestre",
-    description: "O computador vira só a mesa: mostra fase, timer e anúncios, sem roles. O jogo se resolve sozinho pelo que os jogadores fazem no celular.",
+    description: "O computador é só a mesa. Tudo se resolve pelos celulares.",
+    icon: Smartphone,
   },
 ];
 
@@ -44,55 +48,72 @@ export function PlayModeSelector({ gameId, playMode, gamePace }: PlayModeSelecto
   };
 
   return (
-    <section aria-label="Modo de jogo" className="rounded-2xl border border-white/10 bg-black/20 p-4">
-      <h2 className="text-xs font-bold tracking-[0.16em] text-zinc-400 uppercase">Modo de jogo</h2>
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        {OPTIONS.map((option) => {
-          const selected = option.mode === playMode;
+    <section aria-label="Modo de jogo">
+      <header className="flex items-center justify-between gap-3">
+        <h2 className="whitespace-nowrap font-serif text-lg font-semibold text-[#fffaf0]">Modo de jogo</h2>
+        <GameSettingsButton gameId={gameId} />
+      </header>
+      <div role="radiogroup" aria-label="Modo de jogo" className="mt-4 grid gap-2">
+        {OPTIONS.map(({ mode, title, description, icon: Icon }) => {
+          const selected = mode === playMode;
           return (
             <button
-              key={option.mode}
+              key={mode}
               type="button"
-              aria-pressed={selected}
+              role="radio"
+              aria-checked={selected}
               disabled={saving}
-              onClick={() => select(option.mode)}
-              className={`rounded-xl border p-4 text-left transition disabled:opacity-60 ${
-                selected
-                  ? "border-[#d3b88c] bg-[#d3b88c]/15"
-                  : "border-white/10 bg-white/5 hover:border-white/25"
+              onClick={() => select(mode)}
+              className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-60 ${
+                selected ? "border-[#d3b88c]/70 bg-[#d3b88c]/[0.08]" : "border-white/10 hover:border-white/25 hover:bg-white/[0.03]"
               }`}
             >
-              <span className="block font-serif text-lg font-semibold text-[#fffaf0]">{option.title}</span>
-              <span className="mt-1 block text-sm leading-6 text-zinc-400">{option.description}</span>
+              <span
+                aria-hidden="true"
+                className={`grid size-8 shrink-0 place-items-center rounded-full ${selected ? "bg-[#d3b88c] text-[#1b1d20]" : "bg-white/[0.06] text-[#bdb7ad]"}`}
+              >
+                <Icon className="size-4" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold text-[#fffaf0]">{title}</span>
+                {selected && <span className="mt-0.5 block text-xs leading-5 text-[#a9a297]">{description}</span>}
+              </span>
+              <span
+                aria-hidden="true"
+                className={`grid size-5 shrink-0 place-items-center rounded-full border-2 ${selected ? "border-[#d3b88c]" : "border-white/25"}`}
+              >
+                {selected && <span className="size-2.5 rounded-full bg-[#d3b88c]" />}
+              </span>
             </button>
           );
         })}
       </div>
       {playMode === "hostless" && (
-        <div className="mt-4">
-          <h3 className="text-xs font-bold tracking-[0.16em] text-zinc-400 uppercase">Ritmo</h3>
-          <div className="mt-2 grid gap-2 sm:grid-cols-3">
+        <div className="mt-4 grid gap-2 border-t border-white/10 pt-4">
+          <h3 className="text-sm font-semibold text-[#d7d0c4]">Ritmo</h3>
+          <div role="radiogroup" aria-label="Ritmo" className="grid grid-cols-3 rounded-full border border-white/10 bg-black/20 p-1">
             {GAME_PACES.map((pace) => {
               const selected = pace === gamePace;
               return (
                 <button
                   key={pace}
                   type="button"
-                  aria-pressed={selected}
+                  role="radio"
+                  aria-checked={selected}
                   disabled={saving}
                   onClick={() => {
                     if (!selected) save("gamePace", pace);
                   }}
-                  className={`rounded-xl border p-3 text-left transition disabled:opacity-60 ${
-                    selected ? "border-[#d3b88c] bg-[#d3b88c]/15" : "border-white/10 bg-white/5 hover:border-white/25"
+                  className={`min-h-9 whitespace-nowrap rounded-full px-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-60 ${
+                    selected ? "bg-[#d3b88c] text-[#1b1d20]" : "text-[#bdb7ad] hover:text-[#fffaf0]"
                   }`}
                 >
-                  <span className="block font-semibold text-[#fffaf0]">{GAME_PACE_LABELS[pace].title}</span>
-                  <span className="mt-1 block text-xs leading-5 text-zinc-400">{GAME_PACE_LABELS[pace].description}</span>
+                  {GAME_PACE_LABELS[pace].title}
                 </button>
               );
             })}
           </div>
+          <p className="text-xs leading-5 text-[#a9a297]">{GAME_PACE_LABELS[gamePace].description}</p>
         </div>
       )}
       {error && (

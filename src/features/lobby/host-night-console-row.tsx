@@ -48,9 +48,9 @@ export function HostNightConsoleRow({ gameId, nightId, nightNumber, interaction,
             data-night-console-action={action.id}
             className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg px-1 py-1 outline-none transition focus:bg-amber-400/10"
         >
-            <span className="font-medium text-zinc-100">{actor.name}</span>
-            <span className={`w-fit uppercase max-w-full truncate rounded-md border px-2 py-0.5 text-[0.6875rem] font-medium text-[#e6cfa9] ${style.tag}`}>{role.id}</span>
-            <span className="text-sm text-zinc-300">{action.verb}</span>
+            <span className="font-medium text-[#fffaf0]">{actor.name}</span>
+            <span className={`w-fit max-w-full truncate rounded-md border px-2 py-0.5 text-[0.6875rem] font-medium text-[#e6cfa9] ${style.tag}`}>{role.name}</span>
+            <span className="text-sm text-[#d7d0c4]">{action.verb}</span>
             {existingEntry?.source === "player" && (
                 <span className="w-fit shrink-0 rounded-md border border-sky-400/30 bg-sky-400/10 px-2 py-0.5 text-[0.6875rem] font-semibold text-sky-100">
                     Confirmado pelo jogador

@@ -101,7 +101,7 @@ export function HostPlayerSidebarRow({
         <li
             ref={setNodeRef}
             style={{ transform, transition }}
-            className={`flex overflow-hidden rounded-2xl border bg-black/20 transition-colors ${
+            className={`flex overflow-hidden rounded-2xl border bg-white/[0.03] transition-colors ${
                 isDragging ? "z-10 border-[#d3b88c]/60 shadow-xl" : "border-white/8"
             } ${player.disconnected ? "opacity-60" : ""}`}
         >

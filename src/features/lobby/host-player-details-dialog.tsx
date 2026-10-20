@@ -116,7 +116,7 @@ export function HostPlayerDetailsDialog({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="my-auto w-full max-w-lg overflow-hidden rounded-2xl border border-white/15 bg-[#1a1c1e] shadow-2xl"
+        className="my-auto w-full max-w-lg overflow-hidden rounded-2xl border border-[#2e3136] bg-[#1b1d20] shadow-2xl"
       >
         <header className="flex items-start justify-between gap-4 border-b border-white/10 px-5 py-4">
           <div className="flex min-w-0 items-center gap-3">
@@ -149,7 +149,7 @@ export function HostPlayerDetailsDialog({
           )}
           {gameStarted && (
           <section className="rounded-xl border border-white/8 bg-black/15 p-4">
-            <p className="text-xs font-semibold tracking-[0.14em] text-[#9f9990] uppercase">
+            <p className="text-xs font-semibold text-[#9f9990]">
               Role
             </p>
             <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -209,7 +209,7 @@ export function HostPlayerDetailsDialog({
 
           {displayedDeathDetails && (
             <section className="rounded-xl border border-red-300/15 bg-red-400/[0.06] p-4">
-              <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-[#f0b9bd] uppercase">
+              <p className="flex items-center gap-2 text-xs font-semibold text-[#f0b9bd]">
                 <Skull aria-hidden="true" size={15} />
                 Como morreu
               </p>
@@ -228,7 +228,7 @@ export function HostPlayerDetailsDialog({
           />
 
           <section className="rounded-xl border border-white/8 bg-black/15 p-4">
-            <p className="text-xs font-semibold tracking-[0.14em] text-[#9f9990] uppercase">
+            <p className="text-xs font-semibold text-[#9f9990]">
               Controles da partida
             </p>
             {gameStarted ? (

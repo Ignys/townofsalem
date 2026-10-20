@@ -34,8 +34,8 @@ test("a hostless game runs night, trial, verdict, lynch and the win without anyo
   await joinPlayer(caio, code, "Caio");
   await expect(table.getByText("Caio", { exact: true })).toBeVisible();
 
-  await table.getByRole("button", { name: /Sem mestre/ }).click();
-  await expect(table.getByRole("button", { name: /Sem mestre/ })).toHaveAttribute("aria-pressed", "true");
+  await table.getByRole("radio", { name: /Sem mestre/ }).click();
+  await expect(table.getByRole("radio", { name: /Sem mestre/ })).toHaveAttribute("aria-checked", "true");
   await table.getByRole("button", { name: /Doctor/ }).click();
   await table.getByRole("button", { name: /Sheriff/ }).click();
   await table.getByRole("button", { name: /Mafioso/ }).click();
@@ -85,7 +85,7 @@ test("a hostless game runs night, trial, verdict, lynch and the win without anyo
       await expect(viewer.getByRole("region", { name: "Partida encerrada" })).toContainText("Vitória: Cidade", { timeout: 30_000 });
     }
     await table.getByRole("button", { name: "Nova partida" }).click();
-    await expect(table.getByRole("button", { name: /Sem mestre/ })).toBeVisible();
+    await expect(table.getByRole("radio", { name: /Sem mestre/ })).toBeVisible();
   } else {
     // Ninguém venceu ainda: a partida segue para a Noite 2.
     for (const player of players) {

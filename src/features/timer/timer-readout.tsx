@@ -39,7 +39,7 @@ export function TimerReadout({
 
   return (
     <div>
-      <div className="flex w-full items-end justify-between gap-4">
+      <div className="flex w-full flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="flex min-w-0 items-baseline gap-3">
           <div
             className={`font-mono text-5xl font-bold tabular-nums transition-colors duration-300 ${

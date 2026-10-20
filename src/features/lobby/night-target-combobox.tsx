@@ -90,11 +90,11 @@ export function NightTargetCombobox({ ariaLabel, players, assignments, value, on
                 disabled={disabled}
                 onClick={() => open ? setOpen(false) : openList()}
                 onKeyDown={handleKeyDown}
-                className="flex min-h-8 w-fit items-center gap-0.5 rounded-lg border border-zinc-700 bg-zinc-900/50 px-2 pr-1 text-left text-sm text-zinc-100 outline-none transition hover:border-zinc-600 focus:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex min-h-8 w-fit items-center gap-0.5 rounded-lg border border-white/15 bg-white/[0.04] px-2 pr-1 text-left text-sm text-[#fffaf0] outline-none transition hover:border-[#d3b88c]/50 focus:border-amber-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
                 <span className="min-w-0 mr-1 truncate">{selectedPlayer?.name ?? "Selecionar"}</span>
                 {selectedPlayer && <PlayerRoleTag roleId={assignments[selectedPlayer.uid]} />}
-                <ChevronDown aria-hidden="true" size={16} className={`shrink-0 text-zinc-400 transition-transform ${open ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" size={16} className={`shrink-0 text-[#bdb7ad] transition-transform ${open ? "rotate-180" : ""}`} />
             </button>
 
             {open && (
@@ -102,7 +102,7 @@ export function NightTargetCombobox({ ariaLabel, players, assignments, value, on
                     id={listboxId}
                     role="listbox"
                     aria-label={ariaLabel}
-                    className="absolute w-fit top-full right-0 left-0 z-30 mt-1 max-h-80 overflow-y-auto rounded-lg border border-zinc-700 bg-zinc-950 p-1 shadow-xl shadow-black/40"
+                    className="absolute w-fit top-full right-0 left-0 z-30 mt-1 max-h-80 overflow-y-auto rounded-lg border border-white/15 bg-[#1b1d20] p-1 shadow-xl shadow-black/40"
                 >
                     <div
                         id={`${listboxId}-option-0`}
@@ -111,7 +111,7 @@ export function NightTargetCombobox({ ariaLabel, players, assignments, value, on
                         onMouseEnter={() => setActiveIndex(0)}
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={() => selectValue("")}
-                        className={`flex min-h-9 cursor-pointer items-center gap-2 rounded-md px-2 text-sm ${activeIndex === 0 ? "bg-zinc-500/40 text-white" : "text-zinc-300"}`}
+                        className={`flex min-h-9 cursor-pointer items-center gap-2 rounded-md px-2 text-sm ${activeIndex === 0 ? "bg-white/20 text-white" : "text-[#d7d0c4]"}`}
                     >
                         <span className="flex">Selecionar</span>
                        
@@ -130,7 +130,7 @@ export function NightTargetCombobox({ ariaLabel, players, assignments, value, on
                                 onMouseEnter={() => setActiveIndex(optionIndex)}
                                 onMouseDown={(event) => event.preventDefault()}
                                 onClick={() => selectValue(player.uid)}
-                                className={`flex min-h-9 cursor-pointer items-center gap-2 rounded-md px-2 text-sm ${activeIndex === optionIndex ? "bg-zinc-500/40 text-white" : "text-zinc-100"}`}
+                                className={`flex min-h-9 cursor-pointer items-center gap-2 rounded-md px-2 text-sm ${activeIndex === optionIndex ? "bg-white/20 text-white" : "text-[#fffaf0]"}`}
                             >
                                 <span className="min-w-0 truncate">{player.name}</span>
                                 <PlayerRoleTag roleId={assignments[player.uid]} />

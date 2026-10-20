@@ -133,7 +133,7 @@ export function PlayerNightActionRow({
           type="button"
           onClick={onActivate}
           aria-pressed={active}
-          className="min-h-9 rounded-full border border-white/15 px-3 text-xs font-bold text-[#d7d0c4] transition-colors aria-pressed:border-[#c9d4ef] aria-pressed:bg-[#c9d4ef] aria-pressed:text-[#161b28]"
+          className="min-h-9 rounded-full border border-white/15 px-3 text-xs font-bold text-[#d7d0c4] transition-colors aria-pressed:border-[#c9d4ef] aria-pressed:bg-[#c9d4ef] aria-pressed:text-[#1b1d20]"
         >
           {action.label}
           {chosen && ` · ${chosenNames.join(", ")}`}

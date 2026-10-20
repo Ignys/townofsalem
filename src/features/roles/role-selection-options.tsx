@@ -26,45 +26,62 @@ export const FACTION_STYLES: Record<string, { tag: string; card: string }> = {
     },
 };
 
-const DEFAULT_STYLE = FACTION_STYLES.neutral;
+// Faixa da facção na borda esquerda: a cor diz o lado sem repetir o nome em cada carta.
+const FACTION_STRIPES: Record<string, string> = {
+    town: "border-l-emerald-500/70",
+    mafia: "border-l-red-500/70",
+    neutral: "border-l-gray-400/60",
+};
+
+const FACTION_ORDER = ["town", "mafia", "neutral"] as const;
 
 export function RoleSelectionOptions({ roles, selectedRoleCounts, allowDuplicateRoleIds, respectCardCount, disabled, onAdd }: RoleSelectionOptionsProps) {
     return (
-        <ul className="grid gap-2 sm:grid-cols-3">
-            {roles.map((role) => {
-                const selectedCount = selectedRoleCounts[role.id] ?? 0;
-                const unavailable = (!allowDuplicateRoleIds && selectedCount > 0) || (respectCardCount && selectedCount >= role.cardCount);
-                const style = FACTION_STYLES[role.faction] ?? DEFAULT_STYLE;
+        <div className="grid gap-6">
+            {FACTION_ORDER.map((faction) => {
+                const factionRoles = roles.filter((role) => role.faction === faction);
+                if (factionRoles.length === 0) return null;
 
                 return (
-                    <li key={role.id}>
-                        <button
-                            type="button"
-                            onClick={() => onAdd(role.id)}
-                            disabled={disabled || unavailable}
-                            className={`flex min-h-11 w-full items-center justify-between gap-3 rounded-xl border px-2 pr-3 py-2 text-left font-semibold text-[#f8f1e5] transition focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-50 ${style.card}`}
-                        >
-                            <span className="flex items-center gap-2">
-                                <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${style.tag}`}>{FACTION_LABELS[role.faction]}</span>
-                                <span>
-                                    {role.name}
-                                    <span className="ml-2 text-xs font-normal text-[#9f9990]">
-                                        {respectCardCount && role.cardCount - selectedCount > 0 && (
-                                            <span className="">
-                                                {role.cardCount - selectedCount} {role.cardCount === 1 ? "carta" : "cartas"}
+                    <section key={faction} aria-label={FACTION_LABELS[faction]}>
+                        <h5 className="mb-2 flex items-baseline gap-2 font-serif text-lg font-semibold text-[#fffaf0]">
+                            {FACTION_LABELS[faction]}
+                            <span className="font-sans text-xs font-normal text-[#a9a297]">{factionRoles.length} roles</span>
+                        </h5>
+                        <ul className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+                            {factionRoles.map((role) => {
+                                const selectedCount = selectedRoleCounts[role.id] ?? 0;
+                                const unavailable = (!allowDuplicateRoleIds && selectedCount > 0) || (respectCardCount && selectedCount >= role.cardCount);
+                                const cardsLeft = role.cardCount - selectedCount;
+
+                                return (
+                                    <li key={role.id}>
+                                        <button
+                                            type="button"
+                                            onClick={() => onAdd(role.id)}
+                                            disabled={disabled || unavailable}
+                                            className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-lg border border-l-4 border-white/10 bg-white/[0.03] px-3 py-2 text-left transition-colors hover:border-white/20 hover:bg-white/[0.07] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-40 ${FACTION_STRIPES[faction]}`}
+                                        >
+                                            <span className="min-w-0">
+                                                <span className="block truncate font-semibold text-[#f8f1e5]">{role.name}</span>
+                                                {respectCardCount && (
+                                                    <span className="block text-xs text-[#a9a297]">
+                                                        {cardsLeft > 0 ? `${cardsLeft} ${cardsLeft === 1 ? "carta" : "cartas"}` : "Sem cartas"}
+                                                    </span>
+                                                )}
                                             </span>
-                                        )}
-                                    </span>
-                                </span>
-                            </span>
-                            <span className="text-xs text-white/50">
-                                {role.virtueValue > 0 ? "+" : ""}
-                                {role.virtueValue}
-                            </span>
-                        </button>
-                    </li>
+                                            <span className="shrink-0 text-sm font-semibold text-[#bdb7ad] tabular-nums" title="Virtue Value">
+                                                {role.virtueValue > 0 ? "+" : ""}
+                                                {role.virtueValue}
+                                            </span>
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    </section>
                 );
             })}
-        </ul>
+        </div>
     );
 }

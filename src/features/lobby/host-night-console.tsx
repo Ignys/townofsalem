@@ -36,7 +36,7 @@ export function HostNightConsole({ gameId, nightId, nightNumber, hostUid, player
         />
     ) : (
         <HostConsoleFrame title="Console do Mestre" id="host-night-console" className="pb-2" contentClassName="mt-2 flex flex-col gap-1">
-            <p className="py-6 text-center text-sm text-zinc-500">O console estará disponível durante a noite.</p>
+            <p className="py-6 text-center text-sm text-[#a9a297]">O console estará disponível durante a noite.</p>
         </HostConsoleFrame>
     );
 }
@@ -92,7 +92,7 @@ function ActiveHostNightConsole({ gameId, nightId, nightNumber, hostUid, players
     if (!privateRoles.loaded || !nightLog.loaded) {
         return (
             <HostConsoleFrame title="Console do Mestre" id="host-night-console" className="pb-2" contentClassName="mt-2 flex flex-col gap-1">
-                <p role="status" className="py-6 text-center text-sm text-zinc-400">Carregando interações…</p>
+                <p role="status" className="py-6 text-center text-sm text-[#bdb7ad]">Carregando interações…</p>
             </HostConsoleFrame>
         );
     }
@@ -128,7 +128,7 @@ function ActiveHostNightConsole({ gameId, nightId, nightNumber, hostUid, players
                 </div>
             )}
             {interactions.length === 0 ? (
-                <p className="py-6 text-center text-sm text-zinc-500">Nenhuma role possui interação nesta noite.</p>
+                <p className="py-6 text-center text-sm text-[#a9a297]">Nenhuma role possui interação nesta noite.</p>
             ) : interactions.map((interaction) => {
                 const existingEntry = getLatestNightConsoleEntry(interaction, entries);
 

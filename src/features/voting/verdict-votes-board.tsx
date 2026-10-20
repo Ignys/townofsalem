@@ -67,7 +67,7 @@ export function VerdictVotesBoard({ gameId, dayNumber, players, accusedUid, clos
   const groups = groupVerdictVotes(verdicts, players, accusedUid);
 
   return (
-    <section aria-label="Votos do veredito" className="panel-public mt-4">
+    <section aria-label="Votos do veredito" className="panel-public">
       <h2 className="font-serif text-lg font-semibold">
         {closed ? "Resultado da votação" : "Votos do veredito"}
       </h2>

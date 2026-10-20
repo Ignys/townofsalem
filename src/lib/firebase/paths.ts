@@ -19,6 +19,8 @@ export const firebasePaths = {
   openRoomPlayerCount: (code: string) =>
     `openRooms/${code}/playerCount` as const,
   openRoomStatus: (code: string) => `openRooms/${code}/status` as const,
+  rolePresets: "rolePresets",
+  rolePreset: (presetId: string) => `rolePresets/${presetId}` as const,
   game: gamePath,
   gameHostUid: (gameId: string) => `${gamePath(gameId)}/hostUid` as const,
 

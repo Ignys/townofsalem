@@ -21,7 +21,7 @@ export function BalanceSummary({ balance }: BalanceSummaryProps) {
     >
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <p className="text-xs font-bold tracking-wide text-[#9f9990] uppercase">
+          <p className="text-xs font-bold text-[#9f9990]">
             Virtue Value
           </p>
           <p className="mt-1 text-2xl font-bold text-[#fffaf0]">

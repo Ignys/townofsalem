@@ -6,6 +6,7 @@ import { HostGameTimer } from "@/features/timer/host-game-timer";
 import type { GamePublicRecord } from "@/lib/firebase/schema";
 
 import { CurrentGamePhase } from "./current-game-phase";
+import { PhaseSky } from "./phase-sky";
 import { GAME_PACE_LABELS, HOSTLESS_PACE_SECONDS } from "./hostless-autopilot";
 import { getPhaseDefinition } from "./phase-definitions";
 import { EndGameButton } from "./end-game-button";
@@ -63,7 +64,7 @@ export function HostlessTableControls({ gameId, game }: HostlessTableControlsPro
   };
 
   return (
-    <section className="items-center rounded-2xl border border-[#d3b88c]/20 bg-black/20 px-5 py-4 sm:min-w-80">
+    <PhaseSky night={game.phase === "night"} className="p-5">
       <CurrentGamePhase game={game} />
       {game.phase === "day" ? (
         <button
@@ -77,8 +78,8 @@ export function HostlessTableControls({ gameId, game }: HostlessTableControlsPro
       ) : (
         game.phase !== "game-over" && <HostGameTimer gameId={gameId} game={game} />
       )}
-      <p className="mt-4 text-xs leading-5 text-zinc-500">
-        Partida sem mestre · ritmo {GAME_PACE_LABELS[game.gamePace ?? "relaxed"].title}: as fases avançam sozinhas.
+      <p className="mt-4 text-xs leading-5 text-[#a9a297]">
+        Partida sem mestre, ritmo {GAME_PACE_LABELS[game.gamePace ?? "relaxed"].title}: as fases avançam sozinhas.
       </p>
       <div className="mt-4">
         {game.status === "finished" ? (
@@ -86,7 +87,7 @@ export function HostlessTableControls({ gameId, game }: HostlessTableControlsPro
             type="button"
             disabled={busy}
             onClick={handleEndGame}
-            className="min-h-11 w-full rounded-xl border border-[#d3b88c]/40 bg-[#d3b88c]/15 px-4 text-sm font-bold text-[#fffaf0] disabled:opacity-50"
+            className="btn-primary w-full"
           >
             Nova partida
           </button>
@@ -99,6 +100,6 @@ export function HostlessTableControls({ gameId, game }: HostlessTableControlsPro
           Não foi possível concluir a ação. Tente de novo.
         </p>
       )}
-    </section>
+    </PhaseSky>
   );
 }

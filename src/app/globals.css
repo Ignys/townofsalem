@@ -42,7 +42,7 @@ body {
     @apply rounded-2xl border border-[#e0cfb4] bg-[#f4ead9] p-5 text-[#251f1d] shadow-[0_18px_50px_rgba(0,0,0,0.3)];
   }
   .panel-private {
-    @apply rounded-2xl border border-[#34405e] bg-[#161b28] p-5 text-[#e5ded2] shadow-[0_18px_50px_rgba(0,0,0,0.35)];
+    @apply rounded-2xl border border-[#2e3136] bg-[#1b1d20] p-5 text-[#e5ded2] shadow-[0_18px_50px_rgba(0,0,0,0.35)];
   }
   .btn-primary {
     @apply min-h-11 rounded-xl bg-[#7d2330] px-4 text-sm font-bold text-white transition-colors hover:bg-[#681c27] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-50;

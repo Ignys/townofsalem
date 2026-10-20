@@ -54,14 +54,14 @@ export function SelectedRoleComposition({ roleIds, slotVirtues, order, disabled,
                                             <span
                                                 aria-label={`Virtue Value ${slot ? "médio " : ""}${virtueValue}`}
                                                 title={slot ? "Virtue Value médio das roles possíveis" : "Virtue Value"}
-                                                className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase text-xs ${virtueStyle(virtueValue)}`}
+                                                className={`rounded-md px-1.5 py-0.5 text-[10px] font-bold text-xs ${virtueStyle(virtueValue)}`}
                                             >
                                                 {slot ? "≈" : ""}
                                                 {virtueValue > 0 ? "+" : ""}
                                                 {virtueValue}
                                             </span>
                                         ) : null}
-                                        <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold tracking-wide uppercase ${style.tag}`}>
+                                        <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${style.tag}`}>
                                             {faction ? FACTION_LABELS[faction] : slot ? "Qualquer" : "Desconhecida"}
                                         </span>
                                     </div>

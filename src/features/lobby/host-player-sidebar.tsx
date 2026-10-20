@@ -127,9 +127,9 @@ export function HostPlayerSidebar({ gameId, verifiedHostUid, players, gameStarte
     };
 
     return (
-        <aside className="h-[90vh] overflow-y-auto border-r border-white/10 bg-[#1a1c1e] p-3 shadow-[0_24px_70px_rgba(0,0,0,0.3)] lg:sticky lg:top-0">
+        <aside className="max-h-[60svh] overflow-y-auto lg:max-h-none lg:h-svh border-r border-[#2e3136]/70 bg-[#16181b] p-3 shadow-[0_24px_70px_rgba(0,0,0,0.3)] lg:sticky lg:top-0">
             <header className="flex items-center justify-between gap-4 border-b border-white/10 pb-3">
-                <p className="text-sm font-semibold tracking-[0.18em] text-[#d3b88c] uppercase">Jogadores</p>
+                <h2 className="font-serif text-lg font-semibold text-[#fffaf0]">Jogadores</h2>
                 <div className="flex items-center gap-2">
                     <span className="flex size-8 items-center justify-center rounded-full bg-white/8 text-sm font-bold text-[#e6cfa9]" aria-label={`${connectedCount} jogadores ativos`}>
                         {connectedCount}

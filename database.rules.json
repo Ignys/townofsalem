@@ -41,6 +41,30 @@
         }
       }
     },
+    "rolePresets": {
+      ".read": "auth !== null",
+      "$presetId": {
+        ".write": "auth !== null && ((!data.exists() && newData.child('createdByUid').val() === auth.uid) || (data.exists() && !newData.exists() && data.child('createdByUid').val() === auth.uid))",
+        ".validate": "newData.hasChildren(['name', 'roleIds', 'createdAt', 'createdByUid'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+        },
+        "roleIds": {
+          "$index": {
+            ".validate": "$index.matches(/^[0-9]{1,2}$/) && newData.isString() && newData.val().length >= 1 && newData.val().length <= 40"
+          }
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 60000"
+        },
+        "createdByUid": {
+          ".validate": "newData.isString() && newData.val() === auth.uid"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
     "games": {
       "$gameId": {
         ".write": "auth !== null && !data.exists() && newData.hasChildren(['hostUid', 'public']) && newData.child('hostUid').val() === auth.uid && newData.child('public').child('status').val() === 'lobby' && newData.child('public').child('phase').val() === 'lobby' && newData.child('public').child('day').val() === 0 && newData.parent().parent().child('roomCodes').child(newData.child('public').child('code').val()).val() === $gameId",

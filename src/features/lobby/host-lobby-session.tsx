@@ -198,18 +198,23 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                     statusEditable={game.status === "in-progress"}
                     onComposeAction={handleComposeAction}
                 />
-                <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 mt-4">
+                <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-6 px-4 pt-4 pb-10 lg:pl-0">
                     {compositionEditable ? (
                         <>
-                            <PlayModeSelector gameId={gameId} playMode={game.playMode ?? "hosted"} gamePace={game.gamePace ?? "relaxed"} />
-                            <HostRoleComposition gameId={gameId} playerCount={playerCount} editable />
+                            <HostRoleComposition
+                                gameId={gameId}
+                                playerCount={playerCount}
+                                editable
+                                playModeSelector={<PlayModeSelector gameId={gameId} playMode={game.playMode ?? "hosted"} gamePace={game.gamePace ?? "relaxed"} />}
+                            />
                         </>
                     ) : (
-                        <div className="pr-4 p-1 grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(18rem,0.7fr)]">
+                        <div className="grid min-w-0 items-start gap-5 xl:grid-cols-[minmax(0,1.65fr)_minmax(18rem,0.7fr)]">
                             <div className="space-y-4">
                                 <MayorRevealMirror gameId={gameId} hostUid={hostUid} />
                                 <HostAnnouncementSounds gameId={gameId} game={game} />
-                                {nightConsole}
+                                {/* Sem noite aberta o console é só um aviso vazio. */}
+                                {game.currentNightId && nightConsole}
                                 {game.phase !== "night" && (
                                     <>
                                         <HostDayAnnouncements gameId={sessionState.session.gameId} />
@@ -230,8 +235,11 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                                 <HostHistoryPanel gameId={sessionState.session.gameId} hostUid={sessionState.session.uid} players={lobby.players} />
                             </div>
 
-                            {controlPanel}
-                            <HostWinConditionSuggestion gameId={sessionState.session.gameId} hostUid={sessionState.session.uid} nightId={game.currentNightId} players={lobby.players} />
+                            {/* O céu da fase fica à vista enquanto o mestre rola os consoles. */}
+                            <div className="grid gap-4 xl:sticky xl:top-4">
+                                {controlPanel}
+                                <HostWinConditionSuggestion gameId={sessionState.session.gameId} hostUid={sessionState.session.uid} nightId={game.currentNightId} players={lobby.players} />
+                            </div>
                         </div>
                     )}
                 </div>

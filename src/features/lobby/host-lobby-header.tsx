@@ -32,10 +32,10 @@ function getSessionLabel(game: GamePublicRecord) {
 
 export function HostLobbyHeader({ code, game, connectionStatus, updating }: HostLobbyHeaderProps) {
     return (
-        <header className="w-full border-b border-white/10 bg-[#1a1c1e] p-4 shadow-[0_24px_70px_rgba(0,0,0,0.3)]">
+        <header className="w-full border-b border-[#2e3136]/70 bg-[#16181b] px-5 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.3)]">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
-                <div className="flex items-center gap-2 text-lg uppercase font-medium text-[#bdb7ad]">
-                    <Clock size={20} />
+                <div className="flex items-center gap-2 font-serif text-xl font-semibold text-[#fffaf0]">
+                    <Clock aria-hidden="true" size={20} className="text-[#d3b88c]" />
                     {getSessionLabel(game)}
                 </div>
 

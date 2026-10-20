@@ -32,6 +32,7 @@ import type { Player } from "@/types";
 import { getPlayerEntries } from "./player-roster";
 
 import { GameOverCard } from "./game-over-card";
+import { PhaseSky } from "./phase-sky";
 import { GAME_PHASE_LABELS } from "./game-phase-presentation";
 import { useSessionSyncKey } from "./use-session-sync";
 
@@ -198,20 +199,8 @@ export function PlayerGameView({
           onClose={() => setSyncOpen(false)}
         />
       ) : null}
-      <section
-        className={`relative overflow-hidden rounded-3xl border p-6 text-center shadow-[0_24px_70px_rgba(0,0,0,0.4)] ${
-          isNight
-            ? "border-[#34405e] bg-[linear-gradient(180deg,#0e1424_0%,#151c30_100%)]"
-            : "border-[#6b5532]/60 bg-[linear-gradient(180deg,#3a2a17_0%,#211b16_70%)]"
-        }`}
-      >
-        <div
-          aria-hidden="true"
-          className={`pointer-events-none absolute -top-24 left-1/2 size-56 -translate-x-1/2 rounded-full blur-2xl ${
-            isNight ? "bg-[#9fb3e0]/15" : "bg-[#f2b85c]/25"
-          }`}
-        />
-        <div className="relative">
+      <PhaseSky night={isNight} className="p-6 text-center">
+        <div>
           <div
             className={`inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] ${
               isNight ? "text-[#c9d4ef]" : "text-[#f2c879]"
@@ -240,7 +229,7 @@ export function PlayerGameView({
           )}
           </div>
         </div>
-      </section>
+      </PhaseSky>
 
       {isNight && viewer && (
         <PlayerNightActionPanel
@@ -315,7 +304,9 @@ export function PlayerGameView({
               Você está silenciado hoje — seu voto não será contado.
             </p>
           )}
-          <AccusationTallyBoard gameId={gameId} dayNumber={game.day} players={players} />
+          <div className="mt-4">
+            <AccusationTallyBoard gameId={gameId} dayNumber={game.day} players={players} />
+          </div>
         </>
       )}
 
@@ -350,13 +341,15 @@ export function PlayerGameView({
         />
       )}
       {game.phase === "verdict" && (
-        <VerdictVotesBoard
-          gameId={gameId}
-          dayNumber={game.day}
-          players={players}
-          accusedUid={game.accusedPlayerUid}
-          closed={Boolean(game.verdictClosedAt)}
-        />
+        <div className="mt-4">
+          <VerdictVotesBoard
+            gameId={gameId}
+            dayNumber={game.day}
+            players={players}
+            accusedUid={game.accusedPlayerUid}
+            closed={Boolean(game.verdictClosedAt)}
+          />
+        </div>
       )}
 
       <div className="mt-4">

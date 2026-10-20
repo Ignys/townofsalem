@@ -52,6 +52,18 @@ export function DawnReadyMeter({
 
   return (
     <div role="status" aria-live="polite" className="text-center">
+      {revealMissing && (
+        // Só a mesa: a contagem em números, que não aponta ninguém.
+        <p className="mb-3 flex items-baseline justify-center gap-2">
+          <span className="font-serif text-4xl font-semibold text-[#fffaf0] tabular-nums">
+            {alive.length - missing.length}
+          </span>
+          <span className="text-sm text-[#e6cfa9]">
+            de {alive.length} prontos
+            {missing.length > 0 && `, ${missing.length === 1 ? "falta 1" : `faltam ${missing.length}`}`}
+          </span>
+        </p>
+      )}
       <ul aria-hidden="true" className="flex flex-wrap justify-center gap-1.5">
         {alive.map(([uid]) => (
           <li
@@ -64,14 +76,19 @@ export function DawnReadyMeter({
           />
         ))}
       </ul>
-      <p className="mt-3 font-serif text-sm italic text-[#f2c879]">
-        {missing.length === 0 ? "Todos prontos. O dia vai começar." : "prontos para começar o dia"}
-      </p>
+      {/* A mesa já mostra a contagem em números acima dos sóis. */}
+      {!revealMissing && (
+        <p className="mt-3 font-serif text-sm italic text-[#f2c879]">
+          {missing.length === 0
+            ? "Todos prontos. O dia vai começar."
+            : `${missing.length === 1 ? "Falta 1 pronto" : `Faltam ${missing.length} prontos`} para começar o dia`}
+        </p>
+      )}
       {revealMissing && missing.length > 0 && (
         <p
           tabIndex={0}
           title="Passe o mouse para ver quem falta"
-          className="mx-auto mt-1 max-w-xs cursor-default rounded-md text-sm leading-6 text-[#e6cfa9] blur-sm transition-[filter] duration-200 select-none hover:blur-none focus-visible:blur-none focus-visible:outline-2 focus-visible:outline-[#f2c879] motion-reduce:transition-none"
+          className="mx-auto mt-4 max-w-xs cursor-default rounded-md text-sm leading-6 text-[#e6cfa9] blur-sm transition-[filter] duration-200 select-none hover:blur-none focus-visible:blur-none focus-visible:outline-2 focus-visible:outline-[#f2c879] motion-reduce:transition-none"
         >
           Esperando {missing.map(([, player]) => player.name).join(", ")}.
         </p>

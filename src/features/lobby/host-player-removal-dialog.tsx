@@ -48,7 +48,7 @@ export function HostPlayerRemovalDialog({ playerName, isBot, open, busy, error, 
                 }
             }}
         >
-            <section role="dialog" aria-modal="true" aria-labelledby={titleId} className="w-full max-w-sm rounded-2xl border border-white/15 bg-[#1a1c1e] p-5 shadow-2xl">
+            <section role="dialog" aria-modal="true" aria-labelledby={titleId} className="w-full max-w-sm rounded-2xl border border-[#2e3136] bg-[#1b1d20] p-5 shadow-2xl">
                 <div className="flex items-start gap-3">
                     <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#a33843]/15 text-[#f0b9bd]">
                         <Ban aria-hidden="true" size={20} strokeWidth={2} />

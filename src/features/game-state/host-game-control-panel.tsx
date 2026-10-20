@@ -10,6 +10,7 @@ import { EndGameButton } from "./end-game-button";
 import { PhaseChangeConfirmationDialog } from "./phase-change-confirmation-dialog";
 import { getNightEndLabel, shouldConfirmNightEnd } from "./phase-end-label";
 import { PHASE_DEFINITIONS } from "./phase-definitions";
+import { PhaseSky } from "./phase-sky";
 
 interface HostGameControlPanelProps {
   gameId: string;
@@ -124,14 +125,14 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
   };
 
   return (
-    <section className="items-center rounded-2xl border border-[#d3b88c]/20 bg-black/20 px-5 py-4 sm:min-w-80">
+    <PhaseSky night={game.phase === "night"} className="p-5">
       <CurrentGamePhase game={game} />
       {game.phase !== "game-over" && (
         <HostGameTimer gameId={gameId} game={game} />
       )}
       <div className="mt-5">
         <div
-          className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-3"
+          className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-2"
           aria-label="Fases disponíveis"
         >
 
@@ -151,11 +152,7 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
                   })
                 }
                 disabled={busy || game.status !== "in-progress"}
-                className={`min-h-11 rounded-xl border px-3 py-2 text-sm font-bold focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-50 ${
-                  current
-                    ? "border-[#d3b88c] bg-[#d3b88c]/20 text-[#fffaf0]"
-                    : "border-white/15 bg-white/8 text-[#e5ded2] hover:bg-white/12"
-                }`}
+                className="choice-dark min-h-11 px-3 py-2 text-center text-sm"
               >
                 {definition.label}
               </button>
@@ -172,7 +169,7 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
           type="button"
           disabled={busy}
           onClick={() => void handleEndGame()}
-          className="mt-4 min-h-11 w-full rounded-xl border border-[#d3b88c]/40 bg-[#d3b88c]/15 px-4 text-sm font-bold text-[#fffaf0] disabled:opacity-50"
+          className="btn-primary mt-4 w-full"
         >
           Nova partida
         </button>
@@ -186,6 +183,6 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
         onCancel={() => setPendingPhase(null)}
         onConfirm={() => void confirmPhaseChange()}
       />
-    </section>
+    </PhaseSky>
   );
 }

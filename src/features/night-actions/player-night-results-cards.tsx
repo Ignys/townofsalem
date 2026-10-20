@@ -45,6 +45,24 @@ function CardTitle({
   );
 }
 
+/** O anúncio público da noite: o mesmo cartão no celular e na tela do mestre. */
+export function DayAnnouncementCard({
+  announcement,
+  className = "",
+}: Readonly<{ announcement: { nightNumber: number; lines: readonly PlayerNightResultLine[] }; className?: string }>) {
+  return (
+    <section aria-label="Anúncios do dia" className={`panel-public ${className}`}>
+      <CardTitle
+        icon={<Sunrise className="size-4" />}
+        title="Anúncios desse dia"
+        nightNumber={announcement.nightNumber}
+        light
+      />
+      <ResultLines lines={announcement.lines} light />
+    </section>
+  );
+}
+
 /** O que a cidade e o próprio jogador descobrem quando a noite acaba. */
 export function PlayerDawnNightResults({
   gameId,
@@ -65,18 +83,7 @@ export function PlayerDawnNightResults({
         </section>
       )}
 
-      <section
-        aria-label="Anúncios do dia"
-        className="panel-public mt-4"
-      >
-        <CardTitle
-          icon={<Sunrise className="size-4" />}
-          title="Anúncios desse dia"
-          nightNumber={announcement.nightNumber}
-          light
-        />
-        <ResultLines lines={announcement.lines} light />
-      </section>
+      <DayAnnouncementCard announcement={announcement} className="mt-4" />
     </>
   );
 }

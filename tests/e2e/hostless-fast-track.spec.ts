@@ -40,9 +40,9 @@ test("fast track: the night ends when everyone acted and the vote when everyone 
   await joinPlayer(caio, code, "Caio");
   await expect(table.getByText("Caio", { exact: true })).toBeVisible();
 
-  await table.getByRole("button", { name: /Sem mestre/ }).click();
-  await table.getByRole("button", { name: /Fast track/ }).click();
-  await expect(table.getByRole("button", { name: /Fast track/ })).toHaveAttribute("aria-pressed", "true");
+  await table.getByRole("radio", { name: /Sem mestre/ }).click();
+  await table.getByRole("radio", { name: /Fast track/ }).click();
+  await expect(table.getByRole("radio", { name: /Fast track/ })).toHaveAttribute("aria-checked", "true");
   await table.getByRole("button", { name: /Doctor/ }).click();
   await table.getByRole("button", { name: /Sheriff/ }).click();
   await table.getByRole("button", { name: /Mafioso/ }).click();

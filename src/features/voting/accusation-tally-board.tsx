@@ -36,7 +36,7 @@ export function AccusationTallyBoard({ gameId, dayNumber, players }: AccusationT
   );
 
   return (
-    <section className="panel-public mt-4">
+    <section className="panel-public">
       <div className="flex items-baseline justify-between gap-2">
         <h2 className="font-serif text-lg font-semibold">Votos da cidade</h2>
         <span className="text-xs font-bold text-[#75685f]">

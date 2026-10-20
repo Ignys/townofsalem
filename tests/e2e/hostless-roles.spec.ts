@@ -41,7 +41,7 @@ test("hostless: the mayor reveals from the phone and a lynched jester takes reve
   for (const [index, phone] of phones.entries()) await joinPlayer(phone, code, names[index]);
   await expect(table.getByText("Dani", { exact: true })).toBeVisible();
 
-  await table.getByRole("button", { name: /Sem mestre/ }).click();
+  await table.getByRole("radio", { name: /Sem mestre/ }).click();
   for (const role of [/Jester/, /Mayor/, /Mafioso/, /(?<!Peaceful |Spiteful )Townie/]) {
     await table.getByRole("button", { name: role }).first().click();
   }

@@ -30,7 +30,7 @@ export function HostPlayerInteractionHistory({
 
   return (
     <section className="rounded-xl border border-white/8 bg-black/15 p-4">
-      <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.14em] text-[#9f9990] uppercase">
+      <p className="flex items-center gap-2 text-xs font-semibold text-[#9f9990]">
         <History aria-hidden="true" size={15} />
         Interações registradas
       </p>
@@ -58,7 +58,7 @@ export function HostPlayerInteractionHistory({
                     <div className="flex items-start justify-between gap-2">
                       <span>{interaction.description}</span>
                       {interaction.status === "draft" && (
-                        <span className="shrink-0 rounded border border-amber-300/20 bg-amber-400/10 px-1.5 py-0.5 text-[0.625rem] font-semibold text-amber-100 uppercase">
+                        <span className="shrink-0 rounded border border-amber-300/20 bg-amber-400/10 px-1.5 py-0.5 text-[0.625rem] font-semibold text-amber-100">
                           Rascunho
                         </span>
                       )}

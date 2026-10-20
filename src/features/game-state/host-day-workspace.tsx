@@ -34,7 +34,7 @@ export function HostDayWorkspace({ gameId, hostUid, players: playerRecords, cond
 
   if (!privateRoles.loaded) {
     return (
-      <section className="rounded-3xl border border-white/10 bg-[#1a1c1e] p-6">
+      <section className="panel-private">
         <p role="status">Carregando condução do dia…</p>
       </section>
     );
@@ -42,7 +42,7 @@ export function HostDayWorkspace({ gameId, hostUid, players: playerRecords, cond
 
   if (privateRoles.error) {
     return (
-      <section className="rounded-3xl border border-[#a33843]/35 bg-[#a33843]/10 p-6">
+      <section className="panel-private border-[#a33843]/60 bg-[#2a1517]">
         <p role="alert">Não foi possível carregar os dados privados do dia.</p>
       </section>
     );

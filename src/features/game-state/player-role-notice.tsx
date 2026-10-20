@@ -8,7 +8,7 @@ export function PlayerRoleNotice({
   message,
 }: PlayerRoleNoticeProps) {
   return (
-    <section className="w-full max-w-md rounded-3xl border border-[#34405e] bg-[#161b28] p-8 text-center shadow-[0_24px_70px_rgba(0,0,0,0.34)]">
+    <section className="w-full max-w-md rounded-3xl border border-[#2e3136] bg-[#1b1d20] p-8 text-center shadow-[0_24px_70px_rgba(0,0,0,0.34)]">
       <div
         aria-hidden="true"
         className={`mx-auto size-3 rounded-full ${

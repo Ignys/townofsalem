@@ -23,8 +23,8 @@ export function HostWinConditionSuggestion({ gameId, hostUid, nightId, players: 
   const result = checkWinCondition(createEngineGameState({ gameId, nightId: nightId ?? "administrative-check", players, assignments, roleDefinitions: ROLE_DEFINITIONS }));
 
   return (
-    <section className={`rounded-2xl border p-4 text-sm ${result.gameOver ? "border-[#d3b88c]/40 bg-[#d3b88c]/10" : "border-white/10 bg-black/15"}`}>
-      <h3 className="font-semibold">Assistência de condição de vitória</h3>
+    <section className={`rounded-2xl border p-4 text-sm ${result.gameOver ? "border-[#d3b88c]/50 bg-[#2a2215]" : "border-[#2e3136] bg-[#1b1d20]"}`}>
+      <h3 className="font-serif text-base font-semibold text-[#fffaf0]">Condição de vitória</h3>
       {result.gameOver ? <p className="mt-2 text-[#e6cfa9]">Possível condição de vitória atingida. O mestre deve confirmar o encerramento.</p> : <p className="mt-2 text-[#9f9990]">{result.confidenceOrWarnings[0] ?? "Nenhuma condição confirmada foi atingida."}</p>}
     </section>
   );

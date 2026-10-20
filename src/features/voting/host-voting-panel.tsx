@@ -28,9 +28,9 @@ export function HostVotingPanel(props: HostVotingPanelProps) {
   }
 
   return (
-    <section className="w-full rounded-3xl border border-white/10 bg-[#1a1c1e] p-6 shadow-[0_24px_70px_rgba(0,0,0,0.34)] sm:p-8">
-      <p className="text-xs font-semibold tracking-[0.2em] text-[#d3b88c] uppercase">Votações do dia {props.game.day}</p>
-      <h2 className="mt-2 font-serif text-2xl font-semibold text-[#fffaf0]">
+    <section className="panel-private w-full">
+      <p className="text-sm font-semibold text-[#f2c879]">Dia {props.game.day}</p>
+      <h2 className="mt-1 font-serif text-2xl font-semibold text-[#fffaf0]">
         {isAccusationPhase(props.game.phase) ? "Acusações" : "Julgamento"}
       </h2>
 
