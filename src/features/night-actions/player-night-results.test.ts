@@ -27,7 +27,7 @@ const names = { ana: "Ana", bia: "Bia", caio: "Caio", dex: "Dex", eva: "Eva" };
 
 function lineText(line: NightResolutionMessageLine): string {
   return line.parts.map((part) =>
-    part.kind === "role" ? ` [${part.roleId}]` : part.text
+    part.kind === "role" ? ` [${part.roleId}]` : part.kind === "faction" ? ` [${part.faction}]` : part.text
   ).join("");
 }
 
@@ -101,7 +101,7 @@ test("dawn results tell each player what happened to them", () => {
       "Seu alvo Bia foi atacado e você o salvou.",
       "Você foi bloqueado nesta noite e sua ação não teve efeito.",
     ],
-    caio: ["Sua nova role é [sheriff]"],
+    caio: ["Você lembrou que era [sheriff]"],
   });
 });
 

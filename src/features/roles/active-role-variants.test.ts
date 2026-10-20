@@ -78,3 +78,11 @@ test("covers every role variant supported by the game settings", () => {
     );
   }
 });
+
+test("lists the Amnesiac pick and announcement variants", () => {
+  assert.deepEqual(getActiveRoleVariants("amnesiac", withDefaultVariants()), []);
+  assert.equal(
+    getActiveRoleVariants("amnesiac", withDefaultVariants({ amnesiacPicksRole: true, amnesiacRoleAnnounced: true })).length,
+    2,
+  );
+});

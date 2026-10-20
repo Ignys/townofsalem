@@ -200,7 +200,7 @@ export function HostRoleComposition({ gameId, playerCount, editable, playModeSel
                     <div className="panel-private grid grid-cols-[minmax(0,1fr)] divide-y divide-white/10 [&>*]:py-5 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">
                     <RoleCompositionSummary roleCount={composition.roleIds.length} playerCount={playerCount} virtue={virtue} />
                     {playModeSelector}
-                    <CompositionTools playerCount={playerCount} roleIds={composition.roleIds} disabled={controlsDisabled} onApply={(roleIds) => void persistRoleIds(roleIds)} />
+                    <CompositionTools playerCount={playerCount} roleIds={composition.roleIds} disabled={controlsDisabled} respectCardCount={respectCardCount} onRespectCardCountChange={(value) => void gameVariants.updateVariants({ ...gameVariants.variants, compositionRespectsCardCount: value })} onApply={(roleIds) => void persistRoleIds(roleIds)} />
                     </div>
                 </section>
             </div>

@@ -152,7 +152,7 @@ export function PlayerDetailsDialog({
   const death = grave ? describeGraveyardDeath(grave) : null;
   const revealDay = mayorReveals?.[targetUid];
   const playerNames = Object.fromEntries(Object.entries(players).map(([uid, { name }]) => [uid, name]));
-  const entries = getPlayerDossier({ targetUid, playerNames, ...sources });
+  const entries = getPlayerDossier({ targetUid, self: targetUid === viewerUid, playerNames, ...sources });
   const byNight = Map.groupBy(entries, ({ nightNumber }) => nightNumber);
 
   return (

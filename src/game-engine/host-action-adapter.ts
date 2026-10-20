@@ -77,6 +77,7 @@ export function adaptHostActions(
       roleId: entry.roleIdSnapshot,
       actionId: entry.actionId,
       targetUids: [...entry.targetUids],
+      ...(entry.chosenRoleId ? { chosenRoleId: entry.chosenRoleId } : {}),
       ...(definition?.engineEffectType ? { effectType: definition.engineEffectType } : {}),
       ...(definition?.priority !== undefined ? { priority: definition.priority } : {}),
       ...(definition?.engineEffectConfig?.investigationType

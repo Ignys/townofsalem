@@ -33,6 +33,28 @@ test("collects announcements, own actions and own results about one player, by n
   );
 });
 
+test("shows the veteran's own alerts only in their own dossier", () => {
+  const input = {
+    targetUid: "ana",
+    announcements: {},
+    dawnResults: {},
+    instantResults: {},
+    submissions: {
+      n2: {
+        alert: { nightId: "n2", nightNumber: 2, actionId: "alert", roleIdSnapshot: "veteran", targetUids: [], createdAt: 2, updatedAt: 2 },
+      },
+    },
+    nightNumberById: { n2: 2 },
+    playerNames,
+  };
+
+  assert.deepEqual(getPlayerDossier({ ...input, self: false }), []);
+  assert.deepEqual(
+    getPlayerDossier({ ...input, self: true }).map(({ nightNumber, line }) => [nightNumber, line.parts[0]]),
+    [[2, { kind: "text", text: "Você entrou em alerta" }]],
+  );
+});
+
 test("describes when and how a player died from the tombstone", () => {
   assert.deepEqual(
     describeGraveyardDeath({ cleaned: false, diedAt: 1, diedPhase: "day", diedNumber: 2, cause: "hanging" }),
@@ -47,4 +69,20 @@ test("describes when and how a player died from the tombstone", () => {
     { cause: "Morto pelo Serial Killer", when: "Noite 2" },
   );
   assert.equal(describeGraveyardDeath({ cleaned: false, diedAt: 1 }), null);
+});
+
+test("records the role the Amnesiac remembered in their own dossier", () => {
+  const remembered = { parts: [{ kind: "text" as const, text: "Você lembrou que era" }, { kind: "role" as const, roleId: "blackmailer" }] };
+  const input = {
+    targetUid: "ana",
+    announcements: {},
+    dawnResults: { n3: { nightNumber: 3, createdAt: 3, lines: [remembered] } },
+    instantResults: {},
+    submissions: {},
+    nightNumberById: { n3: 3 },
+    playerNames,
+  };
+
+  assert.deepEqual(getPlayerDossier({ ...input, self: false }), []);
+  assert.deepEqual(getPlayerDossier({ ...input, self: true }).map(({ nightNumber, line }) => [nightNumber, line]), [[3, remembered]]);
 });

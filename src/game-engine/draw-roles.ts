@@ -66,13 +66,24 @@ function assertValidInputs(
   }
 }
 
-export function drawRoles(
+// Most recent first; a role played last game costs more than one from 3 games ago.
+export type RoleHistory = Readonly<Record<string, readonly string[]>>;
+
+export const ROLE_HISTORY_LENGTH = 3;
+const DRAW_ATTEMPTS = 30;
+
+function repetitionScore(assignments: RoleAssignmentMap, history: RoleHistory): number {
+  return Object.entries(assignments).reduce((score, [uid, roleId]) => {
+    const index = history[uid]?.indexOf(roleId) ?? -1;
+    return index < 0 ? score : score + (ROLE_HISTORY_LENGTH - index);
+  }, 0);
+}
+
+function drawOnce(
   playerUids: readonly string[],
   roleIds: readonly string[],
-  random: RandomSource = Math.random,
+  random: RandomSource,
 ): RoleAssignmentMap {
-  assertValidInputs(playerUids, roleIds);
-
   const shuffledPlayerUids = shuffleCopy(playerUids, random);
   const shuffledRoleIds = shuffleCopy(roleIds, random);
 
@@ -80,6 +91,37 @@ export function drawRoles(
     shuffledPlayerUids.map((playerUid, index) => [
       playerUid,
       shuffledRoleIds[index],
+    ]),
+  );
+}
+
+export function drawRoles(
+  playerUids: readonly string[],
+  roleIds: readonly string[],
+  random: RandomSource = Math.random,
+  history: RoleHistory = {},
+): RoleAssignmentMap {
+  assertValidInputs(playerUids, roleIds);
+
+  // ponytail: best-of-N random draws, not optimal matching; fine for table-sized games.
+  let best = drawOnce(playerUids, roleIds, random);
+  let bestScore = repetitionScore(best, history);
+  for (let attempt = 1; attempt < DRAW_ATTEMPTS && bestScore > 0; attempt += 1) {
+    const candidate = drawOnce(playerUids, roleIds, random);
+    const score = repetitionScore(candidate, history);
+    if (score < bestScore) [best, bestScore] = [candidate, score];
+  }
+  return best;
+}
+
+export function nextRoleHistory(
+  assignments: RoleAssignmentMap,
+  history: RoleHistory,
+): Record<string, string[]> {
+  return Object.fromEntries(
+    Object.entries(assignments).map(([uid, roleId]) => [
+      uid,
+      [roleId, ...(history[uid] ?? [])].slice(0, ROLE_HISTORY_LENGTH),
     ]),
   );
 }

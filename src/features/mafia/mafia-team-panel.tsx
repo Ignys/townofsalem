@@ -80,7 +80,7 @@ function sendMafiaReaction(
 }
 
 function actionVerb(roleId: string, actionId: string): string {
-  if (actionId === MAFIA_KILL_ACTION_ID) return "ataque";
+  if (actionId === MAFIA_KILL_ACTION_ID) return "Ataque";
   const role = getRoleById(roleId);
   const action = role?.actionDefinitions?.find(({ id }) => id === actionId) ?? role?.action;
   return action?.label ?? actionId;
@@ -172,18 +172,33 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
           const picks = Object.entries(board[uid] ?? {}).filter(([, pick]) => (pick.targetUids?.length ?? 0) > 0);
           const alive = players[uid]?.alive ?? false;
           return (
-            <li key={uid} data-mafia-member={uid} className="flex min-h-10 items-center gap-2 py-1.5 text-sm">
+            <li key={uid} data-mafia-member={uid} className="flex min-h-10 flex-wrap items-center gap-x-2 gap-y-1 py-1.5 text-sm">
               <span className={`min-w-0 truncate font-semibold ${alive ? "text-[#f3ead9]" : "text-[#8f8a82] line-through"}`}>
                 {nameOf(uid)}
               </span>
               <RoleTag roleId={member.roleId} />
               {nightId && alive && (
-                <span className="ml-auto truncate text-right text-xs text-[#bdb7ad]">
-                  {picks.length === 0
-                    ? "pensando…"
-                    : picks
-                        .map(([actionId, pick]) => `${actionVerb(member.roleId, actionId)} → ${(pick.targetUids ?? []).map(nameOf).join(", ")}`)
-                        .join(" · ")}
+                // Cada escolha vira uma etiqueta: a ação em tom apagado, o alvo em destaque.
+                <span className="ml-auto flex flex-wrap justify-end gap-1">
+                  {picks.length === 0 ? (
+                    <span className="text-xs text-[#8f8a82] italic">pensando…</span>
+                  ) : (
+                    picks.map(([actionId, pick]) => (
+                      <span
+                        key={actionId}
+                        className={`inline-flex max-w-full items-center gap-1.5 rounded-full py-0.5 pr-2.5 pl-2 text-xs ${
+                          actionId === MAFIA_KILL_ACTION_ID ? "bg-[#db4242]/18" : "bg-white/7"
+                        }`}
+                      >
+                        <span className={actionId === MAFIA_KILL_ACTION_ID ? "text-[#f0b9bd]" : "text-[#bdb7ad]"}>
+                          {actionVerb(member.roleId, actionId)}
+                        </span>
+                        <span className="truncate font-semibold text-[#fffaf0]">
+                          {(pick.targetUids ?? []).map(nameOf).join(", ")}
+                        </span>
+                      </span>
+                    ))
+                  )}
                 </span>
               )}
             </li>

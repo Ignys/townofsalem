@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { drawRoles, DrawRolesError, type RandomSource } from "./draw-roles";
+import { drawRoles, DrawRolesError, nextRoleHistory, type RandomSource } from "./draw-roles";
 
 function sequenceRandom(values: readonly number[]): RandomSource {
   let index = 0;
@@ -112,4 +112,19 @@ test("rejects values outside the random source contract", () => {
 
 test("returns an empty assignment map for two empty validated lists", () => {
   assert.deepEqual(drawRoles([], []), {});
+});
+
+test("avoids giving players the role they had last game", () => {
+  const history = { "player-1": ["doctor"], "player-2": ["sheriff"] };
+  for (let run = 0; run < 50; run += 1) {
+    const assignments = drawRoles(["player-1", "player-2"], ["doctor", "sheriff"], Math.random, history);
+    assert.deepEqual(assignments, { "player-1": "sheriff", "player-2": "doctor" });
+  }
+});
+
+test("keeps the three most recent roles per player", () => {
+  assert.deepEqual(
+    nextRoleHistory({ "player-1": "mayor" }, { "player-1": ["doctor", "sheriff", "witch"], "gone": ["jester"] }),
+    { "player-1": ["mayor", "doctor", "sheriff"] },
+  );
 });

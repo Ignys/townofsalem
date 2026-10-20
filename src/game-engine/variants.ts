@@ -16,6 +16,10 @@ export interface GameVariants {
   compositionRespectsCardCount: boolean;
   /** Slots aleatórios não usam mais cópias de uma role do que há cartas no baralho. */
   randomRolesRespectCardCount: boolean;
+  /** O Amnesiac escolhe a role da lista na noite 3, em vez de receber uma por sorteio. */
+  amnesiacPicksRole: boolean;
+  /** Anuncia a todos qual role o Amnesiac lembrou, sem dizer quem ele é. */
+  amnesiacRoleAnnounced: boolean;
 }
 
 export const DEFAULT_GAME_VARIANTS: Readonly<GameVariants> = {
@@ -33,6 +37,8 @@ export const DEFAULT_GAME_VARIANTS: Readonly<GameVariants> = {
   announcementSounds: "both",
   compositionRespectsCardCount: true,
   randomRolesRespectCardCount: true,
+  amnesiacPicksRole: false,
+  amnesiacRoleAnnounced: false,
 };
 
 export function withDefaultVariants(

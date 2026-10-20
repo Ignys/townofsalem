@@ -1,6 +1,6 @@
 "use client";
 
-import { Crosshair } from "lucide-react";
+import { BookOpen, Crosshair, Moon, ShieldAlert } from "lucide-react";
 import { useState } from "react";
 
 import { getRoleById, ROLE_DEFINITIONS } from "@/data/roles";
@@ -29,6 +29,8 @@ interface PlayerNightActionPanelProps {
   fastTrack?: boolean;
   /** Parceiros da Máfia: não aparecem como alvo. */
   mafiaTeamUids?: readonly string[];
+  /** Roles que o Amnesiac pode lembrar na noite 3. */
+  amnesiacRolePool?: readonly string[];
   /** Sem mestre: não manda aguardar o mestre. */
   hostless?: boolean;
   /** Avisa qual ação está usando a lista de jogadores para escolher alvos. */
@@ -47,6 +49,7 @@ export function PlayerNightActionPanel({
   resourceUses,
   fastTrack = false,
   mafiaTeamUids = [],
+  amnesiacRolePool = [],
   hostless = false,
   onPickerChange,
 }: PlayerNightActionPanelProps) {
@@ -82,32 +85,68 @@ export function PlayerNightActionPanel({
         (uid) => players.find((player) => player.uid === uid)?.name ?? "?",
       )
     : null;
+  const activeSubmission = activeInteraction ? submissions[activeInteraction.action.id] : undefined;
+  // Roles sem alvo de verdade ganham um cartão próprio em vez de "Alvo: …".
+  const veteranAlert = roleId === "veteran" ? Boolean(activeSubmission) : null;
+  const amnesiac = roleId === "amnesiac" && activeInteraction?.action.id === "remember-role";
+  const rememberedRole = activeSubmission?.chosenRoleId ? getRoleById(activeSubmission.chosenRoleId) : undefined;
+  const announcedNote = variants.amnesiacRoleAnnounced
+    ? " Todos vão saber qual role você lembrou, mas não que foi você."
+    : "";
+  const werewolf = activeInteraction?.action.targetRelation === "adjacent-pair";
+  const [primaryName, neighborName] = activeTargets ?? [];
+  const card = werewolf
+    ? {
+        title: "Lua cheia",
+        body: !primaryName
+          ? "Esta noite você se transforma e ataca dois vizinhos. Escolha o alvo principal na lista."
+          : !neighborName
+            ? `Alvo principal: ${primaryName}. Agora escolha um vizinho para ser o segundo alvo.`
+            : `Você vai atacar ${primaryName} e ${neighborName}. Dá para trocar até o fim da noite.`,
+      }
+    : veteranAlert !== null
+    ? {
+        title: veteranAlert ? "Alerta ligado" : "Alerta desligado",
+        body: `${veteranAlert
+          ? "Você vai atacar qualquer um que te visitar esta noite, inclusive aliados."
+          : "Ligue o alerta para atacar qualquer um que te visitar esta noite, inclusive aliados."} Dá para mudar até o fim da noite.`,
+      }
+    : amnesiac && variants.amnesiacPicksRole
+      ? {
+          title: rememberedRole ? `Você vai lembrar: ${rememberedRole.name}` : "Escolha quem você era",
+          body: `Ao amanhecer você vira essa role, com a facção e o objetivo dela.${announcedNote} Dá para trocar até o fim da noite.`,
+        }
+      : amnesiac
+        ? {
+            title: activeSubmission ? "Você vai lembrar uma role" : "Lembre quem você era",
+            body: `Ao amanhecer você recebe por sorteio uma das roles abaixo e passa a jogar com ela.${announcedNote} Dá para mudar até o fim da noite.`,
+          }
+        : {
+            title: activeTargets
+              ? activeTargets.length > 0 ? `Alvo: ${activeTargets.join(", ")}` : "Nenhum alvo escolhido"
+              : null,
+            body: "Escolha seu alvo da noite de acordo com sua role. Você pode trocar a sua escolha até o fim da noite.",
+          };
+  const Icon = werewolf ? Moon : veteranAlert !== null ? ShieldAlert : amnesiac ? BookOpen : Crosshair;
 
   return (
     <section aria-label="Sua ação da noite" className="panel-private mt-4 text-left">
       <div className="flex gap-3">
         <span
           aria-hidden="true"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#c9d4ef]/10 text-[#c9d4ef]"
+          className={`flex size-10 shrink-0 items-center justify-center rounded-full transition-colors ${
+            veteranAlert ? "bg-[#f0b9bd]/15 text-[#f0b9bd]" : werewolf ? "bg-[#f3e2b3]/15 text-[#f3e2b3]" : "bg-[#c9d4ef]/10 text-[#c9d4ef]"
+          }`}
         >
-          <Crosshair className="size-5" />
+          <Icon className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          {activeTargets && (
-            <p className="text-base font-semibold text-[#fffaf0]">
-              {activeTargets.length > 0
-                ? `Alvo: ${activeTargets.join(", ")}`
-                : "Nenhum alvo escolhido"}
-            </p>
-          )}
-          <p className="mt-0.5 text-sm leading-6 text-[#a9b3cc]">
-            Escolha seu alvo da noite de acordo com sua role. Você pode trocar a sua escolha até o
-            fim da noite.
-          </p>
+          {card.title && <p className="text-base font-semibold text-[#fffaf0]">{card.title}</p>}
+          <p className="mt-0.5 text-sm leading-6 text-[#a9b3cc]">{card.body}</p>
         </div>
         {limit !== null && roleId !== "janitor" && (
           <span className="h-fit shrink-0 rounded-full bg-[#c9d4ef]/10 px-2.5 py-0.5 text-xs font-bold text-[#c9d4ef] tabular-nums">
-            {usedResource}/{limit} usos
+            {limit - usedResource} {limit - usedResource === 1 ? "uso restante" : "usos restantes"}
           </span>
         )}
       </div>
@@ -134,6 +173,7 @@ export function PlayerNightActionPanel({
             exhausted={exhausted}
             shareWithMafia={getRoleById(roleId)?.faction === "mafia"}
             excludedTargetUids={mafiaTeamUids}
+            amnesiacRolePool={amnesiacRolePool}
             active={interaction.id === activeId}
             onActivate={() => setChosenActiveId(interaction.id)}
             onPickerChange={onPickerChange}

@@ -5,7 +5,7 @@ import { useMemo } from "react";
 
 import { getRoleById } from "@/data/roles";
 import type { NightTargetPicker } from "@/features/night-actions/night-target-picker";
-import { FACTION_TAGS } from "./game-composition-board";
+import { FACTION_TAGS, roleTagStyle } from "./game-composition-board";
 import type {
   GraveyardEntryRecord,
   PublicPlayerRecord,
@@ -39,6 +39,7 @@ export function RoleTag({ roleId }: Readonly<{ roleId: string }>) {
   const role = getRoleById(roleId);
   return (
     <span
+      style={roleTagStyle(roleId)}
       className={`inline-flex max-w-32 shrink-0 truncate rounded-md border px-2 py-0.5 text-[0.6875rem] leading-4 font-semibold uppercase ${
         FACTION_TAGS[role?.faction ?? "neutral"] ?? FACTION_TAGS.neutral
       }`}
@@ -171,18 +172,30 @@ export function PlayerStatusBoard({
           {nightMarks[uid]}
         </span>
       ) : null}
-      {nightPick?.eligibleUids.includes(uid) && (
-        <button
-          type="button"
-          aria-pressed={nightPick.selectedUids.includes(uid)}
-          aria-label={`${nightPick.selectedUids.includes(uid) ? "Desmarcar" : "Escolher"} ${player.name}`}
-          disabled={nightPick.disabled}
-          onClick={() => nightPick.toggle(uid)}
-          className="min-h-9 shrink-0 rounded-lg border border-[#34405e] px-3 text-xs font-bold text-[#34405e] transition-colors hover:bg-[#34405e]/10 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#34405e] disabled:opacity-50 aria-pressed:bg-[#161b28] aria-pressed:text-white"
-        >
-          {nightPick.selectedUids.includes(uid) ? "ESCOLHIDO" : "ESCOLHER"}
-        </button>
-      )}
+      {nightPick?.eligibleUids.includes(uid) && (() => {
+        const picked = nightPick.selectedUids.includes(uid);
+        // Werewolf: o principal fica cheio como qualquer escolha; o segundo, só tingido, para ver qual é qual.
+        const neighbor = picked && nightPick.primaryUid !== undefined && uid !== nightPick.primaryUid;
+        const label = !picked
+          ? "ESCOLHER"
+          : "ESCOLHIDO";
+        return (
+          <button
+            type="button"
+            aria-pressed={picked}
+            aria-label={`${picked ? "Desmarcar" : "Escolher"} ${player.name}`}
+            disabled={nightPick.disabled}
+            onClick={() => nightPick.toggle(uid)}
+            className={`min-h-9 shrink-0 rounded-lg border px-3 text-xs font-bold transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#34405e] disabled:opacity-50 ${
+              neighbor
+                ? "border-[#34405e] bg-[#34405e]/15 text-[#161b28]"
+                : "border-[#34405e] text-[#34405e] hover:bg-[#34405e]/10 aria-pressed:bg-[#161b28] aria-pressed:text-white"
+            }`}
+          >
+            {label}
+          </button>
+        );
+      })()}
     </li>
   );
 

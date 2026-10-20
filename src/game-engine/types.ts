@@ -40,6 +40,7 @@ export interface EngineNightAction {
   sourceFaction?: Faction;
   participantUids?: readonly string[];
   countsAsVisit?: boolean;
+  chosenRoleId?: string;
 }
 
 export interface EngineEffect extends EngineNightAction {

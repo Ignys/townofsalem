@@ -171,7 +171,12 @@ export function buildPlayerDawnNightResults(
   (resolution.roleChanges ?? []).forEach((change) => {
     const role = getRoleById(change.toRoleId);
     add(change.playerUid, role
-      ? { parts: [resolutionTextPart("Sua nova role é"), { kind: "role", roleId: role.id }] }
+      ? {
+          parts: [
+            resolutionTextPart(change.fromRoleId === "amnesiac" ? "Você lembrou que era" : "Sua nova role é"),
+            { kind: "role", roleId: role.id },
+          ],
+        }
       : resolutionTextMessage(`Sua nova role é ${change.toRoleId}.`));
   });
 

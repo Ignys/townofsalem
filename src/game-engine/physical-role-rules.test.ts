@@ -10,6 +10,8 @@ import {
 import { arePlayersAdjacent, canUseActionOnNight } from "./role-rules";
 import { resolveNight } from "./resolve-night";
 import { getRoleById } from "@/data/roles";
+import { presentNightResolution } from "@/features/night-actions/night-resolution-presentation";
+import { withDefaultVariants } from "./variants";
 
 test("Werewolf acts only on even nights and ignores dead seats for adjacency", () => {
   const action = getRoleById("werewolf")?.action;
@@ -101,6 +103,31 @@ test("Amnesiac remembers a seeded role from the host-configured pool on Night 3"
 
   assert.equal(result.roleChanges?.[0].toRoleId, "doctor");
   assert.equal(result.randomDecisions?.[0].selectedUid, "doctor");
+});
+
+test("Amnesiac keeps the role they picked when the pick variant is on, and the role can be announced", () => {
+  const resolution = resolveNight(engineGame([
+    enginePlayer("amnesiac", "amnesiac", "neutral"),
+    enginePlayer("target", "townie"),
+  ], {
+    nightId: "night-3",
+    nightNumber: 3,
+    amnesiacRolePool: ["sheriff", "doctor"],
+    variants: withDefaultVariants({ amnesiacPicksRole: true, amnesiacRoleAnnounced: true }),
+  }), [
+    engineAction("remember", "amnesiac", "amnesiac", "remember-role", [], {
+      effectType: "role-trigger",
+      priority: 5,
+      chosenRoleId: "sheriff",
+    }),
+  ], { randomSource: { pickIndex: () => 0 } });
+
+  assert.equal(resolution.roleChanges?.[0].toRoleId, "sheriff");
+  assert.deepEqual(resolution.randomDecisions ?? [], []);
+  assert.deepEqual(
+    presentNightResolution(resolution, { amnesiac: "Ana", target: "Bia" }).announcements.at(-1),
+    { parts: [{ kind: "text", text: "Um Amnesiac lembrou que era" }, { kind: "role", roleId: "sheriff" }, { kind: "text", text: "" }] },
+  );
 });
 
 test("the pure resolver rejects Mafia, Serial Killer and Vigilante attacks on Night 1", () => {

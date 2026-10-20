@@ -202,6 +202,12 @@
           "randomRolesRespectCardCount": {
             ".validate": "newData.isBoolean()"
           },
+          "amnesiacPicksRole": {
+            ".validate": "newData.isBoolean()"
+          },
+          "amnesiacRoleAnnounced": {
+            ".validate": "newData.isBoolean()"
+          },
           "announcementSounds": {
               ".validate": "newData.isString() && (newData.val() === 'players' || newData.val() === 'host' || newData.val() === 'both')"
             },
@@ -231,6 +237,15 @@
           },
           "$other": {
             ".validate": false
+          }
+        },
+        "roleHistory": {
+          ".read": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          "$uid": {
+            "$index": {
+              ".validate": "$index.matches(/^[0-9]$/) && newData.isString() && newData.val().length <= 64"
+            }
           }
         },
         "forcedRoles": {
@@ -393,6 +408,9 @@
                 },
                 "skipped": {
                   ".validate": "newData.isBoolean()"
+                },
+                "chosenRoleId": {
+                  ".validate": "newData.isString() && newData.parent().child('actionId').val() === 'remember-role' && newData.val().length <= 40 && root.child('games').child($gameId).child('settings').child('gameVariants').child('amnesiacPicksRole').val() === true"
                 },
                 "$other": {
                   ".validate": false

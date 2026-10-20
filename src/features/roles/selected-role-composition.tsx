@@ -5,6 +5,7 @@ import { X } from "lucide-react";
 
 import { getRoleById } from "@/data/roles";
 
+import { NEUTRAL_ROLE_COLORS, roleNameColor } from "@/features/game-state/game-composition-board";
 import { getRandomRoleSlot } from "./random-role-slots";
 import { FACTION_LABELS } from "./role-presentation";
 import { orderSelectedRoles, type RoleCompositionOrder } from "./role-composition-order";
@@ -47,7 +48,7 @@ export function SelectedRoleComposition({ roleIds, slotVirtues, order, disabled,
                         const virtueValue = role?.virtueValue ?? slotVirtues[roleId] ?? null;
 
                         return (
-                            <li key={`${roleId}-${originalIndex}`} className={`flex min-h-20 flex-col justify-between rounded-xl border p-3 transition ${style.card}`}>
+                            <li key={`${roleId}-${originalIndex}`} style={NEUTRAL_ROLE_COLORS[roleId] ? { borderColor: NEUTRAL_ROLE_COLORS[roleId], backgroundColor: `color-mix(in srgb, ${NEUTRAL_ROLE_COLORS[roleId]} 12%, transparent)` } : undefined} className={`flex min-h-20 flex-col justify-between rounded-xl border p-3 transition ${style.card}`}>
                                 <div className="flex items-start justify-between gap-2">
                                     <div className="flex items-center h-full gap-1">
                                         {virtueValue !== null ? (
@@ -78,7 +79,7 @@ export function SelectedRoleComposition({ roleIds, slotVirtues, order, disabled,
                                 </div>
 
                                 <div className="flex items-end justify-between gap-2">
-                                    <span className="min-w-0 truncate font-semibold text-[#f8f1e5]">{roleName}</span>
+                                    <span className="min-w-0 truncate font-semibold text-[#f8f1e5]" style={{ color: roleNameColor(roleId, faction) }}>{roleName}</span>
                                 </div>
                             </li>
                         );

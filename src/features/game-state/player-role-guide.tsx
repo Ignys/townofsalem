@@ -61,13 +61,19 @@ export function PlayerRoleGuide({
       )}
 
       {activeVariants.length > 0 && (
-        <section className="rounded-xl border-l-4 border-[#c18b2f] bg-[#c18b2f]/10 py-2 pr-3 pl-3">
+        <section className="border-t border-white/8 pt-2.5">
           <h2 className="text-xs font-semibold text-[#f0d19b]">
             {activeVariants.length === 1 ? "Regra extra nesta partida" : "Regras extras nesta partida"}
           </h2>
-          <ul className="mt-1 space-y-0.5 text-sm leading-6 text-[#fff3df]">
+          {/* Uma carta por variante: cada regra vale por si. */}
+          <ul className="mt-2 grid gap-2">
             {activeVariants.map((variant) => (
-              <li key={variant}>{variant}</li>
+              <li
+                key={variant}
+                className="rounded-xl border-l-4 border-[#c18b2f] bg-[#c18b2f]/10 py-2 pr-3 pl-3 text-sm leading-6 text-[#fff3df]"
+              >
+                {variant}
+              </li>
             ))}
           </ul>
         </section>

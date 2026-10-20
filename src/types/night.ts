@@ -25,6 +25,8 @@ export interface HostNightActionEntry {
   sourceUpdatedAt?: number;
   /** Momento em que o mestre sobrescreveu uma entrada enviada pelo jogador. */
   overriddenAt?: number;
+  /** Role que o Amnesiac escolheu lembrar (variante de escolha). */
+  chosenRoleId?: string;
 }
 
 /** Submissão feita pelo próprio jogador em `playerNightActions/{nightId}/{uid}/{actionId}`. */
@@ -36,6 +38,8 @@ export interface PlayerNightActionSubmission {
   targetUids: readonly string[];
   /** O jogador escolheu não agir com esta ação nesta noite. */
   skipped?: boolean;
+  /** Role que o Amnesiac escolheu lembrar (variante de escolha). */
+  chosenRoleId?: string;
   createdAt: number;
   updatedAt: number;
 }

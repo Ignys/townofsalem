@@ -62,6 +62,19 @@ export function getActiveRoleVariants(
     }
   }
 
+  if (roleId === "amnesiac") {
+    if (variants.amnesiacPicksRole) {
+      activeVariants.push(
+        "Na noite 3, você escolhe a dedo uma das roles separadas, em vez de receber uma por sorteio.",
+      );
+    }
+    if (variants.amnesiacRoleAnnounced) {
+      activeVariants.push(
+        "Ao amanhecer, todos ficam sabendo qual role você lembrou, mas não que foi você.",
+      );
+    }
+  }
+
   if (roleId === "survivor" && variants.survivorLynchBlocksTownNextNight) {
     activeVariants.push(
       "Se você for enforcado, nenhuma role da Town poderá usar sua habilidade na noite seguinte.",

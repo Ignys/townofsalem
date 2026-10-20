@@ -89,9 +89,9 @@ export function PlayModeSelector({ gameId, playMode, gamePace }: PlayModeSelecto
         })}
       </div>
       {playMode === "hostless" && (
-        <div className="mt-4 grid gap-2 border-t border-white/10 pt-4">
-          <h3 className="text-sm font-semibold text-[#d7d0c4]">Ritmo</h3>
-          <div role="radiogroup" aria-label="Ritmo" className="grid grid-cols-3 rounded-full border border-white/10 bg-black/20 p-1">
+        <div className="mt-3 grid gap-1.5 border-t border-white/10 pt-3">
+          <h3 className="text-xs font-semibold text-[#d7d0c4]">Ritmo</h3>
+          <div role="radiogroup" aria-label="Ritmo" className="grid grid-cols-3 rounded-full border border-white/10 bg-black/20 p-0.5">
             {GAME_PACES.map((pace) => {
               const selected = pace === gamePace;
               return (
@@ -104,7 +104,7 @@ export function PlayModeSelector({ gameId, playMode, gamePace }: PlayModeSelecto
                   onClick={() => {
                     if (!selected) save("gamePace", pace);
                   }}
-                  className={`min-h-9 whitespace-nowrap rounded-full px-2 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-60 ${
+                  className={`min-h-7 whitespace-nowrap rounded-full px-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-60 ${
                     selected ? "bg-[#d3b88c] text-[#1b1d20]" : "text-[#bdb7ad] hover:text-[#fffaf0]"
                   }`}
                 >
@@ -113,7 +113,7 @@ export function PlayModeSelector({ gameId, playMode, gamePace }: PlayModeSelecto
               );
             })}
           </div>
-          <p className="text-xs leading-5 text-[#a9a297]">{GAME_PACE_LABELS[gamePace].description}</p>
+          <p className="text-xs leading-4 text-[#a9a297]">{GAME_PACE_LABELS[gamePace].description}</p>
         </div>
       )}
       {error && (

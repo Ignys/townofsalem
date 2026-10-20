@@ -37,6 +37,7 @@ export type RealtimeDatabaseOperation =
   | "read-game-host"
   | "read-game-settings"
   | "read-forced-roles"
+  | "read-role-history"
   | "read-game-players"
   | "read-public-player"
   | "read-day-votes"

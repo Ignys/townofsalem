@@ -15,6 +15,7 @@ import {
   type CustomRolePreset,
 } from "./custom-role-presets";
 import { getRandomRoleSlot } from "./random-role-slots";
+import { SemiAutomaticCompositionDialog } from "./semi-automatic-composition-dialog";
 import {
   formatFactionCounts,
   getSuggestedFactionCounts,
@@ -27,6 +28,8 @@ interface CompositionToolsProps {
   /** Composição atual, que o moderador pode salvar para usar em outras salas. */
   roleIds: readonly string[];
   disabled: boolean;
+  respectCardCount: boolean;
+  onRespectCardCountChange: (value: boolean) => void;
   onApply: (roleIds: readonly string[]) => void;
 }
 
@@ -34,9 +37,12 @@ export function CompositionTools({
   playerCount,
   roleIds,
   disabled,
+  respectCardCount,
+  onRespectCardCountChange,
   onApply,
 }: CompositionToolsProps) {
   const [feedback, setFeedback] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
   const [presets, setPresets] = useState<CustomRolePreset[] | null>(null);
   const [presetName, setPresetName] = useState("");
   const [savingPreset, setSavingPreset] = useState(false);
@@ -76,7 +82,15 @@ export function CompositionTools({
     requestedPlayerCount: number,
     requiredRoleIds: readonly string[] = [],
     keptRoleIds: readonly string[] = [],
+    excludedRoleIds: readonly string[] = [],
+    exactRoleCounts: Readonly<Record<string, number>> = {},
   ) => {
+    // Without the card cap any role can repeat, so every role gets enough copies.
+    const catalog = ROLE_DEFINITIONS.filter((role) => !excludedRoleIds.includes(role.id)).map((role) =>
+      exactRoleCounts[role.id] !== undefined
+        ? { ...role, cardCount: exactRoleCounts[role.id] }
+        : respectCardCount ? role : { ...role, cardCount: Math.max(role.cardCount, requestedPlayerCount) },
+    );
     const suggestedFactionCounts = getSuggestedFactionCounts(requestedPlayerCount);
 
     if (!suggestedFactionCounts) {
@@ -90,7 +104,7 @@ export function CompositionTools({
       requestedPlayerCount,
       suggestedFactionCounts,
       requiredRoleIds,
-      ROLE_DEFINITIONS,
+      catalog,
     );
 
     if (!factionCounts) {
@@ -103,7 +117,7 @@ export function CompositionTools({
     const result = generateBalancedRoleComposition(
       requestedPlayerCount,
       factionCounts,
-      ROLE_DEFINITIONS,
+      catalog,
       requiredRoleIds,
     );
 
@@ -124,35 +138,31 @@ export function CompositionTools({
     <section>
       <h2 className="font-serif text-xl font-semibold text-[#fffaf0]">Composições</h2>
 
-      <div className="mt-4 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <button
           type="button"
           disabled={disabled || autoUnavailable}
-          onClick={() => applySuggestedComposition(playerCount)}
-          className="flex flex-col items-start gap-2 rounded-xl border border-[#d3b88c]/40 bg-[#d3b88c]/[0.08] p-3 text-left transition-colors hover:bg-[#d3b88c]/15 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          <WandSparkles aria-hidden="true" className="size-5 text-[#e6cfa9]" />
-          <span>
-            <span className="block text-sm font-semibold text-[#fffaf0]">Automática</span>
-            <span className="block text-xs leading-4 text-[#a9a297]">Para {playerCount} jogadores</span>
-          </span>
-        </button>
-        <button
-          type="button"
-          disabled={disabled}
           onClick={() => {
             // ponytail: random slots are kept as-is and don't count toward faction balance.
             const randomSlots = roleIds.filter((id) => getRandomRoleSlot(id));
             const fixed = roleIds.filter((id) => !getRandomRoleSlot(id));
             applySuggestedComposition(playerCount - randomSlots.length, fixed, randomSlots);
           }}
-          className="flex flex-col items-start gap-2 rounded-xl border border-white/10 p-3 text-left transition-colors hover:border-white/25 hover:bg-white/[0.04] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-45"
+          title={`Completa a composição atual para ${playerCount} jogadores`}
+          className="flex min-h-9 items-center gap-2 rounded-lg border border-white/10 px-2.5 text-left text-xs font-semibold text-[#d7d0c4] transition-colors hover:border-white/20 hover:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-45"
         >
-          <SlidersHorizontal aria-hidden="true" className="size-5 text-[#bdb7ad]" />
-          <span>
-            <span className="block text-sm font-semibold text-[#fffaf0]">Semiautomática</span>
-            <span className="block text-xs leading-4 text-[#a9a297]">Completa a atual</span>
-          </span>
+          <WandSparkles aria-hidden="true" className="size-3.5 shrink-0 text-[#a9a297]" />
+          Automática
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => setDialogOpen(true)}
+          title="Escolha suas preferências"
+          className="flex min-h-9 items-center gap-2 rounded-lg border border-white/10 px-2.5 text-left text-xs font-semibold text-[#d7d0c4] transition-colors hover:border-white/20 hover:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          <SlidersHorizontal aria-hidden="true" className="size-3.5 shrink-0 text-[#a9a297]" />
+          Semiautomática
         </button>
       </div>
 
@@ -221,6 +231,19 @@ export function CompositionTools({
         {feedback}
       </p>
 
+      {dialogOpen && (
+        <SemiAutomaticCompositionDialog
+          initialPlayerCount={autoUnavailable ? 10 : playerCount}
+          roles={ROLE_DEFINITIONS}
+          respectCardCount={respectCardCount}
+          onRespectCardCountChange={onRespectCardCountChange}
+          onCancel={() => setDialogOpen(false)}
+          onConfirm={(requestedPlayerCount, requiredRoleIds, excludedRoleIds, exactRoleCounts) => {
+            applySuggestedComposition(requestedPlayerCount, requiredRoleIds, [], excludedRoleIds, exactRoleCounts);
+            setDialogOpen(false);
+          }}
+        />
+      )}
     </section>
   );
 }

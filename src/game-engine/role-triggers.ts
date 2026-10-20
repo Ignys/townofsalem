@@ -52,7 +52,11 @@ export function resolveRoleTriggers({
       });
       continue;
     }
-    const rememberedRoleId = choose(`amnesiac-role:${effect.id}`, candidates);
+    const picked = variants.amnesiacPicksRole && effect.chosenRoleId && candidates.includes(effect.chosenRoleId)
+      ? effect.chosenRoleId
+      : null;
+    // Sem escolha válida (ou na variante de sorteio), o motor sorteia da lista.
+    const rememberedRoleId = picked ?? choose(`amnesiac-role:${effect.id}`, candidates);
     roleChanges.push({
       playerUid: effect.actorUid,
       fromRoleId: "amnesiac",
@@ -63,8 +67,8 @@ export function resolveRoleTriggers({
       type: "AMNESIAC_REMEMBERED_ROLE",
       actorUid: effect.actorUid,
       actionId: effect.id,
-      reasonCode: "NIGHT_THREE_RANDOM_ROLE_ASSIGNED",
-      details: { rememberedRoleId },
+      reasonCode: picked ? "NIGHT_THREE_ROLE_CHOSEN" : "NIGHT_THREE_RANDOM_ROLE_ASSIGNED",
+      details: { rememberedRoleId, announced: variants.amnesiacRoleAnnounced },
     });
   }
 

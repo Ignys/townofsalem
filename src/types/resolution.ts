@@ -28,6 +28,7 @@ export interface PlayerNightResultLine {
     | { kind: "text"; text: string; tone?: "danger" }
     | { kind: "player"; playerUid: string; text: string; tone?: "danger" }
     | { kind: "role"; roleId: string }
+    | { kind: "faction"; faction: "town" | "mafia" | "neutral" }
   )[];
 }
 

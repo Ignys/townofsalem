@@ -18,6 +18,8 @@ export interface PlayerDossierEntry {
 
 interface PlayerDossierInput {
   targetUid: string;
+  /** Quem olha o próprio modal: entram também as ações sem alvo (ex.: alerta do Veteran). */
+  self?: boolean;
   announcements: Readonly<Record<string, DayAnnouncementRecord>>;
   dawnResults: Readonly<Record<string, PlayerDawnNightResultRecord>>;
   instantResults: Readonly<Record<string, Readonly<Record<string, PlayerInstantNightResultRecord>>>>;
@@ -34,6 +36,7 @@ function mentions(line: PlayerNightResultLine, uid: string) {
 /** Tudo o que quem olha sabe sobre um jogador, noite a noite. */
 export function getPlayerDossier({
   targetUid,
+  self = false,
   announcements,
   dawnResults,
   instantResults,
@@ -53,12 +56,19 @@ export function getPlayerDossier({
 
   for (const [nightId, actions] of Object.entries(submissions)) {
     for (const submission of Object.values(actions)) {
-      if (submission.skipped || !submission.targetUids.includes(targetUid)) continue;
+      if (submission.skipped) continue;
+      const alert = self && submission.actionId === "alert";
+      if (!alert && !submission.targetUids.includes(targetUid)) continue;
       entries.push({
         key: `s:${nightId}:${submission.actionId}`,
         nightNumber: submission.nightNumber ?? nightNumberById[nightId] ?? 0,
         visibility: "private",
-        line: { parts: [{ kind: "text", text: formatInteractionDescription(submission, playerNames, ROLE_DEFINITIONS) }] },
+        line: {
+          parts: [{
+            kind: "text",
+            text: alert ? "Você entrou em alerta" : formatInteractionDescription(submission, playerNames, ROLE_DEFINITIONS),
+          }],
+        },
       });
     }
   }
@@ -73,7 +83,10 @@ export function getPlayerDossier({
 
   for (const [nightId, record] of Object.entries(dawnResults)) {
     record.lines.forEach((line, index) => {
-      if (mentions(line, targetUid)) {
+      // No próprio modal entra também a troca de role (ex.: o que o Amnesiac lembrou).
+      const ownRoleChange = self && line.parts.some((part) => part.kind === "role")
+        && !line.parts.some((part) => part.kind === "player");
+      if (ownRoleChange || mentions(line, targetUid)) {
         entries.push({ key: `d:${nightId}:${index}`, nightNumber: record.nightNumber, visibility: "private", line });
       }
     });

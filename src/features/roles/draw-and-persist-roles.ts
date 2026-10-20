@@ -7,9 +7,11 @@ import {
   readGamePlayers,
   readGameSettings,
   readPublicGame,
+  readRoleHistory,
 } from "@/lib/firebase/game-access-repository";
+import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
-import { drawRoles, type RandomSource } from "@/game-engine/draw-roles";
+import { drawRoles, nextRoleHistory, type RandomSource } from "@/game-engine/draw-roles";
 import { getRoleById } from "@/data/roles";
 import { withDefaultVariants } from "@/game-engine/variants";
 
@@ -46,13 +48,15 @@ export async function drawAndPersistRoles(
   let settings: Awaited<ReturnType<typeof readGameSettings>>;
   let players: Awaited<ReturnType<typeof readGamePlayers>>;
   let forcedRoles: Awaited<ReturnType<typeof readForcedRoles>>;
+  let roleHistory: Awaited<ReturnType<typeof readRoleHistory>>;
 
   try {
-    [game, settings, players, forcedRoles] = await Promise.all([
+    [game, settings, players, forcedRoles, roleHistory] = await Promise.all([
       readPublicGame(gameId),
       readGameSettings(gameId),
       readGamePlayers(gameId),
       readForcedRoles(gameId),
+      readRoleHistory(gameId),
     ]);
   } catch (error: unknown) {
     throw new RoleAssignmentError("game-unavailable", {
@@ -122,7 +126,7 @@ export async function drawAndPersistRoles(
   }
 
   const assignments = {
-    ...drawRoles(split.remainingUids, split.remainingRoleIds, options.random),
+    ...drawRoles(split.remainingUids, split.remainingRoleIds, options.random, roleHistory ?? {}),
     ...split.forced,
   };
   const updates = createRoleAssignmentUpdates(
@@ -134,6 +138,9 @@ export async function drawAndPersistRoles(
       nightId: (options.createId ?? (() => createId()))(),
     },
   );
+
+  // Only players of this game are kept; whoever left the room drops out.
+  updates[firebasePaths.gameRoleHistory(gameId)] = nextRoleHistory(assignments, roleHistory ?? {});
 
   try {
     await applyAtomicUpdate(updates);

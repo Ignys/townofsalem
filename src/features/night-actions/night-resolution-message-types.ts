@@ -16,10 +16,17 @@ export interface NightResolutionRolePart {
   roleId: string;
 }
 
+/** Etiqueta de facção (ex.: a Máfia como autora de um ataque). */
+export interface NightResolutionFactionPart {
+  kind: "faction";
+  faction: "town" | "mafia" | "neutral";
+}
+
 export type NightResolutionMessagePart =
   | NightResolutionTextPart
   | NightResolutionPlayerPart
-  | NightResolutionRolePart;
+  | NightResolutionRolePart
+  | NightResolutionFactionPart;
 
 export interface NightResolutionMessageLine {
   parts: readonly NightResolutionMessagePart[];

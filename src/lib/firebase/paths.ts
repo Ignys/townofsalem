@@ -36,6 +36,7 @@ export const firebasePaths = {
     field: Field,
   ) => `${gamePath(gameId)}/settings/${field}` as const,
 
+  gameRoleHistory: (gameId: string) => `${gamePath(gameId)}/roleHistory` as const,
   gameForcedRoles: (gameId: string) => `${gamePath(gameId)}/forcedRoles` as const,
   gameForcedRole: (gameId: string, uid: string) =>
     `${gamePath(gameId)}/forcedRoles/${uid}` as const,

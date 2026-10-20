@@ -1,5 +1,6 @@
 import type { RoleDefinition } from "@/types";
 
+import { NEUTRAL_ROLE_COLORS, roleNameColor } from "@/features/game-state/game-composition-board";
 import { FACTION_LABELS } from "./role-presentation";
 
 interface RoleSelectionOptionsProps {
@@ -13,8 +14,8 @@ interface RoleSelectionOptionsProps {
 
 export const FACTION_STYLES: Record<string, { tag: string; card: string }> = {
     town: {
-        tag: "border-emerald-500/40 bg-emerald-500/15 text-emerald-400",
-        card: "border-emerald-500/25 bg-emerald-950/15 hover:border-emerald-400/50 hover:bg-emerald-500/8",
+        tag: "border-emerald-400/40 bg-emerald-400/15 text-emerald-300",
+        card: "border-emerald-400/35 bg-emerald-800/15 hover:border-emerald-300/50 hover:bg-emerald-400/10",
     },
     mafia: {
         tag: "border-red-500/40 bg-red-500/15 text-red-400",
@@ -28,7 +29,7 @@ export const FACTION_STYLES: Record<string, { tag: string; card: string }> = {
 
 // Faixa da facção na borda esquerda: a cor diz o lado sem repetir o nome em cada carta.
 const FACTION_STRIPES: Record<string, string> = {
-    town: "border-l-emerald-500/70",
+    town: "border-l-emerald-400/80",
     mafia: "border-l-red-500/70",
     neutral: "border-l-gray-400/60",
 };
@@ -60,15 +61,15 @@ export function RoleSelectionOptions({ roles, selectedRoleCounts, allowDuplicate
                                             type="button"
                                             onClick={() => onAdd(role.id)}
                                             disabled={disabled || unavailable}
+                                            style={{ borderLeftColor: NEUTRAL_ROLE_COLORS[role.id] }}
                                             className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-lg border border-l-4 border-white/10 bg-white/[0.03] px-3 py-2 text-left transition-colors hover:border-white/20 hover:bg-white/[0.07] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-40 ${FACTION_STRIPES[faction]}`}
                                         >
                                             <span className="min-w-0">
-                                                <span className="block truncate font-semibold text-[#f8f1e5]">{role.name}</span>
-                                                {respectCardCount && (
-                                                    <span className="block text-xs text-[#a9a297]">
-                                                        {cardsLeft > 0 ? `${cardsLeft} ${cardsLeft === 1 ? "carta" : "cartas"}` : "Sem cartas"}
-                                                    </span>
-                                                )}
+                                                <span className="block truncate font-semibold text-[#f8f1e5]" style={{ color: roleNameColor(role.id, role.faction) }}>{role.name}</span>
+                                                <span className="block text-xs text-[#a9a297]">
+                                                    {`${selectedCount} ${selectedCount === 1 ? "selecionada" : "selecionadas"}`}
+                                                    {respectCardCount && ` · ${cardsLeft > 0 ? `${cardsLeft} ${cardsLeft === 1 ? "carta" : "cartas"}` : "sem cartas"}`}
+                                                </span>
                                             </span>
                                             <span className="shrink-0 text-sm font-semibold text-[#bdb7ad] tabular-nums" title="Virtue Value">
                                                 {role.virtueValue > 0 ? "+" : ""}

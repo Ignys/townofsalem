@@ -13,6 +13,8 @@ interface DeathPresentationInput {
   death: EngineDeath;
   playerNames: Readonly<Record<string, string>>;
   roleId?: string;
+  /** Role de quem atacou: no anúncio, o ataque noturno mostra a etiqueta dela. */
+  attackerRoleId?: string;
   resolution?: NightResolution;
   cleaned: boolean;
 }
@@ -45,16 +47,24 @@ export function presentPublicNightDeath({
   death,
   playerNames,
   roleId,
+  attackerRoleId,
   cleaned,
 }: DeathPresentationInput): NightResolutionMessageLine {
-  const cause = PUBLIC_DEATH_CAUSES[death.cause];
+  const victim = [
+    resolutionPlayerPart(death.targetUid, playerNames),
+    ...(cleaned ? [] : roleParts(roleId)),
+  ];
+
+  // Quem atacou vira etiqueta no fim da frase, sem ponto final depois dela.
+  if (death.cause === "mafia-attack") {
+    return { parts: [...victim, resolutionTextPart(" morreu para um ataque da"), { kind: "faction", faction: "mafia" }] };
+  }
+  if (death.cause === "night-attack" && attackerRoleId) {
+    return { parts: [...victim, resolutionTextPart(" morreu para um ataque de"), { kind: "role", roleId: attackerRoleId }] };
+  }
 
   return {
-    parts: [
-      resolutionPlayerPart(death.targetUid, playerNames),
-      ...(cleaned ? [] : roleParts(roleId)),
-      resolutionTextPart(` morreu para ${cause}.`),
-    ],
+    parts: [...victim, resolutionTextPart(` morreu para ${PUBLIC_DEATH_CAUSES[death.cause]}.`)],
   };
 }
 

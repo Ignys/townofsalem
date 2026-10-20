@@ -3,6 +3,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 
 import type { GameVariants } from "@/game-engine/variants";
+import { useBodyScrollLock } from "@/lib/utils/use-body-scroll-lock";
 import type { RoleDefinition } from "@/types";
 
 import { BOOLEAN_GAME_VARIANT_OPTIONS } from "./game-variant-options";
@@ -79,6 +80,7 @@ export function GameVariantsDialog({
   onCancel,
   onConfirm,
 }: GameVariantsDialogProps) {
+  useBodyScrollLock();
   const [draft, setDraft] = useState(initialVariants);
   const [amnesiacRolePool, setAmnesiacRolePool] = useState(initialAmnesiacRolePool);
   const [randomRoleExclusions, setRandomRoleExclusions] = useState(initialRandomRoleExclusions);

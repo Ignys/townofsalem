@@ -68,6 +68,12 @@ export function readForcedRoles(
   return readValue("read-forced-roles", firebasePaths.gameForcedRoles(gameId));
 }
 
+export function readRoleHistory(
+  gameId: string,
+): Promise<Record<string, string[]> | null> {
+  return readValue("read-role-history", firebasePaths.gameRoleHistory(gameId));
+}
+
 export function readGamePlayers(
   gameId: string,
 ): Promise<Record<string, PublicPlayerRecord> | null> {

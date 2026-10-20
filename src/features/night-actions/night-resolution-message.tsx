@@ -17,16 +17,15 @@ export function NightResolutionMessage({
   return line.parts.map((part, index) => {
     const key = part.kind === "role"
       ? `${index}:role:${part.roleId}`
-      : `${index}:${part.kind}:${part.text}`;
+      : part.kind === "faction"
+        ? `${index}:faction:${part.faction}`
+        : `${index}:${part.kind}:${part.text}`;
 
-    if (part.kind === "role") {
-      return light ? (
-        <span key={key} className="mx-1 inline-flex rounded-md bg-[#2a2320] align-middle">
-          <PlayerRoleTag roleId={part.roleId} />
-        </span>
-      ) : (
-        <PlayerRoleTag key={key} roleId={part.roleId} className="mx-1 align-middle" />
-      );
+    if (part.kind === "role" || part.kind === "faction") {
+      const tag = part.kind === "role"
+        ? { roleId: part.roleId }
+        : { faction: part.faction };
+      return <PlayerRoleTag key={key} {...tag} className="mx-1 align-middle" />;
     }
 
     if (part.kind === "player" && onPlayerClick) {

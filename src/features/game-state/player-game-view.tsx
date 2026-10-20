@@ -231,6 +231,18 @@ export function PlayerGameView({
         </div>
       </PhaseSky>
 
+      {privateRole.privatePlayer.faction === "mafia" && game.status === "in-progress" && isNight && (
+        <MafiaTeamPanel
+          gameId={gameId}
+          viewerUid={viewerUid}
+          viewerAlive={alive}
+          nightId={isNight ? game.currentNightId : null}
+          players={players}
+          team={mafiaTeam}
+          board={mafiaBoard}
+        />
+      )}
+
       {isNight && viewer && (
         <PlayerNightActionPanel
           gameId={gameId}
@@ -244,20 +256,9 @@ export function PlayerGameView({
           resourceUses={privateRole.privatePlayer.resourceUses}
           fastTrack={game.playMode === "hostless" && game.gamePace === "fast"}
           mafiaTeamUids={Object.keys(mafiaTeam)}
+          amnesiacRolePool={gameVariants.amnesiacRolePool}
           onPickerChange={setNightPicker}
           hostless={game.playMode === "hostless"}
-        />
-      )}
-
-      {privateRole.privatePlayer.faction === "mafia" && game.status === "in-progress" && isNight && (
-        <MafiaTeamPanel
-          gameId={gameId}
-          viewerUid={viewerUid}
-          viewerAlive={alive}
-          nightId={isNight ? game.currentNightId : null}
-          players={players}
-          team={mafiaTeam}
-          board={mafiaBoard}
         />
       )}
       <PlayerDawnNightResults gameId={gameId} revealed={!isNight && game.phase !== "lobby"} />

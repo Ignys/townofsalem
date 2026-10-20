@@ -84,6 +84,7 @@ export function buildMirrorPlan(
       roleIdSnapshot: submission.roleIdSnapshot,
       actionId: submission.actionId,
       targetUids,
+      ...(submission.chosenRoleId ? { chosenRoleId: submission.chosenRoleId } : {}),
       createdAt: existing?.createdAt ?? submission.createdAt ?? now,
       updatedAt: now,
       status: "confirmed",
@@ -97,7 +98,8 @@ export function buildMirrorPlan(
       existing &&
       existing.sourceUpdatedAt === submission.updatedAt &&
       existing.status === candidate.status &&
-      sameTargets(existing.targetUids as string[], targetUids)
+      sameTargets(existing.targetUids as string[], targetUids) &&
+      existing.chosenRoleId === candidate.chosenRoleId
     ) {
       skipped.push({ actorUid, actionId: submission.actionId, reason: "unchanged" });
       continue;

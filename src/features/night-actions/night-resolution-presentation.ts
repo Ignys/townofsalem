@@ -55,6 +55,7 @@ export function presentNightResolution(
           death,
           playerNames,
           roleId: assignments[playerUid],
+          attackerRoleId: death.attackerUid ? assignments[death.attackerUid] : undefined,
           resolution,
           cleaned,
         })
@@ -65,6 +66,15 @@ export function presentNightResolution(
           cleaned,
         );
     });
+
+  // Variante: todos sabem qual role o Amnesiac lembrou, sem saber quem é.
+  (resolution.engineEvents ?? []).forEach((event) => {
+    const roleId = event.details?.rememberedRoleId;
+    if (event.type !== "AMNESIAC_REMEMBERED_ROLE" || !event.details?.announced || typeof roleId !== "string") return;
+    announcements.push({
+      parts: [resolutionTextPart("Um Amnesiac lembrou que era"), { kind: "role", roleId }, resolutionTextPart("")],
+    });
+  });
 
   const messagesByPlayer = new Map<string, IndividualNightMessageLine[]>();
   const addIndividualMessage = (

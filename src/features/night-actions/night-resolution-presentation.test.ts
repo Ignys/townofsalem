@@ -22,7 +22,7 @@ const base: NightResolution = {
 
 function lineText(line: NightResolutionMessageLine): string {
   return line.parts.map((part) =>
-    part.kind === "role" ? ` [${part.roleId}]` : part.text
+    part.kind === "role" ? ` [${part.roleId}]` : part.kind === "faction" ? ` [${part.faction}]` : part.text
   ).join("");
 }
 
@@ -67,7 +67,7 @@ test("keeps public announcements free of killer identities and private results",
 
   assert.deepEqual(
     presentation.announcements.map(lineText),
-    ["João [doctor] morreu para um ataque da Máfia."],
+    ["João [doctor] morreu para um ataque da [mafia]"],
   );
   assert.deepEqual(playerUids(presentation.announcements[0]), ["joao"]);
   assert.ok(!lineText(presentation.announcements[0]).includes("Carlos"));
@@ -97,7 +97,7 @@ test("hides the role, but keeps the public cause, when the body was cleaned", ()
 
   assert.equal(
     lineText(presentation.announcements[0]),
-    "João morreu para um ataque da Máfia.",
+    "João morreu para um ataque da [mafia]",
   );
   assert.ok(!lineText(presentation.announcements[0]).includes("doctor"));
   assert.ok(!lineText(presentation.announcements[0]).includes("Carlos"));
@@ -249,4 +249,17 @@ test("normalizes optional collections omitted by Firebase", () => {
   assert.deepEqual(presentation.hostPrivateInformation, []);
   assert.deepEqual(presentation.resolutionDetails, []);
   assert.deepEqual(presentation.warnings, []);
+});
+
+test("a night attack shows the attacker's role tag, never the attacker", () => {
+  const presentation = presentNightResolution(
+    {
+      deaths: ["joao"],
+      deathRecords: [{ targetUid: "joao", cause: "night-attack", attackerUid: "sk" }],
+    } as never,
+    { joao: "João", sk: "Sara" },
+    { joao: "doctor", sk: "serial-killer" },
+  );
+
+  assert.deepEqual(presentation.announcements.map(lineText), ["João [doctor] morreu para um ataque de [serial-killer]"]);
 });

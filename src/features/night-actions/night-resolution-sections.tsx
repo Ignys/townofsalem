@@ -15,7 +15,7 @@ function EmptyMessage({ children }: Readonly<{ children: string }>) {
 
 function lineKey(line: NightResolutionMessageLine, index: number): string {
   return `${index}:${line.parts.map((part) =>
-    part.kind === "role" ? part.roleId : part.text
+    part.kind === "role" ? part.roleId : part.kind === "faction" ? part.faction : part.text
   ).join("")}`;
 }
 

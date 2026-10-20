@@ -61,6 +61,6 @@ test("generates the closest composition for every supported player count", () =>
     if (!result.ok) continue;
     assert.equal(result.roleIds.length, playerCount);
     assert.equal(Number.isFinite(result.virtueTotal), true);
-    if (playerCount <= 27) assert.equal(result.virtueTotal, 0);
+    if (playerCount <= 27) assert.ok(Math.abs(result.virtueTotal) <= 1);
   }
 });

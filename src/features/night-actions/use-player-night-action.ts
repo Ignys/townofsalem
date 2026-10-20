@@ -40,7 +40,7 @@ export function usePlayerNightAction({
   const selectedTargetUids = draftTargetUids ?? savedTargetUids;
   const chosenCount = selectedTargetUids.filter(Boolean).length;
 
-  const save = (targetUids: readonly string[], active: boolean) => {
+  const save = (targetUids: readonly string[], active: boolean, chosenRoleId?: string) => {
     if (disabled) return;
     const timestamp = currentTimestamp();
     const payload: PlayerNightActionSubmission | null = active
@@ -50,6 +50,7 @@ export function usePlayerNightAction({
           actionId: interaction.action.id,
           roleIdSnapshot: interaction.role.id,
           targetUids: targetUids.filter(Boolean),
+          ...(chosenRoleId ? { chosenRoleId } : {}),
           createdAt: submission?.createdAt ?? timestamp,
           updatedAt: timestamp,
         }
@@ -73,14 +74,20 @@ export function usePlayerNightAction({
     save(next, next.some(Boolean));
   };
 
+  const replaceTargets = (next: readonly string[]) => save(next, next.some(Boolean));
+
   return {
     selectedTargetUids,
     setTarget,
+    replaceTargets,
     error,
     /** Quantos alvos estão escolhidos agora. */
     chosenCount,
     /** Ação sem alvo (ex.: alerta do Veteran): ligada ou não nesta noite. */
     active: Boolean(submission),
     toggle: () => save([], !submission),
+    /** Amnesiac na variante de escolha: tocar na role já escolhida desfaz. */
+    chosenRoleId: submission?.chosenRoleId,
+    chooseRole: (roleId: string) => save([], submission?.chosenRoleId !== roleId, roleId),
   };
 }

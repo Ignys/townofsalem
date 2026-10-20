@@ -10,6 +10,28 @@ export const FACTION_TAGS: Record<string, string> = {
   neutral: "border-[#303030] bg-[#303030] text-white",
 };
 
+/** Cores das roles neutras do jogo digital; tags de categoria ("Neutro") seguem cinza. */
+export const NEUTRAL_ROLE_COLORS: Record<string, string> = {
+  "serial-killer": "#4d6bff", // #000080 no jogo, clareado para leitura no fundo escuro
+  werewolf: "#b0703f", // #784421 clareado
+  jester: "#f5a6d4",
+  executioner: "#acacac",
+  witch: "#bf5fff",
+  amnesiac: "#22ffff",
+};
+
+/** Cor do nome da role: própria para neutras, da facção para Cidade e Máfia. */
+export function roleNameColor(roleId: string, faction?: string | null) {
+  return NEUTRAL_ROLE_COLORS[roleId] ?? (faction === "town" ? "#3dd69b" : faction === "mafia" ? "#db4242" : undefined);
+}
+
+export function roleTagStyle(roleId?: string) {
+  const color = roleId ? NEUTRAL_ROLE_COLORS[roleId] : undefined;
+  if (!color) return undefined;
+  const bg = `color-mix(in srgb, ${color} 22%, #111)`;
+  return { color, backgroundColor: bg, borderColor: bg };
+}
+
 interface GameCompositionBoardProps {
   roleComposition: Readonly<Record<string, number>> | null;
 }
@@ -47,7 +69,8 @@ export function GameCompositionBoard({ roleComposition }: GameCompositionBoardPr
         {entries.map(({ id, name, faction, count }) => (
           <li
             key={id}
-            className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium ${FACTION_TAGS[faction ?? "neutral"] ?? FACTION_TAGS.neutral}`}
+            style={roleTagStyle(id)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-1.5 py-px text-[0.6875rem] leading-4 font-medium uppercase ${FACTION_TAGS[faction ?? "neutral"] ?? FACTION_TAGS.neutral}`}
           >
             {name}
             {count > 1 && <span className="font-bold tabular-nums">×{count}</span>}

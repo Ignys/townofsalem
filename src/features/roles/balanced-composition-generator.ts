@@ -155,7 +155,8 @@ export function generateBalancedRoleComposition(
           ...mafia.roleIds,
           ...neutral.roleIds,
         ];
-        const distance = Math.abs(town.score + mafia.score + neutral.score);
+        // Virtue -1, 0 and +1 are equally good, so the draw varies between them.
+        const distance = Math.max(1, Math.abs(town.score + mafia.score + neutral.score));
 
         // Reservoir-sample among equally balanced lists.
         if (distance < bestDistance) {
