@@ -1,52 +1,58 @@
 "use client";
 
-import {
-  FACTION_LABELS,
-  formatRoleAlignment,
-} from "@/features/roles/role-presentation";
+import type { ReactNode } from "react";
+
 import type { GameVariants } from "@/game-engine/variants";
 import type { RoleDefinition } from "@/types";
 
 import { PlayerRoleGuide } from "./player-role-guide";
 
+// Mesmas cores do texto das etiquetas de facção da composição.
+const FACTION_NAME_COLORS: Record<string, string> = {
+  town: "text-[#3ce667]",
+  mafia: "text-[#db4242]",
+  neutral: "text-[#c8c8c8]",
+};
+
+// Brilho suave atrás do nome, na cor da facção.
+const FACTION_GLOWS: Record<string, string> = {
+  town: "bg-[#3ce667]/14",
+  mafia: "bg-[#db4242]/16",
+  neutral: "bg-[#c8c8c8]/10",
+};
+
 interface PlayerRoleCardProps {
   role: RoleDefinition;
   variants: GameVariants;
   playerCount: number;
+  secrets?: ReactNode;
 }
 
 /** The private role sheet. Only ever rendered while the player holds the reveal button. */
-export function PlayerRoleCard({ role, variants, playerCount }: PlayerRoleCardProps) {
+export function PlayerRoleCard({ role, variants, playerCount, secrets }: PlayerRoleCardProps) {
   return (
     <article className="mx-auto w-full max-w-xl">
-      <header className="text-center">
-        <p className="text-xs font-semibold tracking-[0.2em] text-[#d3b88c] uppercase">
-          Sua role secreta
-        </p>
-        <h1 className="mt-2 font-serif text-3xl leading-tight font-semibold tracking-tight text-[#fffaf0]">
+      <header className="relative pt-3 text-center">
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute top-0 left-1/2 h-20 w-60 -translate-x-1/2 rounded-full blur-3xl ${
+            FACTION_GLOWS[role.faction] ?? FACTION_GLOWS.neutral
+          }`}
+        />
+        <h1
+          className={`relative text-4xl leading-tight font-bold tracking-tight ${
+            FACTION_NAME_COLORS[role.faction] ?? FACTION_NAME_COLORS.neutral
+          }`}
+        >
           {role.name}
         </h1>
-        <div className="mt-3 flex flex-wrap justify-center gap-2 text-xs">
-          <span className="rounded-full border border-[#d3b88c]/30 bg-[#d3b88c]/10 px-3 py-1 font-bold text-[#e6cfa9]">
-            {FACTION_LABELS[role.faction]}
-          </span>
-          <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[#bdb7ad]">
-            {formatRoleAlignment(role.alignment)}
-          </span>
-        </div>
       </header>
-
-      <section className="mt-4 rounded-2xl border border-white/10 bg-black/25 p-4">
-        <h2 className="text-sm font-bold tracking-wide text-[#e6cfa9] uppercase">
-          Seu objetivo
-        </h2>
-        <p className="mt-1.5 text-sm leading-6 text-[#e5ded2]">{role.goal}</p>
-      </section>
 
       <PlayerRoleGuide
         role={role}
         variants={variants}
         playerCount={playerCount}
+        secrets={secrets}
       />
     </article>
   );

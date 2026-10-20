@@ -5,11 +5,14 @@ import type { NightResolutionMessageLine } from "./night-resolution-message-type
 interface NightResolutionMessageProps {
   line: NightResolutionMessageLine;
   onPlayerClick?: (playerUid: string) => void;
+  /** Fundo claro (pergaminho): cores escuras para manter o contraste. */
+  light?: boolean;
 }
 
 export function NightResolutionMessage({
   line,
   onPlayerClick,
+  light = false,
 }: NightResolutionMessageProps) {
   return line.parts.map((part, index) => {
     const key = part.kind === "role"
@@ -17,7 +20,13 @@ export function NightResolutionMessage({
       : `${index}:${part.kind}:${part.text}`;
 
     if (part.kind === "role") {
-      return <PlayerRoleTag key={key} roleId={part.roleId} className="mx-1 align-middle" />;
+      return light ? (
+        <span key={key} className="mx-1 inline-flex rounded-md bg-[#2a2320] align-middle">
+          <PlayerRoleTag roleId={part.roleId} />
+        </span>
+      ) : (
+        <PlayerRoleTag key={key} roleId={part.roleId} className="mx-1 align-middle" />
+      );
     }
 
     if (part.kind === "player" && onPlayerClick) {
@@ -37,7 +46,7 @@ export function NightResolutionMessage({
     return (
       <span
         key={key}
-        className={part.tone === "danger" ? "font-bold text-red-400" : undefined}
+        className={part.tone === "danger" ? `font-bold ${light ? "text-[#7d2330]" : "text-red-400"}` : undefined}
         title={part.tone === "danger" ? "Suspeito verdadeiro" : undefined}
       >
         {part.text}

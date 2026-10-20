@@ -100,7 +100,9 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
     if (
       busy ||
       !window.confirm(
-        "Encerrar a partida? Todos os jogadores voltarão ao lobby para uma nova composição de roles.",
+        game.status === "finished"
+          ? "Voltar todos ao lobby para uma nova partida?"
+          : "Encerrar a partida? Todos verão o resultado e as roles de cada um.",
       )
     ) {
       return;
@@ -112,7 +114,7 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
       await endGame(gameId);
       setFeedback({
         kind: "success",
-        message: "Partida encerrada. Retornando todos ao lobby.",
+        message: game.status === "finished" ? "Retornando todos ao lobby." : "Partida encerrada.",
       });
     } catch {
       setFeedback({ kind: "error", message: "Não foi possível encerrar a partida." });
@@ -164,6 +166,16 @@ export function HostGameControlPanel({ gameId, game }: HostGameControlPanelProps
 
       {game.status === "in-progress" && (
         <EndGameButton busy={busy} onClick={() => void handleEndGame()} />
+      )}
+      {game.status === "finished" && (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void handleEndGame()}
+          className="mt-4 min-h-11 w-full rounded-xl border border-[#d3b88c]/40 bg-[#d3b88c]/15 px-4 text-sm font-bold text-[#fffaf0] disabled:opacity-50"
+        >
+          Nova partida
+        </button>
       )}
 
       <PhaseChangeConfirmationDialog

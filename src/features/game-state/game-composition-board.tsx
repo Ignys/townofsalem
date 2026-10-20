@@ -2,7 +2,13 @@
 
 import { ROLE_DEFINITIONS } from "@/data/roles";
 import { RANDOM_ROLE_SLOTS } from "@/features/roles/random-role-slots";
-import { FACTION_STYLES } from "@/features/roles/role-selection-options";
+
+// Cores cheias por facção: a facção tem que saltar aos olhos no pergaminho.
+export const FACTION_TAGS: Record<string, string> = {
+  town: "border-[#052603] bg-[#052603] text-[#3ce667]",
+  mafia: "border-[#401010] bg-[#401010] text-[#db4242]",
+  neutral: "border-[#303030] bg-[#303030] text-white",
+};
 
 interface GameCompositionBoardProps {
   roleComposition: Readonly<Record<string, number>> | null;
@@ -29,19 +35,19 @@ export function GameCompositionBoard({ roleComposition }: GameCompositionBoardPr
   }
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-black/15 p-4">
+    <section className="panel-public">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-xs font-bold tracking-wide text-[#9f9990] uppercase">
-          Composição do jogo
-        </h2>
-        <span className="text-sm font-bold text-[#e6cfa9]">{total}</span>
+        <h2 className="font-serif text-base font-semibold">Composição do jogo</h2>
+        <span className="rounded-full bg-[#e4d6bf] px-3 py-0.5 text-sm font-bold text-[#3b2a22]">
+          {total}
+        </span>
       </div>
 
       <ul className="mt-3 flex flex-wrap gap-1.5">
         {entries.map(({ id, name, faction, count }) => (
           <li
             key={id}
-            className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium ${FACTION_STYLES[faction ?? "neutral"].tag}`}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium ${FACTION_TAGS[faction ?? "neutral"] ?? FACTION_TAGS.neutral}`}
           >
             {name}
             {count > 1 && <span className="font-bold tabular-nums">×{count}</span>}

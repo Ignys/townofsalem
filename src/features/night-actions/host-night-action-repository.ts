@@ -1,5 +1,6 @@
 "use client";
 
+import { createId } from "@/lib/utils/create-id";
 import { runTransaction } from "firebase/database";
 
 import { readNightSession, readPublicGame } from "@/lib/firebase/game-access-repository";
@@ -34,7 +35,7 @@ export async function saveHostNightAction(
 ): Promise<void> {
   const { hostUid } = await requireEditableNight(gameId, entry.nightId);
   const sessionPath = firebasePaths.gameNightSession(gameId, entry.nightId);
-  const pendingWriteId = crypto.randomUUID();
+  const pendingWriteId = createId();
   const pendingResult = await runTransaction(
     getDatabaseReference(sessionPath),
     (current: NightSession | null) => {
@@ -57,7 +58,7 @@ export async function saveHostNightAction(
             },
           }
         : {}),
-      [firebasePaths.gameEvent(gameId, crypto.randomUUID())]: {
+      [firebasePaths.gameEvent(gameId, createId())]: {
         type: "HOST_ACTION_RECORDED",
         timestamp: entry.updatedAt,
         actorUid: hostUid,

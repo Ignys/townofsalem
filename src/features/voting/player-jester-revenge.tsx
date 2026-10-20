@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Crosshair } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
+import type { NightTargetPicker } from "@/features/night-actions/night-target-picker";
 import { firebaseAuth } from "@/lib/firebase/auth";
 import { firebasePaths } from "@/lib/firebase/paths";
-import { applyAtomicUpdate, observePublicVerdicts } from "@/lib/firebase/realtime-database-repository";
+import {
+  applyAtomicUpdate,
+  observeAuthenticatedJesterRevenge,
+  observePublicVerdicts,
+} from "@/lib/firebase/realtime-database-repository";
 import type { PublicPlayerRecord, VerdictVote } from "@/lib/firebase/schema";
 
 interface PlayerJesterRevengeProps {
@@ -12,13 +18,15 @@ interface PlayerJesterRevengeProps {
   dayNumber: number;
   viewerUid: string;
   players: Readonly<Record<string, PublicPlayerRecord>>;
+  /** A escolha acontece na lista de jogadores, como as ações da noite. */
+  onPickerChange: (picker: NightTargetPicker | null) => void;
 }
 
 /**
- * O Jester acabou de ser enforcado: escolhe na hora um dos que votaram culpado para morrer.
- * A escolha é única; a mesa aplica (ou descarta, se o prazo acabar).
+ * Na noite seguinte ao enforcamento, o Jester escolhe na lista um dos que votaram culpado.
+ * Dá para trocar até a noite acabar; o que estiver escolhido nessa hora é a vingança.
  */
-export function PlayerJesterRevenge({ gameId, dayNumber, viewerUid, players }: PlayerJesterRevengeProps) {
+export function PlayerJesterRevenge({ gameId, dayNumber, viewerUid, players, onPickerChange }: PlayerJesterRevengeProps) {
   const [verdicts, setVerdicts] = useState<Record<string, VerdictVote>>({});
   const [chosenUid, setChosenUid] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -31,58 +39,69 @@ export function PlayerJesterRevenge({ gameId, dayNumber, viewerUid, players }: P
     }),
     [dayNumber, gameId],
   );
+  // A própria escolha salva (a regra só deixa o Jester ler a dele).
+  useEffect(
+    () => observeAuthenticatedJesterRevenge(gameId, dayNumber, {
+      onData: (value) => setChosenUid(value ?? null),
+      onError: () => undefined,
+    }),
+    [dayNumber, gameId],
+  );
 
   const guiltyVoters = Object.entries(verdicts)
     .filter(([uid, vote]) => vote === "guilty" && uid !== viewerUid && players[uid]?.alive)
-    .map(([uid]) => uid)
-    .sort((left, right) => (players[left]?.name ?? "").localeCompare(players[right]?.name ?? "", "pt-BR"));
+    .map(([uid]) => uid);
 
   const choose = (targetUid: string) => {
     const uid = firebaseAuth.currentUser?.uid;
-    if (!uid || saving || chosenUid) return;
+    if (!uid || saving) return;
+    const next = chosenUid === targetUid ? null : targetUid;
     setSaving(true);
     setError(false);
-    applyAtomicUpdate({ [firebasePaths.gameJesterRevenge(gameId, dayNumber, uid)]: targetUid })
-      .then(() => setChosenUid(targetUid))
+    applyAtomicUpdate({ [firebasePaths.gameJesterRevenge(gameId, dayNumber, uid)]: next })
+      .then(() => setChosenUid(next))
       .catch(() => setError(true))
       .finally(() => setSaving(false));
   };
+  const chooseRef = useRef(choose);
+  useEffect(() => {
+    chooseRef.current = choose;
+  });
+
+  const eligibleKey = guiltyVoters.join(",");
+  useEffect(() => {
+    onPickerChange({
+      eligibleUids: eligibleKey ? eligibleKey.split(",") : [],
+      selectedUids: chosenUid ? [chosenUid] : [],
+      disabled: saving,
+      toggle: (uid) => chooseRef.current(uid),
+    });
+    return () => onPickerChange(null);
+  }, [eligibleKey, chosenUid, saving, onPickerChange]);
 
   return (
-    <section
-      aria-label="Vingança do Jester"
-      className="mt-4 rounded-2xl border border-[#a33843]/40 bg-[#a33843]/10 p-4"
-    >
-      <h2 className="font-serif text-xl font-semibold text-[#fffaf0]">Sua vingança</h2>
-      {chosenUid ? (
-        <p className="mt-2 text-sm text-[#f0b9bd]">
-          Você escolheu <strong>{players[chosenUid]?.name}</strong>.
-        </p>
-      ) : guiltyVoters.length === 0 ? (
-        <p className="mt-2 text-sm text-[#bdb7ad]">Ninguém vivo votou culpado. Não há vingança.</p>
-      ) : (
-        <>
-          <p className="mt-1 text-sm text-[#e6cfa9]">
-            Você foi enforcado. Escolha agora quem votou culpado para morrer com você.
+    <section aria-label="Vingança do Jester" className="panel-private mt-4 border-[#a33843]/60 bg-[#2a1517] text-left">
+      <div className="flex gap-3">
+        <span
+          aria-hidden="true"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#f0b9bd]/10 text-[#f0b9bd]"
+        >
+          <Crosshair className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-base font-semibold text-[#fffaf0]">
+            {chosenUid ? `Vingança: ${players[chosenUid]?.name ?? "?"}` : "Nenhum alvo escolhido"}
           </p>
-          <div className="mt-3 grid gap-2">
-            {guiltyVoters.map((uid) => (
-              <button
-                key={uid}
-                type="button"
-                disabled={saving}
-                onClick={() => choose(uid)}
-                className="min-h-12 rounded-xl border border-white/10 bg-white/5 px-4 text-left font-bold text-[#e5ded2] disabled:opacity-50"
-              >
-                {players[uid]?.name}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
+          <p className="mt-0.5 text-sm leading-6 text-[#e6c3c6]">
+            {guiltyVoters.length === 0
+              ? "Ninguém vivo votou culpado. Não há vingança."
+              : "Você foi enforcado. Escolha na lista quem votou culpado para morrer com você. Dá para trocar até o fim da noite."}
+          </p>
+        </div>
+      </div>
       {error && (
         <p role="alert" className="mt-2 text-sm text-[#f0b9bd]">
-          Não foi possível registrar sua vingança.
+          Não foi possível salvar sua vingança.
         </p>
       )}
     </section>

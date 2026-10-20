@@ -9,6 +9,7 @@ import { VerdictVotesBoard } from "@/features/voting/verdict-votes-board";
 import { isAccusationPhase } from "@/features/voting/voting-phases";
 import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
 
+import { DawnReadyMeter } from "./dawn-ready-meter";
 import { GameOverCard } from "./game-over-card";
 import { PlayerStatusBoard } from "./player-status-board";
 import { GameCompositionBoard } from "./game-composition-board";
@@ -47,9 +48,16 @@ export function HostlessTableView({ gameId, game, players, controls, engine }: H
             </p>
           </section>
         ) : (
-          <HostDayAnnouncements gameId={gameId} />
+          <>
+            {game.phase === "day" && game.day ? (
+              <section className="rounded-3xl border border-[#6b5532]/60 bg-[linear-gradient(180deg,#3a2a17_0%,#211b16_70%)] p-6">
+                <DawnReadyMeter gameId={gameId} day={game.day} players={players} revealMissing />
+              </section>
+            ) : null}
+            <HostDayAnnouncements gameId={gameId} />
+          </>
         )}
-        {isAccusationPhase(game.phase) && !game.accusedPlayerUid && (
+        {isAccusationPhase(game.phase) && game.phase !== "day" && !game.accusedPlayerUid && (
           <AccusationTallyBoard gameId={gameId} dayNumber={game.day} players={players} />
         )}
         {game.phase === "verdict" && (

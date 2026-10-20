@@ -1,6 +1,7 @@
 export type CreateGameErrorCode =
   | "authentication-failed"
   | "code-generation-exhausted"
+  | "invalid-room-name"
   | "persistence-failed";
 
 export class CreateGameError extends Error {
@@ -25,6 +26,8 @@ export function getCreateGameErrorMessage(error: unknown): string {
       return "Não foi possível preparar seu acesso. Recarregue a página e tente novamente.";
     case "code-generation-exhausted":
       return "Não foi possível reservar um código de sala. Tente novamente.";
+    case "invalid-room-name":
+      return "Dê um nome à sala (até 30 caracteres).";
     case "persistence-failed":
       return "Não foi possível salvar a partida. Verifique sua conexão e tente novamente.";
   }

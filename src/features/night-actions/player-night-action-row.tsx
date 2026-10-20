@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef } from "react";
 
 import type { NightConsoleInteraction } from "@/features/lobby/night-console-interactions";
 import type { GameVariants } from "@/game-engine/variants";
 import type { Player, PlayerNightActionSubmission } from "@/types";
 
+import type { NightTargetPicker } from "./night-target-picker";
 import { getPlayerNightTargets } from "./player-night-interactions";
 import { usePlayerNightAction } from "./use-player-night-action";
 
@@ -22,6 +23,12 @@ interface PlayerNightActionRowProps {
   shareWithMafia?: boolean;
   /** Quem não aparece como alvo (ex.: parceiros da Máfia). */
   excludedTargetUids?: readonly string[];
+  /** Esta ação usa a lista de jogadores para escolher alvos agora. */
+  active: boolean;
+  onActivate: () => void;
+  onPickerChange?: (picker: NightTargetPicker | null) => void;
+  /** Mais de uma ação: mostra um seletor para a lista saber qual alvo está escolhendo. */
+  showSelector: boolean;
 }
 
 export function PlayerNightActionRow({
@@ -36,142 +43,107 @@ export function PlayerNightActionRow({
   exhausted,
   shareWithMafia = false,
   excludedTargetUids = [],
+  active,
+  onActivate,
+  onPickerChange,
+  showSelector,
 }: PlayerNightActionRowProps) {
   const blocked = disabled || exhausted;
-  const { selectedTargetUids, setTarget, locked, saving, error, chosenCount, confirm, skip, skipped, cancel } =
-    usePlayerNightAction({
-      gameId,
-      nightId,
-      nightNumber,
-      interaction,
-      submission,
-      disabled: blocked,
-      shareWithMafia,
-    });
-  const targets = getPlayerNightTargets(interaction, players, variants, excludedTargetUids);
+  const {
+    selectedTargetUids,
+    setTarget,
+    error,
+    chosenCount,
+    active: switchedOn,
+    toggle,
+  } = usePlayerNightAction({
+    gameId,
+    nightId,
+    nightNumber,
+    interaction,
+    submission,
+    disabled: blocked,
+    shareWithMafia,
+  });
+  const targets = getPlayerNightTargets(
+    interaction,
+    players,
+    variants,
+    excludedTargetUids,
+  );
   const { action } = interaction;
   const targetCount = action.targetCount;
-  const [confirmingPartial, setConfirmingPartial] = useState(false);
-  const partial = targetCount > 0 && chosenCount < targetCount;
 
-  const handleConfirm = () => {
-    if (partial && !confirmingPartial) {
-      setConfirmingPartial(true);
-      return;
-    }
-    setConfirmingPartial(false);
-    confirm();
+  // Tocar num alvo escolhido o remove; senão ocupa o próximo espaço livre (ou troca o último).
+  const toggleTarget = (uid: string) => {
+    const index = selectedTargetUids.indexOf(uid);
+    if (index >= 0) return setTarget(index, uid);
+    const emptyIndex = Array.from(
+      { length: targetCount },
+      (_, slot) => slot,
+    ).find((slot) => !selectedTargetUids[slot]);
+    setTarget(emptyIndex ?? targetCount - 1, uid);
   };
+  const toggleRef = useRef(toggleTarget);
+  useEffect(() => {
+    toggleRef.current = toggleTarget;
+  });
 
-  const handleSkip = () => {
-    setConfirmingPartial(false);
-    skip();
-  };
+  const picking = active && !blocked && targetCount > 0;
+  const eligibleKey = targets.map(({ uid }) => uid).join(",");
+  const selectedKey = selectedTargetUids.join(",");
+  useEffect(() => {
+    if (!picking || !onPickerChange) return;
+    onPickerChange({
+      eligibleUids: eligibleKey ? eligibleKey.split(",") : [],
+      selectedUids: selectedKey.split(",").filter(Boolean),
+      disabled: false,
+      toggle: (uid) => toggleRef.current(uid),
+    });
+    return () => onPickerChange(null);
+  }, [picking, eligibleKey, selectedKey, onPickerChange]);
 
-  const handleCancel = () => {
-    setConfirmingPartial(false);
-    cancel();
-  };
+  const chosenNames = selectedTargetUids
+    .filter(Boolean)
+    .map((uid) => players.find((player) => player.uid === uid)?.name ?? "?");
 
+  const chosen = targetCount > 0 ? chosenCount > 0 : switchedOn;
+
+  // Sem cartão: a escolha acontece na lista de jogadores. Aqui só fica o que a lista não cobre.
   return (
-    <li className="rounded-2xl border border-[#3b4a6b]/40 bg-black/25 p-4">
-      <div className="flex items-baseline justify-between gap-2">
-        <h3 className="font-serif text-lg font-semibold text-[#fffaf0]">{action.label}</h3>
-        {locked && !exhausted && (
-          <span className="rounded-full border border-[#6f9b77]/40 bg-[#6f9b77]/10 px-2 py-0.5 text-xs font-bold text-[#bfe0c5]">
-            {skipped ? "Pulou" : "Confirmado"}
-          </span>
-        )}
-      </div>
-
+    <li className="contents">
       {exhausted ? (
-        <p className="mt-2 text-sm text-[#9f9990]">Você já usou todos os usos desta ação.</p>
-      ) : skipped ? (
-        <p className="mt-2 text-sm text-[#9f9990]">Você pulou esta ação nesta noite.</p>
-      ) : targetCount === 0 ? (
-        <p className="mt-2 text-sm text-[#9f9990]">
-          {locked ? "Ação registrada para esta noite." : "Esta ação não tem alvo."}
+        <p className="w-full text-sm text-[#9f9990]">
+          Você já usou todos os usos de {action.label}.
         </p>
-      ) : (
-        Array.from({ length: targetCount }, (_, targetIndex) => (
-          <fieldset key={targetIndex} className="mt-3" disabled={blocked || locked || saving}>
-            <legend className="text-xs font-bold tracking-[0.15em] text-[#9f9990] uppercase">
-              {targetCount > 1 ? `${action.verb} — alvo ${targetIndex + 1}` : action.verb}
-            </legend>
-            <div className="mt-2 grid gap-2 sm:grid-cols-2">
-              {targets.map((target) => {
-                const selected = selectedTargetUids[targetIndex] === target.uid;
-                const takenByOtherSlot = selectedTargetUids.some(
-                  (uid, index) => index !== targetIndex && uid === target.uid,
-                );
-
-                return (
-                  <button
-                    key={target.uid}
-                    type="button"
-                    aria-pressed={selected}
-                    disabled={blocked || locked || saving || takenByOtherSlot}
-                    onClick={() => {
-                      setConfirmingPartial(false);
-                      setTarget(targetIndex, target.uid);
-                    }}
-                    className={`min-h-12 rounded-xl border px-4 py-3 text-left font-bold disabled:opacity-40 ${
-                      selected
-                        ? "border-[#d3b88c] bg-[#d3b88c]/20 text-[#fffaf0]"
-                        : "border-white/10 bg-white/5 text-[#e5ded2]"
-                    }`}
-                  >
-                    {target.name}
-                  </button>
-                );
-              })}
-            </div>
-          </fieldset>
-        ))
+      ) : targetCount === 0 ? (
+        <button
+          type="button"
+          disabled={blocked}
+          onClick={toggle}
+          aria-pressed={switchedOn}
+          className={`${switchedOn ? "btn-primary" : "btn-quiet-dark"} w-full`}
+        >
+          {switchedOn
+            ? `${action.label}: ativado (toque para desfazer)`
+            : `Ativar ${action.label}`}
+        </button>
+      ) : showSelector ? (
+        <button
+          type="button"
+          onClick={onActivate}
+          aria-pressed={active}
+          className="min-h-9 rounded-full border border-white/15 px-3 text-xs font-bold text-[#d7d0c4] transition-colors aria-pressed:border-[#c9d4ef] aria-pressed:bg-[#c9d4ef] aria-pressed:text-[#161b28]"
+        >
+          {action.label}
+          {chosen && ` · ${chosenNames.join(", ")}`}
+        </button>
+      ) : null}
+      {error && (
+        <p role="alert" className="w-full text-sm text-[#f0b9bd]">
+          {error}
+        </p>
       )}
-
-      {!locked && !exhausted && (
-        <>
-          {confirmingPartial && (
-            <p className="mt-3 text-sm text-[#e6cfa9]">
-              Você escolheu {chosenCount} de {targetCount} alvos. Depois de confirmar, não dá para
-              mudar. Confirmar mesmo assim?
-            </p>
-          )}
-          <div className={`mt-3 grid gap-2 ${targetCount > 0 ? "grid-cols-2" : ""}`}>
-            {targetCount > 0 && (
-              <button
-                type="button"
-                disabled={blocked || saving || chosenCount === 0}
-                onClick={handleCancel}
-                className="min-h-11 rounded-xl border border-white/10 px-4 text-sm font-bold text-[#bdb7ad] disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-            )}
-            <button
-              type="button"
-              disabled={blocked || saving || (targetCount > 0 && chosenCount === 0)}
-              onClick={handleConfirm}
-              className="min-h-11 rounded-xl border border-[#d3b88c]/40 bg-[#d3b88c]/15 px-4 text-sm font-bold text-[#fffaf0] disabled:opacity-50"
-            >
-              {saving ? "Enviando…" : confirmingPartial ? "Confirmar mesmo assim" : "Confirmar"}
-            </button>
-          </div>
-          <button
-            type="button"
-            disabled={blocked || saving}
-            onClick={handleSkip}
-            className="mt-2 min-h-11 w-full rounded-xl border border-white/10 px-4 text-sm font-bold text-[#bdb7ad] disabled:opacity-50"
-          >
-            Pular esta ação
-          </button>
-        </>
-      )}
-
-      <p role="alert" className="mt-2 min-h-5 text-sm text-[#f0b9bd]">
-        {error ?? ""}
-      </p>
     </li>
   );
 }

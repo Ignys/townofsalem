@@ -27,17 +27,18 @@ export interface FastTrackSignals {
   allVerdictsIn: boolean;
 }
 
-/** No modo sem mestre o acusado se defende no julgamento e a cidade vota no veredito. */
+/**
+ * No modo sem mestre o dia começa com a preparação (resultados da noite), o acusado se
+ * defende no julgamento e a cidade vota no veredito.
+ */
 export const HOSTLESS_PHASE_LABELS = {
+  day: "Preparação",
   trial: "Defesa",
   verdict: "Votação",
 } as const;
 
 /** Quanto tempo o resultado da votação fica na tela antes da noite começar. */
 export const VERDICT_RESULT_DISPLAY_MS = 10_000;
-
-/** Tempo que o Jester enforcado tem para escolher a vingança, contado do fim da votação. */
-export const JESTER_REVENGE_WINDOW_MS = 30_000;
 
 /** Jester enforcado com vingança em aberto, e o alvo que ele já escolheu (se escolheu). */
 export interface PendingJesterRevenge {
@@ -49,6 +50,7 @@ export type HostlessStep =
   | { kind: "declare-winner"; winningFactions: readonly string[]; winningPlayerUids: readonly string[] }
   | { kind: "start-timer"; seconds: number }
   | { kind: "end-night" }
+  | { kind: "start-discussion" }
   | { kind: "start-night" }
   | { kind: "start-verdict" }
   | { kind: "close-verdict" }
@@ -68,6 +70,7 @@ export function decideHostlessStep(
   jesterRevenge: PendingJesterRevenge | null = null,
   pace: GamePace = "relaxed",
   fast: FastTrackSignals = { nightComplete: false, allVerdictsIn: false },
+  allDawnReady = false,
 ): HostlessStep | null {
   const seconds = HOSTLESS_PACE_SECONDS[pace];
   if (game.status !== "in-progress") return null;
@@ -76,9 +79,14 @@ export function decideHostlessStep(
     && Boolean(game.verdictClosedAt)
     && now - (game.verdictClosedAt ?? 0) < VERDICT_RESULT_DISPLAY_MS;
 
-  // A vitória vale antes de qualquer outra coisa, mas espera a lista de votos sair da tela
-  // e a vingança do Jester (que ainda pode matar alguém).
-  if (winner?.gameOver && !showingVerdictResult && !jesterRevenge) {
+  // A vitória espera a lista de votos sair da tela e a vingança do Jester (que ainda pode
+  // matar alguém). Se acontecer de noite, a noite termina e a cidade lê na preparação quem
+  // morreu: a vitória só aparece quando todos os vivos apertam "Pronto".
+  const holdWinner = showingVerdictResult
+    || Boolean(jesterRevenge)
+    || game.phase === "night"
+    || (game.phase === "day" && !allDawnReady);
+  if (winner?.gameOver && !holdWinner) {
     return {
       kind: "declare-winner",
       winningFactions: winner.winningFactions,
@@ -91,18 +99,23 @@ export function decideHostlessStep(
     if (game.verdictOutcome === "guilty" && game.accusedPlayerUid && isAlive(game.accusedPlayerUid)) {
       return { kind: "apply-lynch", targetUid: game.accusedPlayerUid };
     }
-    // O Jester enforcado escolhe na hora; sem escolha no prazo, a vingança não acontece.
-    if (jesterRevenge) {
-      if (jesterRevenge.targetUid) {
-        return { kind: "resolve-jester-revenge", ...jesterRevenge };
-      }
-      return now - game.verdictClosedAt >= JESTER_REVENGE_WINDOW_MS
-        ? { kind: "resolve-jester-revenge", jesterUid: jesterRevenge.jesterUid, targetUid: null }
-        : null;
-    }
+    // A vingança do Jester enforcado é uma ação da noite seguinte: não segura o dia.
     // Deixa a lista de culpados/inocentes na tela por um momento antes da noite.
     return now - game.verdictClosedAt >= VERDICT_RESULT_DISPLAY_MS ? { kind: "start-night" } : null;
   }
+
+  // Fim da noite: a vingança do Jester (escolhida durante a noite) acontece antes do resto.
+  // Sem escolha até aqui, ela é descartada.
+  const nightOver = game.phase === "night"
+    && (timerStatus === "expired"
+      || (pace === "fast" && (timerStatus === "running" || timerStatus === "paused") && fast.nightComplete));
+  if (nightOver && jesterRevenge) {
+    return { kind: "resolve-jester-revenge", ...jesterRevenge };
+  }
+
+  // Preparação: sem timer, acaba quando todos os vivos leram os resultados da noite
+  // (ou quando a mesa pula a fase).
+  if (game.phase === "day" && allDawnReady) return { kind: "start-discussion" };
 
   // Ritmo rápido: cada fase acaba assim que todos fizeram sua parte (a defesa tem tempo fixo).
   if (pace === "fast") {
@@ -121,7 +134,6 @@ export function decideHostlessStep(
   switch (game.phase) {
     case "night":
       return { kind: "end-night" };
-    case "day":
     case "discussion":
       // Um julgamento em andamento tem a própria fase; sem acusado, o dia acabou.
       return game.accusedPlayerUid ? null : { kind: "start-night" };

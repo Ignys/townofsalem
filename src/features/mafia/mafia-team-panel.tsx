@@ -1,10 +1,12 @@
 "use client";
 
-import { Lock } from "lucide-react";
+import { createId } from "@/lib/utils/create-id";
+import { X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { PiKnife } from "react-icons/pi";
 
 import { getRoleById } from "@/data/roles";
-import { PlayerRoleTag } from "@/features/roles/player-role-tag";
+import { RoleTag } from "@/features/game-state/player-status-board";
 import { firebasePaths } from "@/lib/firebase/paths";
 import {
   applyAtomicUpdate,
@@ -26,9 +28,9 @@ export const MAFIA_REACTIONS: readonly { key: string; label: string }[] = [
   { key: "ok", label: "👍" },
 ];
 const REACTION_LABELS = Object.fromEntries(MAFIA_REACTIONS.map(({ key, label }) => [key, label]));
-const VISIBLE_REACTIONS = 6;
+const VISIBLE_REACTIONS = 4;
 
-type Board = Record<string, Record<string, MafiaBoardPickRecord>>;
+export type MafiaBoard = Record<string, Record<string, MafiaBoardPickRecord>>;
 
 /** Quem é da Máfia; vazio para quem não é (a regra do RTDB nega a leitura). */
 export function useMafiaTeam(gameId: string, enabled: boolean) {
@@ -45,17 +47,43 @@ export function useMafiaTeam(gameId: string, enabled: boolean) {
   return enabled ? team : {};
 }
 
-function sendMafiaReaction(gameId: string, nightId: string, uid: string, key: string): Promise<void> {
+/** As escolhas ao vivo da Máfia nesta noite (vazio fora da noite ou para quem não é da Máfia). */
+export function useMafiaBoard(gameId: string, nightId: string | null | undefined) {
+  const [board, setBoard] = useState<{ nightId: string; value: MafiaBoard } | null>(null);
+
+  useEffect(() => {
+    if (!nightId) return;
+    return observeMafiaBoard(gameId, nightId, {
+      onData: (value) => setBoard({ nightId, value: value ?? {} }),
+      onError: () => setBoard({ nightId, value: {} }),
+    });
+  }, [gameId, nightId]);
+
+  return nightId && board?.nightId === nightId ? board.value : {};
+}
+
+function sendMafiaReaction(
+  gameId: string,
+  nightId: string,
+  uid: string,
+  key: string,
+  targetUid: string | null,
+): Promise<void> {
   return applyAtomicUpdate({
-    [firebasePaths.gameMafiaReaction(gameId, nightId, crypto.randomUUID())]: { uid, key, at: Date.now() },
+    [firebasePaths.gameMafiaReaction(gameId, nightId, createId())]: {
+      uid,
+      key,
+      at: Date.now(),
+      ...(targetUid ? { targetUid } : {}),
+    },
   });
 }
 
 function actionVerb(roleId: string, actionId: string): string {
-  if (actionId === MAFIA_KILL_ACTION_ID) return "vota para matar";
+  if (actionId === MAFIA_KILL_ACTION_ID) return "ataque";
   const role = getRoleById(roleId);
   const action = role?.actionDefinitions?.find(({ id }) => id === actionId) ?? role?.action;
-  return action?.verb ?? actionId;
+  return action?.label ?? actionId;
 }
 
 interface MafiaTeamPanelProps {
@@ -66,137 +94,177 @@ interface MafiaTeamPanelProps {
   nightId: string | null | undefined;
   players: Readonly<Record<string, PublicPlayerRecord>>;
   team: Readonly<Record<string, MafiaTeamMemberRecord>>;
+  board: MafiaBoard;
 }
 
 /**
- * A Máfia acorda junta: vê os parceiros e as roles deles, o que cada um está escolhendo
- * (com cadeado quando confirmado), o placar do ataque e as reações rápidas do grupo.
+ * A Máfia acorda junta: o alvo que o grupo está levando, o que cada parceiro escolheu e as
+ * reações rápidas. Os alvos em si são escolhidos na lista de jogadores.
  */
-export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, players, team }: MafiaTeamPanelProps) {
-  const [board, setBoard] = useState<Board>({});
+export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, players, team, board }: MafiaTeamPanelProps) {
   const [reactions, setReactions] = useState<Record<string, MafiaReactionRecord>>({});
   const [sending, setSending] = useState(false);
+  // Reação escolhida, esperando o segundo toque: sobre quem ela é.
+  const [pendingKey, setPendingKey] = useState<string | null>(null);
 
   useEffect(() => {
     if (!nightId) return;
-    const stopBoard = observeMafiaBoard(gameId, nightId, {
-      onData: (value) => setBoard(value ?? {}),
-      onError: () => setBoard({}),
-    });
-    const stopReactions = observeMafiaReactions(gameId, nightId, {
+    return observeMafiaReactions(gameId, nightId, {
       onData: (value) => setReactions(value ?? {}),
       onError: () => setReactions({}),
     });
-    return () => {
-      stopBoard();
-      stopReactions();
-    };
   }, [gameId, nightId]);
 
   const members = Object.entries(team).sort(([left], [right]) =>
     (players[left]?.name ?? "").localeCompare(players[right]?.name ?? "", "pt-BR"),
   );
   const nameOf = (uid: string) => players[uid]?.name ?? "?";
-  const liveBoard = nightId ? board : {};
-  const tally = tallyMafiaKill(liveBoard, team);
+  const tally = tallyMafiaKill(board, team);
+  const projectedVotes = tally.projectedTargetUid ? tally.votesByTarget[tally.projectedTargetUid]?.length ?? 0 : 0;
   const recentReactions = nightId
     ? Object.values(reactions).sort((left, right) => right.at - left.at).slice(0, VISIBLE_REACTIONS)
     : [];
 
-  const react = (key: string) => {
+  const react = (key: string, targetUid: string | null) => {
     if (!nightId || sending) return;
     setSending(true);
-    sendMafiaReaction(gameId, nightId, viewerUid, key)
+    setPendingKey(null);
+    sendMafiaReaction(gameId, nightId, viewerUid, key, targetUid)
       .catch(() => undefined)
       .finally(() => setSending(false));
   };
+  // Quem já leva votos de ataque vem primeiro: costuma ser de quem o grupo está falando.
+  const mentionable = Object.entries(players)
+    .filter(([uid, player]) => player.alive && uid !== viewerUid)
+    .sort(
+      ([leftUid, left], [rightUid, right]) =>
+        (tally.votesByTarget[rightUid]?.length ?? 0) - (tally.votesByTarget[leftUid]?.length ?? 0)
+        || left.name.localeCompare(right.name, "pt-BR"),
+    );
+  const pillClass =
+    "rounded-full border px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-3 focus-visible:outline-[#d3b88c] disabled:opacity-50";
 
   return (
-    <section aria-label="Sua Máfia" className="mt-4 rounded-2xl border border-[#a33843]/35 bg-[#a33843]/10 p-4 text-left">
-      <h2 className="font-serif text-lg font-semibold text-[#fffaf0]">Sua Máfia</h2>
+    <section aria-label="Sua Máfia" className="panel-private mt-4 border-[#a33843]/60 bg-[#2a1517] text-left">
+      <div className="flex items-center gap-3">
+        <span
+          aria-hidden="true"
+          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#db4242]/15 text-[#f0b9bd]"
+        >
+          <PiKnife className="size-5" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-serif text-lg font-semibold text-[#fffaf0]">Sua Máfia</h2>
+          {nightId && (
+            <p className="text-sm text-[#e6c3c6]">
+              {tally.projectedTargetUid
+                ? `Alvo: ${nameOf(tally.projectedTargetUid)} (${projectedVotes} ${projectedVotes === 1 ? "voto" : "votos"})`
+                : tally.tied
+                  ? "Empate: um dos alvos empatados será sorteado."
+                  : "Ninguém votou ainda. Escolha o alvo na lista."}
+            </p>
+          )}
+        </div>
+      </div>
 
-      <ul className="mt-3 grid gap-2">
+      <ul className="mt-3 divide-y divide-white/8">
         {members.map(([uid, member]) => {
-          const picks = Object.entries(liveBoard[uid] ?? {}).filter(([, pick]) => (pick.targetUids?.length ?? 0) > 0);
+          const picks = Object.entries(board[uid] ?? {}).filter(([, pick]) => (pick.targetUids?.length ?? 0) > 0);
           const alive = players[uid]?.alive ?? false;
           return (
-            <li key={uid} data-mafia-member={uid} className="rounded-xl border border-white/10 bg-black/20 px-3 py-2">
-              <div className="flex items-center gap-2">
-                <span className={`font-semibold text-[#e5ded2] ${alive ? "" : "line-through opacity-60"}`}>{nameOf(uid)}</span>
-                {uid === viewerUid && <span className="text-xs text-[#d3b88c]">você</span>}
-                <PlayerRoleTag roleId={member.roleId} className="ml-auto" />
-              </div>
+            <li key={uid} data-mafia-member={uid} className="flex min-h-10 items-center gap-2 py-1.5 text-sm">
+              <span className={`min-w-0 truncate font-semibold ${alive ? "text-[#f3ead9]" : "text-[#8f8a82] line-through"}`}>
+                {nameOf(uid)}
+              </span>
+              <RoleTag roleId={member.roleId} />
               {nightId && alive && (
-                <ul className="mt-1 grid gap-0.5 text-sm text-[#bdb7ad]">
-                  {picks.length === 0 ? (
-                    <li className="text-xs text-[#8f8a82]">Ainda não escolheu.</li>
-                  ) : picks.map(([actionId, pick]) => (
-                    <li key={actionId} data-mafia-pick={actionId} className="flex items-center gap-1.5">
-                      {pick.locked && <Lock aria-label="Confirmado" className="size-3.5 text-[#e6cfa9]" />}
-                      <span>
-                        {actionVerb(member.roleId, actionId)}{" "}
-                        <strong className="text-[#fffaf0]">{(pick.targetUids ?? []).map(nameOf).join(", ")}</strong>
-                        {!pick.locked && <span className="text-xs text-[#8f8a82]"> · escolhendo</span>}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                <span className="ml-auto truncate text-right text-xs text-[#bdb7ad]">
+                  {picks.length === 0
+                    ? "pensando…"
+                    : picks
+                        .map(([actionId, pick]) => `${actionVerb(member.roleId, actionId)} → ${(pick.targetUids ?? []).map(nameOf).join(", ")}`)
+                        .join(" · ")}
+                </span>
               )}
             </li>
           );
         })}
       </ul>
 
-      {nightId && Object.keys(tally.votesByTarget).length > 0 && (
-        <div aria-label="Placar do ataque" className="mt-3 rounded-xl border border-white/10 bg-black/20 px-3 py-2 text-sm">
-          <p className="text-xs font-bold tracking-[0.12em] text-[#f0b9bd] uppercase">Ataque da Máfia</p>
-          <ul className="mt-1 grid gap-0.5 text-[#e5ded2]">
-            {Object.entries(tally.votesByTarget)
-              .sort(([, left], [, right]) => right.length - left.length)
-              .map(([targetUid, votes]) => (
-                <li key={targetUid}>
-                  <strong>{nameOf(targetUid)}</strong>: {votes.length} {votes.length === 1 ? "voto" : "votos"}{" "}
-                  <span className="text-xs text-[#8f8a82]">
-                    ({votes.map(({ uid, locked }) => `${nameOf(uid)}${locked ? " 🔒" : ""}`).join(", ")})
-                  </span>
+      {nightId && (
+        <div className="mt-3 border-t border-white/8 pt-3">
+          {recentReactions.length > 0 && (
+            <ul aria-label="Reações recentes" className="mb-2 grid gap-1">
+              {[...recentReactions].reverse().map((reaction) => (
+                <li
+                  key={`${reaction.uid}:${reaction.at}`}
+                  className={`w-fit max-w-full rounded-2xl px-3 py-1 text-sm ${
+                    reaction.uid === viewerUid
+                      ? "ml-auto bg-[#7d2330] text-white"
+                      : "bg-white/8 text-[#e5ded2]"
+                  }`}
+                >
+                  {reaction.uid !== viewerUid && <strong className="mr-1 font-semibold">{nameOf(reaction.uid)}:</strong>}
+                  {REACTION_LABELS[reaction.key] ?? reaction.key}
+                  {reaction.targetUid && (
+                    <strong className="ml-1 font-semibold">→ {nameOf(reaction.targetUid)}</strong>
+                  )}
                 </li>
               ))}
-          </ul>
-          <p className="mt-1 text-xs text-[#bdb7ad]">
-            {tally.projectedTargetUid
-              ? `Se a noite acabar agora, ${nameOf(tally.projectedTargetUid)} é atacado.`
-              : tally.tied
-                ? "Empate sem desempate do Godfather: um dos alvos empatados será sorteado."
-                : "Só votos confirmados contam."}
-          </p>
-        </div>
-      )}
-
-      {nightId && (
-        <div className="mt-3">
-          {viewerAlive && (
+            </ul>
+          )}
+          {viewerAlive && pendingKey && (
+            <div aria-label="Sobre quem" className="rounded-xl bg-black/25 p-2">
+              <div className="mb-1.5 flex items-center gap-2 px-1 text-xs text-[#e6c3c6]">
+                <span className="min-w-0 flex-1 truncate">
+                  <strong className="text-[#fffaf0]">{REACTION_LABELS[pendingKey]}</strong> sobre quem?
+                </span>
+                <button
+                  type="button"
+                  aria-label="Cancelar"
+                  onClick={() => setPendingKey(null)}
+                  className="rounded-full p-1 text-[#bdb7ad] hover:bg-white/10 focus-visible:outline-3 focus-visible:outline-[#d3b88c]"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                <button
+                  type="button"
+                  disabled={sending}
+                  onClick={() => react(pendingKey, null)}
+                  className={`${pillClass} border-white/25 bg-white/10 text-[#fffaf0] hover:bg-white/15`}
+                >
+                  Ninguém
+                </button>
+                {mentionable.map(([uid, player]) => (
+                  <button
+                    key={uid}
+                    type="button"
+                    disabled={sending}
+                    onClick={() => react(pendingKey, uid)}
+                    className={`${pillClass} border-[#db4242]/30 bg-[#7d2330]/25 text-[#f3ead9] hover:bg-[#7d2330]/45`}
+                  >
+                    {player.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+          {viewerAlive && !pendingKey && (
             <div aria-label="Reações" className="flex flex-wrap gap-1.5">
               {MAFIA_REACTIONS.map(({ key, label }) => (
                 <button
                   key={key}
                   type="button"
                   disabled={sending}
-                  onClick={() => react(key)}
-                  className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-[#e5ded2] disabled:opacity-50"
+                  onClick={() => setPendingKey(key)}
+                  className={`${pillClass} border-white/15 bg-white/5 text-[#e5ded2] hover:bg-white/10`}
                 >
                   {label}
                 </button>
               ))}
             </div>
-          )}
-          {recentReactions.length > 0 && (
-            <ul aria-label="Reações recentes" className="mt-2 grid gap-0.5 text-sm text-[#e5ded2]">
-              {recentReactions.map((reaction) => (
-                <li key={`${reaction.uid}:${reaction.at}`}>
-                  <strong>{nameOf(reaction.uid)}</strong>: {REACTION_LABELS[reaction.key] ?? reaction.key}
-                </li>
-              ))}
-            </ul>
           )}
         </div>
       )}

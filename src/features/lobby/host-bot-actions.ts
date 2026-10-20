@@ -1,5 +1,6 @@
 "use client";
 
+import { createId } from "@/lib/utils/create-id";
 import { requireAuthenticatedGameHost } from "@/features/game-state/require-authenticated-game-host";
 import {
   readGamePlayers,
@@ -31,7 +32,7 @@ export async function addBotPlayer(gameId: string): Promise<void> {
       0,
       ...Object.values(players).map((player) => player.seat ?? 0),
     ) + 1;
-  const botUid = createBotPlayerUid(() => crypto.randomUUID());
+  const botUid = createBotPlayerUid(() => createId());
 
   await applyAtomicUpdate({
     [firebasePaths.gamePlayer(gameId, botUid)]: {

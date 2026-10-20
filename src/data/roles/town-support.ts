@@ -20,9 +20,9 @@ export const TOWN_SUPPORT_ROLES = [
     faction: "town",
     alignment: "Town Support",
     description:
-      "Durante o dia, você pode revelar sua carta à cidade. Depois disso, o peso do seu voto depende do número de jogadores da partida.",
+      "Durante o dia, você pode revelar sua carta à cidade. Depois disso, seu voto passa a valer mais.",
     playTip:
-      "Revele-se quando o voto extra fizer diferença, lembrando que você perderá a possibilidade de cura do Doctor.",
+      "Revele-se quando o voto extra decidir um julgamento importante.",
     goal: TOWN_GOAL,
     virtueValue: 8,
     cardCount: 1,
@@ -40,14 +40,14 @@ export const TOWN_SUPPORT_ROLES = [
     faction: "town",
     alignment: "Town Support",
     description:
-      "À noite, escolha uma pessoa morta. O moderador mostrará uma quantidade de suspeitos calculada pelo tamanho da partida; um deles foi responsável pela morte. Essa habilidade também ajuda a recuperar informações sobre a role da vítima.",
+      "À noite, escolha uma pessoa morta. O moderador mostra alguns suspeitos; um deles foi responsável pela morte.",
     playTip:
-      "Use os mortos para recuperar informações, especialmente quando um Janitor escondeu a role de uma vítima.",
+      "Cruze os suspeitos com os votos e as alegações do dia para descobrir quem matou.",
     goal: TOWN_GOAL,
     virtueValue: 3,
     cardCount: 1,
     importantInteractions: [
-      "Pode escolher jogadores mortos.",
+      "A quantidade de suspeitos depende do tamanho da partida.",
       "É especialmente útil para investigar vítimas limpas pelo Janitor.",
     ],
     canDieAtNight: true,
@@ -66,12 +66,11 @@ export const TOWN_SUPPORT_ROLES = [
     description:
       "Você participa normalmente das discussões e acusações, mas em todo julgamento é obrigado a votar Innocent (inocente).",
     playTip:
-      "Você nunca pode votar Guilty no veredito, mesmo quando acredita que o acusado é culpado.",
+      "Como seu voto não condena ninguém, use a discussão para convencer quem pode votar Guilty.",
     goal: TOWN_GOAL,
     virtueValue: -1,
     cardCount: 1,
     importantInteractions: [
-      "Seu voto de veredito é sempre Innocent.",
       "Nunca entra no grupo de votos Guilty que um Jester enforcado pode punir.",
     ],
     canDieAtNight: true,
@@ -84,15 +83,14 @@ export const TOWN_SUPPORT_ROLES = [
     faction: "town",
     alignment: "Town Support",
     description:
-      "Você pertence à Town e não possui habilidade ativa, mas aparece como Evil (má) quando é investigado pelo Sheriff.",
+      "Você pertence à Town e não possui habilidade ativa, mas aparece como Evil (má) para o Sheriff.",
     playTip:
       "Prepare-se para explicar por que o Sheriff recebeu um resultado Evil mesmo você sendo da Town.",
     goal: TOWN_GOAL,
     virtueValue: -2,
     cardCount: 2,
     importantInteractions: [
-      "A investigação do Sheriff retorna Evil.",
-      "Investigator e Consigliere ainda descobrem Politician como role exata.",
+      "Investigator e Consigliere descobrem sua role exata.",
     ],
     canDieAtNight: true,
     investigativeAppearance: investigativeAppearance("Politician", "town", "Evil"),
@@ -106,12 +104,11 @@ export const TOWN_SUPPORT_ROLES = [
     description:
       "Você participa normalmente das discussões e acusações, mas em todo julgamento é obrigado a votar Guilty (culpado).",
     playTip:
-      "Você nunca pode votar Innocent; isso é especialmente arriscado quando o acusado pode ser Jester.",
+      "Se o acusado pode ser Jester, tente evitar na discussão que ele chegue ao veredito.",
     goal: TOWN_GOAL,
     virtueValue: -1,
     cardCount: 1,
     importantInteractions: [
-      "Seu voto de veredito é sempre Guilty.",
       "Pode ser escolhido pela vingança de um Jester que foi enforcado.",
     ],
     canDieAtNight: true,
@@ -126,13 +123,11 @@ export const TOWN_SUPPORT_ROLES = [
     description:
       "Você pertence à Town e deve ajudar a eliminar as ameaças da cidade. Não pode ser morto durante a noite, mas ainda pode ser enforcado durante o dia.",
     playTip:
-      "Ataques noturnos não matam você, mas um julgamento ainda pode.",
+      "Como os ataques noturnos não te matam, você pode se expor mais na discussão do que os outros.",
     goal: TOWN_GOAL,
     virtueValue: 4,
     cardCount: 2,
     importantInteractions: [
-      "Possui imunidade a mortes noturnas.",
-      "Tentativas de morte durante a noite não eliminam esta role.",
     ],
     canDieAtNight: false,
     investigativeAppearance: investigativeAppearance("Survivor", "town"),
@@ -146,7 +141,7 @@ export const TOWN_SUPPORT_ROLES = [
     description:
       "Você não possui habilidade especial. Converse, analise comportamentos, compartilhe informações, acuse e vote para ajudar a Town.",
     playTip:
-      "Sua principal ferramenta é a discussão. Escute as alegações e use seu voto com cuidado.",
+      "Escute as alegações com atenção e use seu voto com cuidado.",
     goal: TOWN_GOAL,
     virtueValue: 1,
     cardCount: 8,

@@ -18,6 +18,29 @@
         }
       }
     },
+    "openRooms": {
+      ".read": "auth !== null",
+      ".indexOn": ["createdAt"],
+      "$code": {
+        ".write": "auth !== null && newData.parent().parent().child('roomCodes').child($code).isString() && newData.parent().parent().child('games').child(newData.parent().parent().child('roomCodes').child($code).val()).child('hostUid').val() === auth.uid",
+        ".validate": "newData.hasChildren(['name', 'createdAt'])",
+        "name": {
+          ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 30"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber() && newData.val() <= now + 60000"
+        },
+        "status": {
+          ".validate": "newData.isString() && (newData.val() === 'lobby' || newData.val() === 'in-progress' || newData.val() === 'finished')"
+        },
+        "playerCount": {
+          ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 100"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
     "games": {
       "$gameId": {
         ".write": "auth !== null && !data.exists() && newData.hasChildren(['hostUid', 'public']) && newData.child('hostUid').val() === auth.uid && newData.child('public').child('status').val() === 'lobby' && newData.child('public').child('phase').val() === 'lobby' && newData.child('public').child('day').val() === 0 && newData.parent().parent().child('roomCodes').child(newData.child('public').child('code').val()).val() === $gameId",
@@ -71,6 +94,11 @@
           },
           "winningPlayerUids": {
             ".validate": true
+          },
+          "finalRoles": {
+            "$uid": {
+              ".validate": "newData.isString()"
+            }
           },
           "gameEndedAt": {
             ".validate": "newData.isNumber() && newData.val() > 0"
@@ -181,6 +209,13 @@
             ".validate": false
           }
         },
+        "forcedRoles": {
+          ".read": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid && root.child('games').child($gameId).child('public').child('status').val() === 'lobby' && root.child('games').child($gameId).child('public').child('phase').val() === 'lobby'",
+          "$uid": {
+            ".validate": "newData.isString() && newData.val().length <= 64"
+          }
+        },
         "players": {
           ".read": "auth !== null && (root.child('games').child($gameId).child('hostUid').val() === auth.uid || root.child('games').child($gameId).child('players').child(auth.uid).exists())",
           "$uid": {
@@ -223,6 +258,18 @@
             },
             "diedAt": {
               ".validate": "newData.isNumber() && newData.val() > 0"
+            },
+            "diedPhase": {
+              ".validate": "newData.val() === 'night' || newData.val() === 'day'"
+            },
+            "diedNumber": {
+              ".validate": "newData.isNumber() && newData.val() >= 0"
+            },
+            "cause": {
+              ".validate": "newData.val() === 'night' || newData.val() === 'night-attack' || newData.val() === 'mafia-attack' || newData.val() === 'veteran-attack' || newData.val() === 'bodyguard-counterattack' || newData.val() === 'bodyguard-sacrifice' || newData.val() === 'witch-curse' || newData.val() === 'hanging' || newData.val() === 'day-death' || newData.val() === 'jester-revenge' || newData.val() === 'host'"
+            },
+            "killerRoleId": {
+              ".validate": "newData.isString() && (newData.val() === 'bodyguard' || newData.val() === 'deputy' || newData.val() === 'doctor' || newData.val() === 'investigator' || newData.val() === 'mayor' || newData.val() === 'medium' || newData.val() === 'peaceful-townie' || newData.val() === 'politician' || newData.val() === 'sheriff' || newData.val() === 'spiteful-townie' || newData.val() === 'survivor' || newData.val() === 'townie' || newData.val() === 'veteran' || newData.val() === 'vigilante' || newData.val() === 'blackmailer' || newData.val() === 'consigliere' || newData.val() === 'godfather' || newData.val() === 'janitor' || newData.val() === 'mafioso' || newData.val() === 'amnesiac' || newData.val() === 'executioner' || newData.val() === 'jester' || newData.val() === 'serial-killer' || newData.val() === 'werewolf' || newData.val() === 'witch')"
             },
             "$other": {
               ".validate": false
@@ -295,7 +342,7 @@
             "$uid": {
               ".read": "auth !== null && auth.uid === $uid",
               "$actionId": {
-                ".write": "auth !== null && auth.uid === $uid && root.child('games').child($gameId).child('players').child(auth.uid).child('alive').val() === true && root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' && root.child('games').child($gameId).child('public').child('phase').val() === 'night' && root.child('games').child($gameId).child('public').child('currentNightId').val() === $nightId && !root.child('games').child($gameId).child('nightSessions').child($nightId).child('resolutionAppliedAt').exists() && !data.exists() && newData.exists()",
+                ".write": "auth !== null && auth.uid === $uid && root.child('games').child($gameId).child('players').child(auth.uid).child('alive').val() === true && root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' && root.child('games').child($gameId).child('public').child('phase').val() === 'night' && root.child('games').child($gameId).child('public').child('currentNightId').val() === $nightId && !root.child('games').child($gameId).child('nightSessions').child($nightId).child('resolutionAppliedAt').exists()",
                 ".validate": "newData.hasChildren(['nightId', 'actionId', 'roleIdSnapshot', 'createdAt', 'updatedAt']) && newData.child('nightId').val() === $nightId && newData.child('actionId').val() === $actionId && newData.child('roleIdSnapshot').val() === root.child('games').child($gameId).child('privatePlayers').child($uid).child('roleId').val() && newData.child('createdAt').isNumber() && newData.child('updatedAt').isNumber()",
                 "targetUids": {
                   "$index": {
@@ -460,7 +507,7 @@
           "$dayNumber": {
             "$uid": {
               ".read": "auth !== null && auth.uid === $uid",
-              ".write": "auth !== null && auth.uid === $uid && !data.exists() && newData.exists() && root.child('games').child($gameId).child('privatePlayers').child($uid).child('statuses').child('jester-revenge-pending').exists() && root.child('games').child($gameId).child('public').child('phase').val() === 'verdict' && root.child('games').child($gameId).child('public').child('day').val() + '' === $dayNumber",
+              ".write": "auth !== null && auth.uid === $uid && root.child('games').child($gameId).child('privatePlayers').child($uid).child('statuses').child('jester-revenge-pending').exists() && root.child('games').child($gameId).child('public').child('phase').val() === 'night' && root.child('games').child($gameId).child('public').child('day').val() + '' === $dayNumber",
               ".validate": "newData.isString() && root.child('games').child($gameId).child('votes').child($dayNumber).child('verdicts').child(newData.val()).val() === 'guilty' && root.child('games').child($gameId).child('players').child(newData.val()).child('alive').val() === true"
             }
           }
@@ -470,7 +517,7 @@
           ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
           "$uid": {
             ".write": "auth !== null && auth.uid === $uid && !data.exists() && newData.exists() && root.child('games').child($gameId).child('privatePlayers').child($uid).child('roleId').val() === 'mayor' && root.child('games').child($gameId).child('players').child($uid).child('alive').val() === true && root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' && root.child('games').child($gameId).child('public').child('phase').val() !== 'night'",
-            ".validate": "newData.isNumber()"
+            ".validate": "newData.isNumber() && newData.val() >= 1"
           }
         },
         "mafiaTeam": {
@@ -505,7 +552,10 @@
             ".read": "auth !== null && root.child('games').child($gameId).child('mafiaTeam').child(auth.uid).exists()",
             "$reactionId": {
               ".write": "!data.exists() && auth !== null && root.child('games').child($gameId).child('mafiaTeam').child(auth.uid).exists() && root.child('games').child($gameId).child('players').child(auth.uid).child('alive').val() === true && root.child('games').child($gameId).child('public').child('status').val() === 'in-progress' && root.child('games').child($gameId).child('public').child('phase').val() === 'night' && root.child('games').child($gameId).child('public').child('currentNightId').val() === $nightId",
-              ".validate": "newData.hasChildren(['uid', 'key', 'at']) && newData.child('uid').val() === auth.uid && newData.child('key').isString() && newData.child('key').val().length <= 32 && newData.child('at').isNumber()"
+              ".validate": "newData.hasChildren(['uid', 'key', 'at']) && newData.child('uid').val() === auth.uid && newData.child('key').isString() && newData.child('key').val().length <= 32 && newData.child('at').isNumber()",
+            "targetUid": {
+              ".validate": "newData.isString() && root.child('games').child($gameId).child('players').child(newData.val()).exists()"
+            }
             }
           }
         },
@@ -516,6 +566,17 @@
             "$uid": {
               ".read": "auth !== null && auth.uid === $uid",
               ".write": "auth !== null && auth.uid === $uid && !data.exists() && newData.exists() && root.child('games').child($gameId).child('players').child(auth.uid).child('alive').val() === true && root.child('games').child($gameId).child('public').child('phase').val() === 'night' && root.child('games').child($gameId).child('public').child('currentNightId').val() === $nightId",
+              ".validate": "newData.isNumber()"
+            }
+          }
+        },
+        "dawnReady": {
+          ".read": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          ".write": "auth !== null && root.child('games').child($gameId).child('hostUid').val() === auth.uid",
+          "$day": {
+            ".read": "auth !== null && root.child('games').child($gameId).child('players').child(auth.uid).exists()",
+            "$uid": {
+              ".write": "auth !== null && auth.uid === $uid && !data.exists() && newData.exists() && root.child('games').child($gameId).child('players').child(auth.uid).child('alive').val() === true && root.child('games').child($gameId).child('public').child('phase').val() === 'day' && root.child('games').child($gameId).child('public').child('day').val() + '' === $day",
               ".validate": "newData.isNumber()"
             }
           }

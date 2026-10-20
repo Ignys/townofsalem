@@ -1,13 +1,16 @@
 "use client";
 
+import { createId } from "@/lib/utils/create-id";
 import { requireAuthenticatedGameHost } from "@/features/game-state/require-authenticated-game-host";
 import {
+  readForcedRoles,
   readGamePlayers,
   readGameSettings,
   readPublicGame,
 } from "@/lib/firebase/game-access-repository";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 import { drawRoles, type RandomSource } from "@/game-engine/draw-roles";
+import { getRoleById } from "@/data/roles";
 import { withDefaultVariants } from "@/game-engine/variants";
 
 import {
@@ -16,6 +19,7 @@ import {
   RandomRoleResolutionError,
   resolveRandomRoles,
 } from "./random-role-slots";
+import { splitForcedRoles } from "./forced-roles";
 import { compositionRecordToRoleIds } from "./role-composition";
 import { ROLE_COMPOSITION_RULES } from "./role-composition-rules";
 import { RoleAssignmentError } from "./role-assignment-error";
@@ -41,12 +45,14 @@ export async function drawAndPersistRoles(
   let game: Awaited<ReturnType<typeof readPublicGame>>;
   let settings: Awaited<ReturnType<typeof readGameSettings>>;
   let players: Awaited<ReturnType<typeof readGamePlayers>>;
+  let forcedRoles: Awaited<ReturnType<typeof readForcedRoles>>;
 
   try {
-    [game, settings, players] = await Promise.all([
+    [game, settings, players, forcedRoles] = await Promise.all([
       readPublicGame(gameId),
       readGameSettings(gameId),
       readGamePlayers(gameId),
+      readForcedRoles(gameId),
     ]);
   } catch (error: unknown) {
     throw new RoleAssignmentError("game-unavailable", {
@@ -104,18 +110,28 @@ export async function drawAndPersistRoles(
     });
   }
 
-  const assignments = drawRoles(
-    participantUids,
-    resolvedRoleIds,
-    options.random,
-  );
+  const split = splitForcedRoles(participantUids, roleIds, resolvedRoleIds, forcedRoles);
+  if ("invalid" in split) {
+    throw new RoleAssignmentError("invalid-composition", {
+      validationErrors: [{
+        code: "forced-role-unavailable",
+        message: `A role “${getRoleById(split.invalid)?.name ?? split.invalid}” foi atribuída a mais jogadores do que existe na composição.`,
+        roleId: split.invalid,
+      }],
+    });
+  }
+
+  const assignments = {
+    ...drawRoles(split.remainingUids, split.remainingRoleIds, options.random),
+    ...split.forced,
+  };
   const updates = createRoleAssignmentUpdates(
     gameId,
     assignments,
     (options.now ?? Date.now)(),
     {
-      phaseSessionId: (options.createId ?? (() => crypto.randomUUID()))(),
-      nightId: (options.createId ?? (() => crypto.randomUUID()))(),
+      phaseSessionId: (options.createId ?? (() => createId()))(),
+      nightId: (options.createId ?? (() => createId()))(),
     },
   );
 

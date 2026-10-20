@@ -6,7 +6,7 @@ import type { NightConsoleInteraction } from "@/features/lobby/night-console-int
 import { currentTimestamp } from "@/lib/utils/timestamp";
 import type { PlayerNightActionSubmission } from "@/types";
 
-import { savePlayerNightAction, shareMafiaDraftPick } from "./player-night-action-repository";
+import { savePlayerNightChoice } from "./player-night-action-repository";
 
 interface UsePlayerNightActionOptions {
   gameId: string;
@@ -20,8 +20,8 @@ interface UsePlayerNightActionOptions {
 }
 
 /**
- * Escolha local até o jogador confirmar. Confirmar grava uma única vez: a regra do RTDB
- * não deixa trocar nem apagar, e o mestre também não edita uma ação confirmada pelo jogador.
+ * Como no jogo digital: cada toque já salva a escolha, e o jogador pode trocar até a noite
+ * acabar. O que estiver salvo nesse momento é a ação dele; nada salvo, nada acontece.
  */
 export function usePlayerNightAction({
   gameId,
@@ -32,70 +32,55 @@ export function usePlayerNightAction({
   disabled,
   shareWithMafia = false,
 }: UsePlayerNightActionOptions) {
-  const [draftTargetUids, setDraftTargetUids] = useState<readonly string[]>([]);
-  const [saving, setSaving] = useState(false);
+  // A escolha local só cobre o intervalo até o servidor confirmar a gravação.
+  const [draftTargetUids, setDraftTargetUids] = useState<readonly string[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const targetCount = interaction.action.targetCount;
-  const locked = Boolean(submission);
-  const selectedTargetUids = submission?.targetUids ?? draftTargetUids;
-  const chosenCount = draftTargetUids.filter(Boolean).length;
+  const savedTargetUids = submission?.targetUids ?? [];
+  const selectedTargetUids = draftTargetUids ?? savedTargetUids;
+  const chosenCount = selectedTargetUids.filter(Boolean).length;
+
+  const save = (targetUids: readonly string[], active: boolean) => {
+    if (disabled) return;
+    const timestamp = currentTimestamp();
+    const payload: PlayerNightActionSubmission | null = active
+      ? {
+          nightId,
+          nightNumber,
+          actionId: interaction.action.id,
+          roleIdSnapshot: interaction.role.id,
+          targetUids: targetUids.filter(Boolean),
+          createdAt: submission?.createdAt ?? timestamp,
+          updatedAt: timestamp,
+        }
+      : null;
+
+    setDraftTargetUids(targetUids);
+    setError(null);
+    savePlayerNightChoice(gameId, nightId, interaction.action.id, payload, shareWithMafia)
+      .catch(() => {
+        setError("Não foi possível salvar sua escolha. Tente de novo; se continuar, a noite pode já ter acabado.");
+      })
+      .finally(() => setDraftTargetUids(null));
+  };
 
   const setTarget = (targetIndex: number, playerUid: string) => {
-    if (disabled || locked || saving) return;
-    setError(null);
     const next = Array.from({ length: targetCount }, (_, index) =>
       index === targetIndex
-        ? (draftTargetUids[index] === playerUid ? "" : playerUid)
-        : draftTargetUids[index] ?? "",
+        ? (selectedTargetUids[index] === playerUid ? "" : playerUid)
+        : selectedTargetUids[index] ?? "",
     );
-    setDraftTargetUids(next);
-    shareDraft(next);
-  };
-
-  const shareDraft = (targetUids: readonly string[]) => {
-    if (!shareWithMafia) return;
-    void shareMafiaDraftPick(gameId, nightId, interaction.action.id, targetUids).catch(() => undefined);
-  };
-
-  const submit = (skipped: boolean) => {
-    if (disabled || locked || saving) return;
-
-    const timestamp = currentTimestamp();
-    const payload: PlayerNightActionSubmission = {
-      nightId,
-      nightNumber,
-      actionId: interaction.action.id,
-      roleIdSnapshot: interaction.role.id,
-      targetUids: skipped ? [] : draftTargetUids.filter(Boolean),
-      ...(skipped ? { skipped: true } : {}),
-      createdAt: timestamp,
-      updatedAt: timestamp,
-    };
-
-    setSaving(true);
-    setError(null);
-    savePlayerNightAction(gameId, payload, shareWithMafia)
-      .catch(() => {
-        setError("Não foi possível enviar sua ação. Tente de novo; se continuar, a noite pode já ter acabado.");
-      })
-      .finally(() => setSaving(false));
+    save(next, next.some(Boolean));
   };
 
   return {
     selectedTargetUids,
     setTarget,
-    locked,
-    saving,
     error,
-    /** Quantos alvos o jogador escolheu (antes de confirmar). */
+    /** Quantos alvos estão escolhidos agora. */
     chosenCount,
-    /** Pular: trava "nenhuma ação" para esta noite. */
-    skipped: Boolean(submission?.skipped),
-    confirm: () => submit(false),
-    skip: () => submit(true),
-    cancel: () => {
-      setDraftTargetUids([]);
-      shareDraft([]);
-    },
+    /** Ação sem alvo (ex.: alerta do Veteran): ligada ou não nesta noite. */
+    active: Boolean(submission),
+    toggle: () => save([], !submission),
   };
 }

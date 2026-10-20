@@ -34,9 +34,9 @@ export const TOWN_PROTECTIVE_ROLES = [
     faction: "town",
     alignment: "Town Protective",
     description:
-      "Toda noite, escolha alguém para proteger. Se essa pessoa for atacada, você impede um dos ataques e enfrenta o atacante: vocês atacam um ao outro.",
+      "Toda noite, escolha alguém para proteger. Se essa pessoa for atacada, você entra na frente e enfrenta o atacante: vocês atacam um ao outro.",
     playTip:
-      "Proteja quem parece importante. Se essa pessoa sofrer um ataque, você se sacrifica e tenta levar o atacante junto.",
+      "Proteja quem acabou de compartilhar informações valiosas: é o alvo mais provável da noite.",
     goal: TOWN_GOAL,
     virtueValue: 4,
     cardCount: 1,
@@ -58,9 +58,9 @@ export const TOWN_PROTECTIVE_ROLES = [
     faction: "town",
     alignment: "Town Protective",
     description:
-      "Toda noite, escolha uma pessoa para curar. Se ela for atacada naquela noite, a cura impede essa morte. Você não pode curar um Mayor que já revelou sua role.",
+      "Toda noite, escolha uma pessoa para curar. Se ela for atacada naquela noite, a cura impede essa morte.",
     playTip:
-      "Escolha uma pessoa por noite para impedir que uma tentativa de morte noturna a elimine.",
+      "Quem acabou de revelar informações importantes costuma ser o alvo da Mafia. Cure essa pessoa.",
     goal: TOWN_GOAL,
     virtueValue: 4,
     cardCount: 1,

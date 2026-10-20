@@ -1,5 +1,6 @@
 "use client";
 
+import { createId as newId } from "@/lib/utils/create-id";
 import { runTransaction } from "firebase/database";
 
 import {
@@ -14,6 +15,7 @@ import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 import { getDatabaseReference } from "@/lib/firebase/references";
 import { requireAuthenticatedGameHost } from "@/features/game-state/require-authenticated-game-host";
 import { buildStartHostPhaseUpdates } from "@/features/game-state/start-host-phase";
+import { HOSTLESS_PHASE_LABELS } from "@/features/game-state/hostless-autopilot";
 import { getPhaseDefinition } from "@/features/game-state/phase-definitions";
 import { withDefaultVariants } from "@/game-engine/variants";
 
@@ -34,7 +36,7 @@ export async function startAccusedTrial(
   gameId: string,
   targetUid: string,
   now: () => number = Date.now,
-  createId: () => string = () => crypto.randomUUID(),
+  createId: () => string = () => newId(),
 ): Promise<boolean> {
   const hostUid = await requireAuthenticatedGameHost(gameId);
   const game = await readPublicGame(gameId);
@@ -83,7 +85,10 @@ export async function startAccusedTrial(
 
   const startedAt = now();
   const eventId = createId();
-  const trialPhase = getPhaseDefinition("trial");
+  // Sem mestre, o acusado já começa a se defender: a fase se chama Defesa.
+  const trialLabel = game.playMode === "hostless"
+    ? HOSTLESS_PHASE_LABELS.trial
+    : getPhaseDefinition("trial").label;
 
   await applyAtomicUpdate({
     ...buildStartHostPhaseUpdates({
@@ -91,7 +96,7 @@ export async function startAccusedTrial(
       hostUid,
       game,
       // Sem timer: o mestre inicia a fase Defesa manualmente depois de calar a mesa.
-      input: { phaseId: "trial", label: trialPhase.label, durationSeconds: null },
+      input: { phaseId: "trial", label: trialLabel, durationSeconds: null },
       startedAt,
       createId,
     }),

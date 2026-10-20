@@ -1,5 +1,6 @@
 "use client";
 
+import { createId } from "@/lib/utils/create-id";
 import { useRef, useState } from "react";
 
 import type { HostNightNote } from "@/types";
@@ -25,7 +26,7 @@ export function HostNightNotes({ gameId, nightId, notes, locked }: HostNightNote
     const now = Date.now();
     try {
       await saveHostNightNote(gameId, {
-        id: editing?.id ?? crypto.randomUUID(),
+        id: editing?.id ?? createId(),
         nightId,
         text: normalized,
         createdAt: editing?.createdAt ?? now,

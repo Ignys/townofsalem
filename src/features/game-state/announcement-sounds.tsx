@@ -13,7 +13,7 @@ function play(src: string) {
   void new Audio(src).play().catch(() => undefined);
 }
 
-/** Toca Wolves ao cair a noite e ChurchBell quando alguém vai a julgamento. */
+/** Toca Wolves ao cair a noite, Rooster ao começar a discussão e ChurchBell quando alguém vai a julgamento. */
 export function useAnnouncementSounds(
   game: Pick<GamePublicRecord, "phase" | "accusedPlayerUid">,
   setting: GameVariants["announcementSounds"],
@@ -21,17 +21,19 @@ export function useAnnouncementSounds(
 ) {
   const enabled = setting === "both" || setting === device;
   const night = game.phase === "night";
+  const discussion = game.phase === "discussion";
   const accused = game.accusedPlayerUid ?? null;
   // Começa com o estado atual: entrar/recarregar no meio da noite não toca nada.
-  const previous = useRef({ night, accused });
+  const previous = useRef({ night, discussion, accused });
 
   useEffect(() => {
     const before = previous.current;
-    previous.current = { night, accused };
+    previous.current = { night, discussion, accused };
     if (!enabled) return;
     if (night && !before.night) play("/sounds/Wolves.mp3");
+    if (discussion && !before.discussion) play("/sounds/Rooster.ogg");
     if (accused && accused !== before.accused) play("/sounds/ChurchBell.mp3");
-  }, [enabled, night, accused]);
+  }, [enabled, night, discussion, accused]);
 }
 
 export function HostAnnouncementSounds({ gameId, game }: Readonly<{ gameId: string; game: GamePublicRecord }>) {

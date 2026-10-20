@@ -1,3 +1,5 @@
+import type { ReactNode } from "react";
+
 import { getActiveRoleVariants } from "@/features/roles/active-role-variants";
 import { RoleInteractionLimitNotice } from "@/features/roles/role-interaction-limit-notice";
 import type { GameVariants } from "@/game-engine/variants";
@@ -7,64 +9,69 @@ interface PlayerRoleGuideProps {
   role: RoleDefinition;
   variants: GameVariants;
   playerCount: number;
+  /** Segredos do jogador (ex.: a equipe da Máfia), logo depois do objetivo. */
+  secrets?: ReactNode;
+}
+
+export function GuideSection({ title, children }: Readonly<{ title: string; children: ReactNode }>) {
+  return (
+    <section className="border-t border-white/8 pt-2.5">
+      <h2 className="text-xs font-semibold text-[#9f9990]">{title}</h2>
+      <div className="mt-1 text-sm leading-6 text-[#ece5d8]">{children}</div>
+    </section>
+  );
 }
 
 export function PlayerRoleGuide({
   role,
   variants,
   playerCount,
+  secrets,
 }: PlayerRoleGuideProps) {
   const activeVariants = getActiveRoleVariants(role.id, variants);
 
   return (
-    <section className="mt-4 rounded-2xl border border-[#d3b88c]/25 bg-[#d3b88c]/8 p-4">
-      <h2 className="text-sm font-bold tracking-wide text-[#e6cfa9] uppercase">
-        Como jogar esta role
-      </h2>
-      <p className="mt-1.5 text-sm leading-6 text-[#e5ded2]">{role.description}</p>
+    <div className="mt-4 grid gap-2.5 text-left">
+      <GuideSection title="Objetivo">
+        <p>{role.goal}</p>
+      </GuideSection>
 
-      <RoleInteractionLimitNotice
-        roleId={role.id}
-        playerCount={playerCount}
-      />
+      {secrets}
 
-      {role.playTip && (
-        <div className="mt-3 border-t border-[#d3b88c]/15 pt-3">
-          <h3 className="text-sm font-bold tracking-wide text-[#e6cfa9] uppercase">
-            Dica prática
-          </h3>
-          <p className="mt-1.5 text-sm leading-6 text-[#e5ded2]">{role.playTip}</p>
-        </div>
-      )}
-
-      {activeVariants.length > 0 && (
-        <div className="mt-3 rounded-xl border border-[#c18b2f]/35 bg-black/15 p-3">
-          <h3 className="text-sm font-bold tracking-wide text-[#f0d19b] uppercase">
-            {activeVariants.length === 1 ? "Variante ativa" : "Variantes ativas"}
-          </h3>
-          <p className="mt-1.5 text-xs leading-5 text-[#cfc7ba]">
-            Nesta partida, aplique também {activeVariants.length === 1 ? "esta regra" : "estas regras"}:
-          </p>
-          <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm leading-6 text-[#fff3df]">
-            {activeVariants.map((variant) => (
-              <li key={variant}>{variant}</li>
-            ))}
-          </ul>
-        </div>
-      )}
+      <GuideSection title="Como jogar">
+        <p>{role.description}</p>
+      </GuideSection>
 
       {role.importantInteractions.length > 0 && (
-        <div className="mt-3 border-t border-[#d3b88c]/15 pt-3">
-          <h3 className="text-sm font-bold tracking-wide text-[#e6cfa9] uppercase">
-            Interações importantes
-          </h3>
-          <ul className="mt-1.5 list-disc space-y-1 pl-5 text-sm leading-6 text-[#e5ded2]">
+        <GuideSection title="Interações importantes">
+          <ul className="list-disc space-y-0.5 pl-5 marker:text-[#6b6560]">
             {role.importantInteractions.map((interaction) => (
               <li key={interaction}>{interaction}</li>
             ))}
           </ul>
-        </div>
+        </GuideSection>
       )}
-    </section>
+
+      <RoleInteractionLimitNotice roleId={role.id} playerCount={playerCount} />
+
+      {role.playTip && (
+        <GuideSection title="Dica">
+          <p>{role.playTip}</p>
+        </GuideSection>
+      )}
+
+      {activeVariants.length > 0 && (
+        <section className="rounded-xl border-l-4 border-[#c18b2f] bg-[#c18b2f]/10 py-2 pr-3 pl-3">
+          <h2 className="text-xs font-semibold text-[#f0d19b]">
+            {activeVariants.length === 1 ? "Regra extra nesta partida" : "Regras extras nesta partida"}
+          </h2>
+          <ul className="mt-1 space-y-0.5 text-sm leading-6 text-[#fff3df]">
+            {activeVariants.map((variant) => (
+              <li key={variant}>{variant}</li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
   );
 }

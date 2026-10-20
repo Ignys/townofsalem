@@ -1,5 +1,6 @@
 "use client";
 
+import { createId } from "@/lib/utils/create-id";
 import { getRoleById } from "@/data/roles";
 import { getEffectiveVerdicts } from "@/features/voting/voter-rules";
 import { findWatchingExecutioners } from "@/game-engine/role-rules";
@@ -12,7 +13,7 @@ import {
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate, type AtomicUpdateMap } from "@/lib/firebase/realtime-database-repository";
 
-import { buildGraveyardEntry } from "./graveyard-entry";
+import { buildGraveyardEntry, getGraveyardDeathContext } from "./graveyard-entry";
 import { requireAuthenticatedGameHost } from "./require-authenticated-game-host";
 
 export const JESTER_REVENGE_STATUS = "jester-revenge-pending";
@@ -49,7 +50,7 @@ export async function applyJesterRevenge(
 
   const updates: AtomicUpdateMap = {
     [firebasePaths.gamePrivatePlayerStatus(gameId, jesterUid, JESTER_REVENGE_STATUS)]: null,
-    [firebasePaths.gameEvent(gameId, crypto.randomUUID())]: {
+    [firebasePaths.gameEvent(gameId, createId())]: {
       type: "JESTER_REVENGE_RESOLVED",
       timestamp: now,
       actorUid: hostUid,
@@ -63,6 +64,7 @@ export async function applyJesterRevenge(
       privatePlayers[targetUid]?.roleId,
       false,
       now,
+      getGraveyardDeathContext(game, "jester-revenge"),
     );
     // O alvo de um Executioner morreu sem ser enforcado: o Executioner vira Jester.
     const jester = getRoleById("jester");

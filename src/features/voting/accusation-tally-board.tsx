@@ -36,37 +36,37 @@ export function AccusationTallyBoard({ gameId, dayNumber, players }: AccusationT
   );
 
   return (
-    <section className="mt-4 rounded-2xl border border-[#d3b88c]/25 bg-black/20 p-4">
+    <section className="panel-public mt-4">
       <div className="flex items-baseline justify-between gap-2">
-        <h2 className="font-serif text-lg font-semibold text-[#fffaf0]">Votos</h2>
-        <span className="text-xs font-bold text-[#9f9990]">
-          {votesRequired} para julgar
+        <h2 className="font-serif text-lg font-semibold">Votos da cidade</h2>
+        <span className="text-xs font-bold text-[#75685f]">
+          Julgamento com {votesRequired} votos
         </span>
       </div>
 
       {error ? (
-        <p role="alert" className="mt-2 text-sm text-[#f0b9bd]">
+        <p role="alert" className="mt-2 text-sm text-[#7d2330]">
           Não foi possível carregar o placar.
         </p>
       ) : !loaded ? (
-        <p className="mt-2 text-sm text-[#9f9990]">Carregando votos…</p>
+        <p className="mt-2 text-sm text-[#75685f]">Carregando votos…</p>
       ) : rows.length === 0 ? (
-        <p className="mt-2 text-sm text-[#9f9990]">Ninguém foi acusado ainda.</p>
+        <p className="mt-2 text-sm text-[#75685f]">Ninguém foi acusado ainda.</p>
       ) : (
-        <ul className="mt-2 grid gap-1">
+        <ul className="mt-2 divide-y divide-[#d8c8b0]">
           {rows.map(([targetUid, voters]) => (
-            <li key={targetUid} className="text-sm">
+            <li key={targetUid} className="py-2 text-sm">
               <div className="flex items-center justify-between gap-3">
-                <span className="truncate text-[#e5ded2]">{players[targetUid]?.name}</span>
+                <span className="truncate font-semibold">{players[targetUid]?.name}</span>
                 <span
                   className={`shrink-0 font-bold ${
-                    voters.length >= votesRequired ? "text-[#f0b9bd]" : "text-[#bdb7ad]"
+                    voters.length >= votesRequired ? "text-[#7d2330]" : "text-[#5b4d44]"
                   }`}
                 >
                   {voters.length}/{votesRequired}
                 </span>
               </div>
-              <p className="text-xs text-[#9f9990]">
+              <p className="text-xs text-[#75685f]">
                 {voters.sort((left, right) => left.localeCompare(right, "pt-BR")).join(", ")}
               </p>
             </li>

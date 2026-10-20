@@ -47,8 +47,10 @@ function joinTargetNames(targetNames: readonly string[]): string {
   return `${targetNames.slice(0, -1).join(", ")} e ${targetNames.at(-1)}`;
 }
 
+type ActionEntryShape = Pick<HostNightActionEntry, "actionId" | "roleIdSnapshot" | "targetUids">;
+
 function findActionDefinition(
-  entry: HostNightActionEntry,
+  entry: ActionEntryShape,
   roleDefinitions: readonly RoleDefinition[],
 ): RoleActionDefinition | undefined {
   const role = roleDefinitions.find(({ id }) => id === entry.roleIdSnapshot);
@@ -56,8 +58,8 @@ function findActionDefinition(
     ?? (role?.action?.id === entry.actionId ? role.action : undefined);
 }
 
-function formatInteractionDescription(
-  entry: HostNightActionEntry,
+export function formatInteractionDescription(
+  entry: ActionEntryShape,
   playerNames: Readonly<Record<string, string>>,
   roleDefinitions: readonly RoleDefinition[],
 ): string {

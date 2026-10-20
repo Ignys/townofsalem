@@ -219,9 +219,9 @@ test("a player submits their own night action and nobody else can read it", asyn
   await assertFails(set(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`), { ...submission, roleIdSnapshot: "godfather" }));
   await assertFails(set(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`), { ...submission, targetUids: ["ghost-que-nao-existe"] }));
 
-  // Confirmar é definitivo: o jogador não troca o alvo nem apaga a ação.
-  await assertFails(set(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`), { ...submission, targetUids: ["player"], updatedAt: 2 }));
-  await assertFails(remove(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`)));
+  // Até a noite acabar o jogador troca o alvo ou apaga a escolha.
+  await assertSucceeds(set(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`), { ...submission, targetUids: ["player"], updatedAt: 2 }));
+  await assertSucceeds(remove(ref(player, `${VOTE}/playerNightActions/night-current/player/interrogate`)));
   await assertFails(remove(ref(player, `${VOTE}/playerNightActions/night-current/player`)));
 });
 
@@ -238,7 +238,7 @@ test("night submissions are rejected off-phase, off-night, when dead, and after 
     updatedAt: 1,
   };
   const path = `${VOTE}/playerNightActions/night-current/player/interrogate`;
-  // Ações confirmadas são definitivas; limpa o que o teste anterior travou.
+  // Limpa o que o teste anterior deixou.
   await environment.withSecurityRulesDisabled(async (context) => {
     await remove(ref(context.database(), `${VOTE}/playerNightActions`));
   });
@@ -261,12 +261,12 @@ test("night submissions are rejected off-phase, off-night, when dead, and after 
   const otherAction = { ...submission, actionId: "second-look", updatedAt: 2 };
   await assertFails(set(ref(player, otherActionPath), otherAction));
 
-  // O rollback reabre o envio das ações ainda não confirmadas; as confirmadas seguem travadas.
+  // O rollback reabre a noite: o jogador volta a poder mudar as escolhas.
   await environment.withSecurityRulesDisabled(async (context) => {
     await update(ref(context.database(), `${VOTE}/nightSessions/night-current`), { resolutionAppliedAt: null });
   });
   await assertSucceeds(set(ref(player, otherActionPath), otherAction));
-  await assertFails(set(ref(player, path), { ...submission, updatedAt: 3 }));
+  await assertSucceeds(set(ref(player, path), { ...submission, updatedAt: 3 }));
 });
 
 test("night results: instant ones reach only their owner, dawn ones wait for the night to end", async () => {
@@ -384,6 +384,24 @@ test("the pace is set in the lobby; in fast track a living player can pass the n
   await assertFails(set(ref(other, `${VOTE}/nightPasses/night-current/player`), 1));
   await assertFails(get(ref(other, `${VOTE}/nightPasses/night-current/player`)));
   await assertFails(set(ref(player, `${VOTE}/nightPasses/night-old/player`), 1));
+});
+
+test("in the preparation a living player marks themselves ready once, and the game sees it", async () => {
+  const player = environment.authenticatedContext("player").database();
+  const other = environment.authenticatedContext("other").database();
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}`), { "public/status": "in-progress", "players/player/alive": true, dawnReady: null });
+  });
+
+  await setPhase("discussion", { day: 3 });
+  await assertFails(set(ref(player, `${VOTE}/dawnReady/3/player`), 1));
+
+  await setPhase("day", { day: 3 });
+  await assertSucceeds(set(ref(player, `${VOTE}/dawnReady/3/player`), 1));
+  await assertFails(set(ref(player, `${VOTE}/dawnReady/3/player`), 2));
+  await assertFails(set(ref(other, `${VOTE}/dawnReady/3/player`), 1));
+  await assertFails(set(ref(player, `${VOTE}/dawnReady/2/player`), 1));
+  await assertSucceeds(get(ref(other, `${VOTE}/dawnReady/3`)));
 });
 
 test("unauthenticated and cross-player secret reads fail", async () => {

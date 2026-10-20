@@ -1,5 +1,6 @@
 "use client";
 
+import { createId } from "@/lib/utils/create-id";
 import { runTransaction } from "firebase/database";
 
 import { requireAuthenticatedGameHost } from "@/features/game-state/require-authenticated-game-host";
@@ -116,7 +117,7 @@ export async function applyNightResolution(
     ),
     appliedAt: now,
   };
-  const attemptId = crypto.randomUUID();
+  const attemptId = createId();
   if ((await claimResolution(gameId, record, attemptId, now)) === "already-applied") return;
 
   const session = await readNightSession(gameId, draft.nightId);
@@ -133,7 +134,7 @@ export async function applyNightResolution(
     },
     [firebasePaths.gameNightResolution(gameId, draft.nightId)]: record,
     [firebasePaths.gameNightResolutionVersion(gameId, draft.nightId, record.id)]: record,
-    [firebasePaths.gameEvent(gameId, crypto.randomUUID())]: {
+    [firebasePaths.gameEvent(gameId, createId())]: {
       type: "NIGHT_RESOLUTION_APPLIED",
       timestamp: now,
       actorUid: hostUid,
@@ -167,13 +168,25 @@ export async function applyNightResolution(
   const cleanedUids = new Set(record.resolution.cleanedPlayerUids);
   for (const uid of record.resolution.deaths) {
     if (!players[uid]) continue;
+    const death = record.resolution.deathRecords?.find(({ targetUid }) => targetUid === uid);
+    // O Bodyguard morre do ataque que interceptou: a lápide mostra esse ataque.
+    const cause = (death?.cause === "bodyguard-sacrifice" ? death.originalAttackCause : death?.cause) ?? "night";
+    const killerRoleId = cause === "night-attack" && death?.attackerUid
+      ? privatePlayers?.[death.attackerUid]?.roleId
+      : undefined;
     updates[firebasePaths.gamePlayerField(gameId, uid, "alive")] = false;
     updates[firebasePaths.gameGraveyardEntry(gameId, uid)] = buildGraveyardEntry(
       privatePlayers?.[uid]?.roleId,
       cleanedUids.has(uid),
       now,
+      {
+        diedPhase: "night",
+        diedNumber: nightNumber,
+        cause,
+        killerRoleId,
+      },
     );
-    updates[firebasePaths.gameEvent(gameId, crypto.randomUUID())] = {
+    updates[firebasePaths.gameEvent(gameId, createId())] = {
       type: "PLAYER_DIED", timestamp: now, actorUid: hostUid, visibility: "host-only", payload: { playerUid: uid, nightId: draft.nightId },
     };
   }
@@ -227,7 +240,7 @@ export async function rollbackNightResolution(gameId: string, nightId: string, n
     },
     [firebasePaths.gameNightResolution(gameId, nightId)]: { ...record, rolledBackAt: now },
     [firebasePaths.gameNightResolutionVersion(gameId, nightId, record.id)]: { ...record, rolledBackAt: now },
-    [firebasePaths.gameEvent(gameId, crypto.randomUUID())]: {
+    [firebasePaths.gameEvent(gameId, createId())]: {
       type: "NIGHT_RESOLUTION_ROLLED_BACK", timestamp: now, actorUid: hostUid, visibility: "host-only", payload: { nightId, resolutionId: record.id },
     },
   };

@@ -7,7 +7,7 @@ import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 
 /** Botão do Mayor para se revelar à cidade. Só de dia, uma vez, e não dá para desfazer. */
-export function PlayerMayorReveal({ gameId }: Readonly<{ gameId: string }>) {
+export function PlayerMayorReveal({ gameId, day }: Readonly<{ gameId: string; day: number }>) {
   const [confirming, setConfirming] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
@@ -17,13 +17,14 @@ export function PlayerMayorReveal({ gameId }: Readonly<{ gameId: string }>) {
     if (!uid || saving) return;
     setSaving(true);
     setError(false);
-    applyAtomicUpdate({ [firebasePaths.gameMayorReveal(gameId, uid)]: Date.now() })
+    // Guarda o dia da revelação, mostrado a todos nos detalhes do jogador.
+    applyAtomicUpdate({ [firebasePaths.gameMayorReveal(gameId, uid)]: Math.max(1, day) })
       .catch(() => setError(true))
       .finally(() => setSaving(false));
   };
 
   return (
-    <section aria-label="Revelar Mayor" className="mt-4 rounded-2xl border border-[#d3b88c]/25 bg-black/20 p-4">
+    <section aria-label="Revelar Mayor" className="panel-private mt-4">
       <h2 className="font-serif text-lg font-semibold text-[#fffaf0]">Você é o Mayor</h2>
       <p className="mt-1 text-sm text-[#bdb7ad]">
         Revelado, seu voto pesa mais no veredito, mas o Doctor não consegue mais te proteger.
@@ -33,7 +34,7 @@ export function PlayerMayorReveal({ gameId }: Readonly<{ gameId: string }>) {
           <button
             type="button"
             onClick={() => setConfirming(false)}
-            className="min-h-11 rounded-xl border border-white/10 px-4 text-sm font-bold text-[#bdb7ad]"
+            className="btn-quiet-dark"
           >
             Cancelar
           </button>
@@ -41,7 +42,7 @@ export function PlayerMayorReveal({ gameId }: Readonly<{ gameId: string }>) {
             type="button"
             disabled={saving}
             onClick={reveal}
-            className="min-h-11 rounded-xl border border-[#d3b88c]/40 bg-[#d3b88c]/15 px-4 text-sm font-bold text-[#fffaf0] disabled:opacity-50"
+            className="btn-primary"
           >
             {saving ? "Revelando…" : "Revelar agora"}
           </button>
@@ -50,7 +51,7 @@ export function PlayerMayorReveal({ gameId }: Readonly<{ gameId: string }>) {
         <button
           type="button"
           onClick={() => setConfirming(true)}
-          className="mt-3 min-h-11 w-full rounded-xl border border-[#d3b88c]/40 bg-[#d3b88c]/15 px-4 text-sm font-bold text-[#fffaf0]"
+          className="btn-primary mt-3 w-full"
         >
           Revelar-se como Mayor
         </button>

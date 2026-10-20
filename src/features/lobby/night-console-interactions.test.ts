@@ -73,6 +73,25 @@ test("uses each action definition to filter valid targets", () => {
   );
 });
 
+test("hides a revealed Mayor from the Doctor, but only once revealed", () => {
+  const doctor = getRoleById("doctor");
+  assert.ok(doctor?.actionDefinitions?.[0]);
+  const interaction = {
+    id: "daniel:protect",
+    actor: players[0],
+    role: doctor,
+    action: doctor.actionDefinitions[0],
+  };
+  const withRevealedMaria = players.map((player) =>
+    player.uid === "maria" ? { ...player, statuses: [{ type: "mayor-revealed" }] } : player,
+  );
+
+  assert.deepEqual(
+    getAvailableNightTargets(interaction, withRevealedMaria).map(({ uid }) => uid),
+    ["joao"],
+  );
+});
+
 test("selects the latest persisted entry for a console interaction", () => {
   const doctor = getRoleById("doctor");
   assert.ok(doctor?.actionDefinitions?.[0]);

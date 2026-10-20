@@ -39,6 +39,8 @@ export interface GamePublicRecord {
   nightNumber?: number;
   winningFactions?: readonly string[];
   winningPlayerUids?: readonly string[];
+  /** Role de cada jogador, publicada só quando a partida termina. */
+  finalRoles?: Record<string, string>;
   gameEndedAt?: number;
   /** "hostless": o computador vira só a mesa e o motor resolve tudo. Ausente equivale a "hosted". */
   playMode?: GamePlayMode;
@@ -97,10 +99,29 @@ export type PrivatePlayerRecord = Pick<
  * a cleaned body must stay anonymous, so `roleId` is simply absent and the
  * role remains in the "still out there" list every player can see.
  */
+export type GraveyardDeathCause =
+  | "night"
+  | "night-attack"
+  | "mafia-attack"
+  | "veteran-attack"
+  | "bodyguard-counterattack"
+  | "bodyguard-sacrifice"
+  | "witch-curse"
+  | "hanging"
+  | "day-death"
+  | "jester-revenge"
+  | "host";
+
 export type GraveyardEntryRecord = {
   roleId?: string;
   cleaned: boolean;
   diedAt: number;
+  /** Quando morreu, em termos de jogo: "Noite 2", "Dia 3". Ausente em lápides antigas. */
+  diedPhase?: "night" | "day";
+  diedNumber?: number;
+  cause?: GraveyardDeathCause;
+  /** Role de quem matou, quando o ataque não é da Máfia (ex.: Serial Killer). Nunca o nome. */
+  killerRoleId?: string;
 };
 
 export interface NightActionRecord {

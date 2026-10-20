@@ -1,5 +1,17 @@
 import { firebasePaths } from "@/lib/firebase/paths";
+import type { PrivatePlayerRecord } from "@/lib/firebase/schema";
 import type { AtomicUpdateMap } from "@/lib/firebase/realtime-database-repository";
+
+/** As roles de todos, para a tela de fim de jogo. Só são públicas depois que a partida acaba. */
+export function getFinalRoles(
+  privatePlayers: Readonly<Record<string, PrivatePlayerRecord>> | null | undefined,
+): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(privatePlayers ?? {}).flatMap(([uid, player]) =>
+      player.roleId ? [[uid, player.roleId]] : [],
+    ),
+  );
+}
 
 export interface EndGameWinners {
   factions?: readonly string[];
@@ -42,6 +54,7 @@ export function createEndGameUpdates({
     [firebasePaths.gamePublicField(gameId, "nightNumber")]: 0,
     [firebasePaths.gamePublicField(gameId, "winningFactions")]: null,
     [firebasePaths.gamePublicField(gameId, "winningPlayerUids")]: null,
+    [firebasePaths.gamePublicField(gameId, "finalRoles")]: null,
     [firebasePaths.gamePublicField(gameId, "gameEndedAt")]: null,
     [firebasePaths.gameSettingsField(gameId, "rolesAssignedAt")]: null,
     [firebasePaths.gamePrivatePlayers(gameId)]: null,
@@ -57,6 +70,7 @@ export function createEndGameUpdates({
     [firebasePaths.gameMafiaBoards(gameId)]: null,
     [firebasePaths.gameAllMafiaReactions(gameId)]: null,
     [firebasePaths.gameAllNightPasses(gameId)]: null,
+    [firebasePaths.gameAllDawnReady(gameId)]: null,
     [firebasePaths.gameEvent(gameId, eventId)]: {
       type: "GAME_ENDED",
       timestamp: endedAt,

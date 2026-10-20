@@ -92,6 +92,14 @@ test("an unchanged submission is skipped", () => {
   assert.equal(plan.skipped[0].reason, "unchanged");
 });
 
+test("a withdrawn submission cancels its mirrored entry", () => {
+  const [entry] = buildMirrorPlan([submission(sheriffActionId, ["maria"])], interactions, [], context, 100).entries;
+  const plan = buildMirrorPlan([], interactions, [entry], context, 200);
+  assert.equal(plan.entries.length, 1);
+  assert.equal(plan.entries[0].status, "cancelled");
+  assert.deepEqual(buildMirrorPlan([], interactions, [plan.entries[0]], context, 300).entries, []);
+});
+
 test("a host override wins over an unchanged submission", () => {
   const record = submission(sheriffActionId, ["maria"]);
   const [mirrored] = buildMirrorPlan([record], interactions, [], context, 100).entries;

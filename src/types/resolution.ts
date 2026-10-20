@@ -69,4 +69,6 @@ export interface MafiaReactionRecord {
   uid: string;
   key: string;
   at: number;
+  /** Jogador mencionado na reação ("Vamos nele 🔪 → Fulano"). */
+  targetUid?: string;
 }

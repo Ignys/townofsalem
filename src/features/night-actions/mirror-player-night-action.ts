@@ -106,5 +106,18 @@ export function buildMirrorPlan(
     entries.push(candidate);
   }
 
+  // O jogador desfez a escolha: a entrada espelhada sai da resolução (salvo sobrescrita do mestre).
+  const submitted = new Set(submissions.map(({ actorUid, submission }) => getMirroredEntryId(actorUid, submission.actionId)));
+  for (const existing of existingEntries) {
+    if (
+      existing.source !== "player"
+      || existing.status === "cancelled"
+      || existing.overriddenAt !== undefined
+      || existing.nightId !== context.nightId
+      || submitted.has(existing.id)
+    ) continue;
+    entries.push({ ...existing, status: "cancelled", updatedAt: now, sourceUpdatedAt: now });
+  }
+
   return { entries, skipped };
 }

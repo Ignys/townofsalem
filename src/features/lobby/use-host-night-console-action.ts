@@ -1,5 +1,6 @@
 "use client";
 
+import { createId } from "@/lib/utils/create-id";
 import { useRef, useState } from "react";
 
 import { ROLE_DEFINITIONS } from "@/data/roles";
@@ -62,7 +63,7 @@ export function useHostNightConsoleAction({
     if (locked) return;
 
     const timestamp = currentTimestamp();
-    const entryId = existingEntry?.id ?? entryIdRef.current ?? crypto.randomUUID();
+    const entryId = existingEntry?.id ?? entryIdRef.current ?? createId();
     const createdAt = existingEntry?.createdAt ?? createdAtRef.current ?? timestamp;
     const candidate: HostNightActionEntry = {
       id: entryId,

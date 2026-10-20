@@ -19,6 +19,7 @@ import { HostDayAnnouncements } from "@/features/night-actions/host-day-announce
 import { HostNightWorkspace } from "@/features/night-actions/host-night-workspace";
 import { HostVotingPanel } from "@/features/voting/host-voting-panel";
 import { HostRoleComposition } from "@/features/roles/host-role-composition";
+import { firebasePaths } from "@/lib/firebase/paths";
 import { isHostlessGame } from "@/lib/firebase/schema";
 
 import { HostLobbyHeader } from "./host-lobby-header";
@@ -55,6 +56,22 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
     const lobby = useRealtimeLobby({ gameId: session?.gameId ?? null });
     const connectionStatus = useFirebaseConnection(Boolean(session));
     const gameStarted = lobby.game?.status === "in-progress";
+    const lobbyPlayerCount = getPlayerEntries(lobby.players).length;
+    const lobbyStatus = lobby.game?.status;
+
+    // Mostra na home quantos jogadores e em que fase está cada sala.
+    useEffect(() => {
+        if (!session || !lobbyStatus) return;
+
+        void import("@/lib/firebase/realtime-database-repository")
+            .then(({ applyAtomicUpdate }) =>
+                applyAtomicUpdate({
+                    [firebasePaths.openRoomPlayerCount(session.code)]: lobbyPlayerCount,
+                    [firebasePaths.openRoomStatus(session.code)]: lobbyStatus,
+                }),
+            )
+            .catch(() => undefined);
+    }, [lobbyPlayerCount, lobbyStatus, session]);
 
     // Deaths recorded before the graveyard shipped left no tombstone, so the
     // host buries them once the console is open and can read every role.

@@ -58,9 +58,9 @@ export const MAFIA_ROLES = [
     id: "consigliere",
     name: "Consigliere",
     description:
-      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa para revelar a role exata dela a todos os membros da Mafia. A quantidade total de investigações depende do número de jogadores da partida.",
+      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa para revelar a role exata dela a todos os membros da Mafia.",
     playTip:
-      "Use suas investigações exatas limitadas para ajudar a Mafia a escolher alvos importantes.",
+      "Investigue quem parece ter informações: a Mafia pode priorizar essa pessoa no ataque.",
     virtueValue: -10,
     cardCount: 1,
     importantInteractions: [
@@ -75,14 +75,13 @@ export const MAFIA_ROLES = [
     id: "godfather",
     name: "Godfather",
     description:
-      "Vote com a Mafia para escolher o alvo do ataque coletivo, que só pode matar a partir da segunda noite. Se a votação empatar, seu voto decide. Para o Sheriff, você aparece como Good (bom).",
+      "Vote com a Mafia para escolher o alvo do ataque coletivo. Se a votação empatar, seu voto decide.",
     playTip:
-      "Coordene a Mafia, mande atacar um alvo e lembre que você aparece como Good para o Sheriff.",
+      "Aproveite que o Sheriff não te detecta para se defender com confiança nos julgamentos.",
     virtueValue: -8,
     cardCount: 1,
     importantInteractions: [
-      "Seu voto desempata a votação interna da Mafia.",
-      "Aparece como Good para Sheriff, mas é revelado por Investigator e Consigliere.",
+      "Aparece como Good para o Sheriff, mas é revelado por Investigator e Consigliere.",
       "O ataque coletivo da Mafia não mata na primeira noite.",
     ],
     actionDefinitions: [mafiaAttackOrderAction],
@@ -95,13 +94,12 @@ export const MAFIA_ROLES = [
     id: "janitor",
     name: "Janitor",
     description:
-      "Você participa do ataque coletivo da Mafia e esconde a role das primeiras vítimas mortas por esse ataque. A quantidade total de limpezas depende do número de jogadores da partida.",
+      "Você participa do ataque coletivo da Mafia e esconde a role das vítimas desse ataque.",
     playTip:
-      "A role de uma vítima limpa não é revelada aos jogadores, o que permite à Mafia blefar usando essa informação.",
+      "Com a role da vítima escondida, a Mafia pode blefar sobre quem ela era.",
     virtueValue: -8,
     cardCount: 1,
     importantInteractions: [
-      "O limite de vítimas limpas varia com o tamanho da partida.",
       "O Medium ainda pode buscar pistas sobre uma vítima limpa.",
     ],
     actionDefinitions: [mafiaAttackOrderAction],
@@ -116,7 +114,7 @@ export const MAFIA_ROLES = [
     description:
       "Ajude a Mafia durante o dia e vote com a facção no alvo do ataque coletivo durante a noite.",
     playTip:
-      "Você não possui habilidade particular, mas participa da votação do ataque coletivo.",
+      "Defenda seus parceiros sem deixar a coordenação óbvia.",
     virtueValue: -6,
     cardCount: 5,
     importantInteractions: [

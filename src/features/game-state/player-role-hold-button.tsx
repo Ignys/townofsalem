@@ -88,9 +88,9 @@ export function PlayerRoleHoldButton({
         }}
         onBlur={hide}
         onContextMenu={(event) => event.preventDefault()}
-        className="fixed right-4 bottom-4 z-40 flex min-h-14 touch-none items-center gap-2 rounded-2xl border border-[#d3b88c]/35 bg-[#1a1c1e] px-5 font-bold text-[#e6cfa9] shadow-[0_12px_32px_rgba(0,0,0,0.45)] select-none active:scale-[0.98] active:bg-[#d3b88c]/15"
+        className="fixed inset-x-0 bottom-0 z-40 flex min-h-22 touch-none items-center justify-center gap-3 rounded-t-3xl border-t border-[#d3b88c]/35 bg-[#1a1c1e] px-5 pt-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] text-lg font-bold text-[#e6cfa9] shadow-[0_-12px_32px_rgba(0,0,0,0.45)] select-none focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-[#e6cfa9] active:bg-[#2a2620]"
       >
-        <Eye aria-hidden="true" className="size-5" />
+        <Eye aria-hidden="true" className="size-6" />
         Segure para ver sua role
       </button>
 
@@ -109,9 +109,9 @@ export function PlayerRoleHoldButton({
               role={role}
               variants={variants}
               playerCount={playerCount}
+              secrets={secrets}
             />
           </FitToBox>
-          {secrets && <div className="shrink-0 pt-2 text-center text-sm text-[#e6cfa9]">{secrets}</div>}
           <p className="shrink-0 pt-2 text-center text-xs leading-5 text-[#8f8a82]">
             Solte para esconder. Não mostre sua tela aos outros jogadores.
           </p>

@@ -14,6 +14,11 @@ export const firebasePaths = {
   games: "games",
 
   roomCode: (code: string) => `roomCodes/${code}` as const,
+  openRooms: "openRooms",
+  openRoom: (code: string) => `openRooms/${code}` as const,
+  openRoomPlayerCount: (code: string) =>
+    `openRooms/${code}/playerCount` as const,
+  openRoomStatus: (code: string) => `openRooms/${code}/status` as const,
   game: gamePath,
   gameHostUid: (gameId: string) => `${gamePath(gameId)}/hostUid` as const,
 
@@ -28,6 +33,10 @@ export const firebasePaths = {
     gameId: string,
     field: Field,
   ) => `${gamePath(gameId)}/settings/${field}` as const,
+
+  gameForcedRoles: (gameId: string) => `${gamePath(gameId)}/forcedRoles` as const,
+  gameForcedRole: (gameId: string, uid: string) =>
+    `${gamePath(gameId)}/forcedRoles/${uid}` as const,
 
   gamePlayers: (gameId: string) => `${gamePath(gameId)}/players` as const,
   gamePlayer: (gameId: string, uid: string) =>
@@ -124,6 +133,9 @@ export const firebasePaths = {
   gameNightPass: (gameId: string, nightId: string, uid: string) =>
     `${gamePath(gameId)}/nightPasses/${nightId}/${uid}` as const,
   gameAllNightPasses: (gameId: string) => `${gamePath(gameId)}/nightPasses` as const,
+  gameDawnReadyDay: (gameId: string, day: number) => `${gamePath(gameId)}/dawnReady/${day}` as const,
+  gameDawnReady: (gameId: string, day: number, uid: string) => `${gamePath(gameId)}/dawnReady/${day}/${uid}` as const,
+  gameAllDawnReady: (gameId: string) => `${gamePath(gameId)}/dawnReady` as const,
 
   gameHostNotes: (gameId: string, nightId: string) =>
     `${gamePath(gameId)}/hostNotes/${nightId}` as const,

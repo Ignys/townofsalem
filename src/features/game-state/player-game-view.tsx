@@ -1,21 +1,27 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { Moon, Skull, Sun } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { getRoleById } from "@/data/roles";
 import { getChosenExecutionTarget } from "@/game-engine/role-rules";
 import { useAnnouncementSounds } from "@/features/game-state/announcement-sounds";
+import { DawnReadyMeter } from "@/features/game-state/dawn-ready-meter";
+import { PlayerDawnReady } from "@/features/game-state/player-dawn-ready";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
-import { MafiaTeamPanel, useMafiaTeam } from "@/features/mafia/mafia-team-panel";
+import { tallyMafiaKill } from "@/features/mafia/mafia-kill-projection";
+import { MafiaTeamPanel, useMafiaBoard, useMafiaTeam } from "@/features/mafia/mafia-team-panel";
+import type { NightTargetPicker } from "@/features/night-actions/night-target-picker";
 import { PlayerNightActionPanel } from "@/features/night-actions/player-night-action-panel";
 import {
   PlayerDawnNightResults,
-  PlayerInstantNightResults,
 } from "@/features/night-actions/player-night-results-cards";
 import { GameTimerDisplay } from "@/features/timer/game-timer-display";
 import { AccusationTallyBoard } from "@/features/voting/accusation-tally-board";
-import { PlayerAccusationVoting } from "@/features/voting/player-accusation-voting";
+import { getAccusationVotesRequired } from "@/features/voting/accusation-threshold";
+import { useAccusationVoting } from "@/features/voting/use-accusation-voting";
+import { usePublicAccusations } from "@/features/voting/use-public-accusations";
 import { PlayerVerdictVoting } from "@/features/voting/player-verdict-voting";
 import { PlayerJesterRevenge } from "@/features/voting/player-jester-revenge";
 import { VerdictVotesBoard } from "@/features/voting/verdict-votes-board";
@@ -32,9 +38,12 @@ import { useSessionSyncKey } from "./use-session-sync";
 const SessionSyncSheet = dynamic(() => import("./session-sync-sheet"), {
   ssr: false,
 });
+import { RolesGuideButton } from "@/features/roles/roles-guide-button";
 import { PlayerRoleHoldButton } from "./player-role-hold-button";
 import { PlayerRoleNotice } from "./player-role-notice";
-import { PlayerStatusBoard } from "./player-status-board";
+import { PlayerDetailsDialog } from "./player-details-dialog";
+import { GuideSection } from "./player-role-guide";
+import { PlayerStatusBoard, RoleTag } from "./player-status-board";
 import { GameCompositionBoard } from "./game-composition-board";
 import { PlayerMayorReveal } from "./player-mayor-reveal";
 import { useGraveyard } from "./use-graveyard";
@@ -50,15 +59,10 @@ interface PlayerGameViewProps {
   viewerUid: string;
 }
 
-function formatPhase(game: GamePublicRecord): string {
-  const label = game.phaseLabel ?? GAME_PHASE_LABELS[game.phase];
-  if (game.phase === "night" && game.nightNumber) {
-    return `${label} ${game.nightNumber}`;
-  }
-  if (game.phase !== "night" && game.day) {
-    return `${label} ${game.day}`;
-  }
-  return label;
+// O número fica ao lado do ícone; o título mostra só o nome da fase.
+function formatCycle(game: GamePublicRecord): string | null {
+  if (game.phase === "night") return game.nightNumber ? `Noite ${game.nightNumber}` : null;
+  return game.day ? `Dia ${game.day}` : null;
 }
 
 export function PlayerGameView({
@@ -74,9 +78,17 @@ export function PlayerGameView({
   useAnnouncementSounds(game, gameVariants.variants.announcementSounds, "players");
   const { graveyard } = useGraveyard(gameId);
   const mayorReveals = useMayorReveals(gameId);
+  const accusationVoting = useAccusationVoting(gameId, game.day);
+  const { accusations } = usePublicAccusations(gameId, game.day);
   const mafiaTeam = useMafiaTeam(gameId, privateRole.privatePlayer?.faction === "mafia");
+  const mafiaBoard = useMafiaBoard(
+    gameId,
+    privateRole.privatePlayer?.faction === "mafia" && game.phase === "night" ? game.currentNightId : null,
+  );
   const syncKey = useSessionSyncKey();
   const [syncOpen, setSyncOpen] = useState(false);
+  const [selectedPlayerUid, setSelectedPlayerUid] = useState<string | null>(null);
+  const [nightPicker, setNightPicker] = useState<NightTargetPicker | null>(null);
   const holdTimer = useRef<number | null>(null);
   const cancelHold = () => {
     if (holdTimer.current !== null) {
@@ -131,29 +143,54 @@ export function PlayerGameView({
     id: uid,
     uid,
     ...player,
+    // A revelação do Mayor é pública; o resto dos status dos outros não chega aqui.
+    ...(mayorReveals[uid] ? { statuses: [{ type: "mayor-revealed" }] } : {}),
   }));
   const viewer = roster.find((player) => player.uid === viewerUid);
-  const accused = game.accusedPlayerUid ? players[game.accusedPlayerUid] : undefined;
-  const accusing = isAccusationPhase(game.phase) && !game.accusedPlayerUid;
+  // Sem mestre, o "dia" é a preparação: só se lê o que aconteceu na noite.
+  const dawn = game.playMode === "hostless" && game.phase === "day";
+  const accusing = isAccusationPhase(game.phase) && !dawn && !game.accusedPlayerUid;
   // O status vive só nos dados privados do próprio jogador: ninguém mais vê o aviso.
   const silenced = Boolean(privateRole.privatePlayer.statuses?.blackmailed);
   const blackmailed = silenced && gameVariants.variants.blackmailedCannotVote;
   // Segredos que não ficam expostos na tela: só aparecem segurando o botão da role.
-  const mafiaNames = Object.keys(mafiaTeam)
-    .filter((uid) => uid !== viewerUid)
-    .map((uid) => `${players[uid]?.name ?? "?"} (${getRoleById(mafiaTeam[uid].roleId)?.name ?? mafiaTeam[uid].roleId})${players[uid]?.alive === false ? " †" : ""}`);
+  const mafiaPartnerUids = Object.keys(mafiaTeam).filter((uid) => uid !== viewerUid);
   const executionTargetUid = getChosenExecutionTarget(Object.keys(privateRole.privatePlayer.statuses ?? {}));
-  const holdSecrets = mafiaNames.length > 0 || (role.id === "executioner" && executionTargetUid) ? (
+  const holdSecrets = mafiaPartnerUids.length > 0 || (role.id === "executioner" && executionTargetUid) ? (
     <>
-      {mafiaNames.length > 0 && <p>Sua Máfia: {mafiaNames.join(", ")}</p>}
+      {mafiaPartnerUids.length > 0 && (
+        <GuideSection title="Sua Máfia">
+          <ul className="grid gap-1.5">
+            {mafiaPartnerUids.map((uid) => (
+              <li key={uid} className="flex items-center gap-2">
+                <span className={`min-w-0 flex-1 truncate font-semibold ${players[uid]?.alive === false ? "text-[#8f8a82] line-through" : ""}`}>
+                  {players[uid]?.name ?? "?"}
+                </span>
+                <RoleTag roleId={mafiaTeam[uid].roleId} />
+              </li>
+            ))}
+          </ul>
+        </GuideSection>
+      )}
       {role.id === "executioner" && executionTargetUid && (
-        <p>Seu alvo: {players[executionTargetUid]?.name ?? "?"}</p>
+        <GuideSection title="Seu alvo">
+          <p className="font-semibold">{players[executionTargetUid]?.name ?? "?"}</p>
+        </GuideSection>
       )}
     </>
   ) : null;
 
+  // Fim de jogo: só o resultado. As fases, listas e votações já não importam.
+  if (game.status === "finished") {
+    return (
+      <div className="w-full max-w-md pb-8">
+        <GameOverCard game={game} players={players} />
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full max-w-md pb-24">
+    <div className="w-full max-w-md pb-32">
       {syncKey && syncOpen ? (
         <SessionSyncSheet
           syncKey={syncKey}
@@ -161,91 +198,68 @@ export function PlayerGameView({
           onClose={() => setSyncOpen(false)}
         />
       ) : null}
-      <header className="flex items-center justify-between gap-3">
-        <p
-          className="text-xs font-semibold tracking-[0.2em] text-[#8f8a82] uppercase select-none"
-          {...holdHandlers}
-        >
-          Sala {code}
-        </p>
-        <span
-          className={`rounded-full border px-3 py-1 text-xs font-bold ${
-            alive
-              ? "border-[#6f9b77]/30 bg-[#6f9b77]/10 text-[#bfe0c5]"
-              : "border-[#a33843]/30 bg-[#a33843]/10 text-[#f0b9bd]"
-          }`}
-        >
-          {alive ? "Vivo" : "Morto"}
-        </span>
-      </header>
-
       <section
-        className={`mt-4 rounded-3xl border p-6 text-center ${
+        className={`relative overflow-hidden rounded-3xl border p-6 text-center shadow-[0_24px_70px_rgba(0,0,0,0.4)] ${
           isNight
-            ? "border-[#3b4a6b]/40 bg-[#151a26]"
-            : "border-[#d3b88c]/25 bg-[#1f1c17]"
+            ? "border-[#34405e] bg-[linear-gradient(180deg,#0e1424_0%,#151c30_100%)]"
+            : "border-[#6b5532]/60 bg-[linear-gradient(180deg,#3a2a17_0%,#211b16_70%)]"
         }`}
       >
-        <p className="text-xs font-bold tracking-[0.2em] text-[#9f9990] uppercase">
-          Fase atual
-        </p>
-        <h1 className="mt-2 font-serif text-3xl font-semibold text-[#fffaf0]">
-          {formatPhase(game)}
-        </h1>
+        <div
+          aria-hidden="true"
+          className={`pointer-events-none absolute -top-24 left-1/2 size-56 -translate-x-1/2 rounded-full blur-2xl ${
+            isNight ? "bg-[#9fb3e0]/15" : "bg-[#f2b85c]/25"
+          }`}
+        />
+        <div className="relative">
+          <div
+            className={`inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] ${
+              isNight ? "text-[#c9d4ef]" : "text-[#f2c879]"
+            }`}
+          >
+            {isNight ? (
+              <Moon aria-hidden="true" className="size-6" />
+            ) : (
+              <Sun aria-hidden="true" className="size-6" />
+            )}
+            {formatCycle(game)}
+          </div>
+          <h1
+            {...holdHandlers}
+            className="mt-2 font-serif text-4xl font-semibold tracking-[-0.02em] text-[#fffaf0] select-none"
+          >
+            {game.phaseLabel ?? GAME_PHASE_LABELS[game.phase]}
+          </h1>
 
         <div className="mt-5">
-          {isNight && (
-            <div className="mb-5">
-              <GameTimerDisplay game={game} />
-            </div>
-          )}
-          {isNight ? (
-            viewer ? (
-              <PlayerNightActionPanel
-                gameId={gameId}
-                nightId={game.currentNightId}
-                nightNumber={game.nightNumber}
-                viewer={{ ...viewer, statuses: Object.values(privateRole.privatePlayer.statuses ?? {}) }}
-                roleId={privateRole.privatePlayer.roleId}
-                players={roster}
-                variants={gameVariants.variants}
-                playerCount={playerCount}
-                resourceUses={privateRole.privatePlayer.resourceUses}
-                fastTrack={game.playMode === "hostless" && game.gamePace === "fast"}
-                mafiaTeamUids={Object.keys(mafiaTeam)}
-              />
-            ) : (
-              <p className="text-sm leading-6 text-[#a9b3cc]">
-                A noite está em andamento. Aguarde o mestre chamar sua role.
-              </p>
-            )
-          ) : game.phase === "trial" && game.playMode === "hostless" ? (
-            <>
-              <p className="mb-3 text-sm leading-6 text-[#e6cfa9]">
-                <strong className="text-[#fffaf0]">{accused?.name ?? "Um jogador"}</strong> tem a
-                palavra para se defender. A votação começa em seguida.
-              </p>
-              <GameTimerDisplay game={game} />
-            </>
-          ) : game.phase === "trial" ? (
-            <p className="text-sm leading-6 text-[#e6cfa9]">
-              <strong className="text-[#fffaf0]">{accused?.name ?? "Um jogador"}</strong> está
-              sendo julgado. Aguarde o mestre iniciar a defesa.
-            </p>
+          {/* Só o timer: o que acontece na fase aparece nos cartões abaixo. */}
+          {dawn && game.day ? (
+            <DawnReadyMeter gameId={gameId} day={game.day} players={players} />
           ) : (
-            <>
-              {game.phase === "defense" && (
-                <p className="mb-3 text-sm leading-6 text-[#e6cfa9]">
-                  Defesa de <strong className="text-[#fffaf0]">{accused?.name ?? "—"}</strong>.
-                </p>
-              )}
-              <GameTimerDisplay game={game} />
-            </>
+            (game.phase !== "trial" || game.playMode === "hostless") && <GameTimerDisplay game={game} />
           )}
+          </div>
         </div>
       </section>
 
-      {isNight && <PlayerInstantNightResults gameId={gameId} nightId={game.currentNightId} />}
+      {isNight && viewer && (
+        <PlayerNightActionPanel
+          gameId={gameId}
+          nightId={game.currentNightId}
+          nightNumber={game.nightNumber}
+          viewer={{ ...viewer, statuses: Object.values(privateRole.privatePlayer.statuses ?? {}) }}
+          roleId={privateRole.privatePlayer.roleId}
+          players={roster}
+          variants={gameVariants.variants}
+          playerCount={playerCount}
+          resourceUses={privateRole.privatePlayer.resourceUses}
+          fastTrack={game.playMode === "hostless" && game.gamePace === "fast"}
+          mafiaTeamUids={Object.keys(mafiaTeam)}
+          onPickerChange={setNightPicker}
+          hostless={game.playMode === "hostless"}
+        />
+      )}
+
       {privateRole.privatePlayer.faction === "mafia" && game.status === "in-progress" && isNight && (
         <MafiaTeamPanel
           gameId={gameId}
@@ -254,25 +268,36 @@ export function PlayerGameView({
           nightId={isNight ? game.currentNightId : null}
           players={players}
           team={mafiaTeam}
+          board={mafiaBoard}
         />
       )}
       <PlayerDawnNightResults gameId={gameId} revealed={!isNight && game.phase !== "lobby"} />
-
-      <GameOverCard game={game} players={players} />
+      {dawn && alive && game.day ? <PlayerDawnReady gameId={gameId} day={game.day} viewerUid={viewerUid} /> : null}
 
       {!alive && (
-        <p className="mt-4 rounded-xl border border-[#a33843]/30 bg-[#a33843]/10 px-4 py-3 text-center text-sm text-[#f0b9bd]">
-          Você está morto, mas continua acompanhando a partida.
-        </p>
+        <section aria-label="Você está morto" className="panel-private mt-4 flex items-center gap-3">
+          <span
+            aria-hidden="true"
+            className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/8 text-[#bdb7ad]"
+          >
+            <Skull className="size-5" />
+          </span>
+          <div className="min-w-0">
+            <p className="font-serif text-base font-semibold text-[#fffaf0]">Você está morto</p>
+            <p className="text-sm leading-6 text-[#a9a297]">
+              Continue acompanhando a partida, mas sem falar sobre o jogo.
+            </p>
+          </div>
+        </section>
       )}
 
       {silenced && alive && !isNight && game.status === "in-progress" && (
         <section
           role="alert"
           aria-label="Você foi chantageado"
-          className="mt-4 rounded-2xl border border-[#a33843]/50 bg-[#a33843]/15 p-4 text-center"
+          className="panel-private mt-4 border-[#a33843]/60 bg-[#2a1517] text-center"
         >
-          <h2 className="font-serif text-xl font-semibold text-[#fffaf0]">🤐 Você foi chantageado</h2>
+          <h2 className="font-serif text-xl font-semibold text-[#fffaf0]">Você foi chantageado</h2>
           <p className="mt-1 text-sm leading-6 text-[#f0b9bd]">
             Você não pode falar hoje{blackmailed ? " nem votar" : ""}. Fique em silêncio até a noite.
           </p>
@@ -280,22 +305,15 @@ export function PlayerGameView({
       )}
 
       {role.id === "mayor" && alive && !isNight && game.status === "in-progress" && !mayorReveals[viewerUid] && (
-        <PlayerMayorReveal gameId={gameId} />
+        <PlayerMayorReveal gameId={gameId} day={game.day} />
       )}
 
       {accusing && (
         <>
-          {blackmailed ? (
-            <p className="mt-5 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-[#bdb7ad]">
+          {blackmailed && (
+            <p className="panel-private mt-4 py-3 text-sm text-[#bdb7ad]">
               Você está silenciado hoje — seu voto não será contado.
             </p>
-          ) : (
-            <PlayerAccusationVoting
-              gameId={gameId}
-              dayNumber={game.day}
-              playerAlive={alive}
-              players={players}
-            />
           )}
           <AccusationTallyBoard gameId={gameId} dayNumber={game.day} players={players} />
         </>
@@ -303,11 +321,13 @@ export function PlayerGameView({
 
       {game.phase === "verdict" && (
         blackmailed && !game.verdictClosedAt ? (
-          <p className="mt-5 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-sm text-[#bdb7ad]">
+          <p className="panel-private mt-4 py-3 text-sm text-[#bdb7ad]">
             Você está silenciado hoje — seu voto não será contado.
           </p>
         ) : (
           <PlayerVerdictVoting
+            accusedName={game.accusedPlayerUid ? players[game.accusedPlayerUid]?.name : undefined}
+            accusedGrave={game.accusedPlayerUid ? graveyard[game.accusedPlayerUid] : undefined}
             gameId={gameId}
             dayNumber={game.day}
             playerUid={viewerUid}
@@ -319,10 +339,15 @@ export function PlayerGameView({
           />
         )
       )}
-      {game.phase === "verdict"
-        && game.verdictClosedAt
+      {isNight
         && privateRole.privatePlayer.statuses?.["jester-revenge-pending"] && (
-        <PlayerJesterRevenge gameId={gameId} dayNumber={game.day} viewerUid={viewerUid} players={players} />
+        <PlayerJesterRevenge
+          gameId={gameId}
+          dayNumber={game.day}
+          viewerUid={viewerUid}
+          players={players}
+          onPickerChange={setNightPicker}
+        />
       )}
       {game.phase === "verdict" && (
         <VerdictVotesBoard
@@ -335,7 +360,54 @@ export function PlayerGameView({
       )}
 
       <div className="mt-4">
-        <PlayerStatusBoard players={players} viewerUid={viewerUid} graveyard={graveyard} mayorReveals={mayorReveals} />
+        <PlayerStatusBoard
+          players={players}
+          viewerUid={viewerUid}
+          graveyard={graveyard}
+          mayorReveals={mayorReveals}
+          onSelectPlayer={setSelectedPlayerUid}
+          nightPick={isNight ? nightPicker ?? undefined : undefined}
+          nightMarks={
+            isNight
+              ? Object.fromEntries(
+                  Object.entries(tallyMafiaKill(mafiaBoard, mafiaTeam).votesByTarget).map(([uid, votes]) => [uid, votes.length]),
+                )
+              : undefined
+          }
+          accusation={
+            accusing && alive && !blackmailed
+              ? {
+                  vote: accusationVoting.vote,
+                  disabled: accusationVoting.disabled,
+                  failed: accusationVoting.failed,
+                  // Como no placar: só contam votos de vivos em vivos.
+                  counts: Object.entries(accusations)
+                    .filter(([voterUid, targetUid]) => players[voterUid]?.alive && players[targetUid]?.alive)
+                    .reduce<Record<string, number>>((counts, [, targetUid]) => {
+                      counts[targetUid] = (counts[targetUid] ?? 0) + 1;
+                      return counts;
+                    }, {}),
+                  required: getAccusationVotesRequired(players),
+                  onAccuse: (uid) => void accusationVoting.accuse(uid),
+                }
+              : undefined
+          }
+        />
+        {selectedPlayerUid && (
+          <PlayerDetailsDialog
+            key={selectedPlayerUid}
+            gameId={gameId}
+            targetUid={selectedPlayerUid}
+            viewerUid={viewerUid}
+            players={players}
+            graveyard={graveyard}
+            mayorReveals={mayorReveals}
+            mafiaTeam={mafiaTeam}
+            currentNightId={game.currentNightId}
+            revealed={!isNight && game.phase !== "lobby"}
+            onClose={() => setSelectedPlayerUid(null)}
+          />
+        )}
       </div>
 
       <div className="mt-4">
@@ -348,6 +420,8 @@ export function PlayerGameView({
         playerCount={playerCount}
         secrets={holdSecrets}
       />
+
+      <RolesGuideButton />
     </div>
   );
 }

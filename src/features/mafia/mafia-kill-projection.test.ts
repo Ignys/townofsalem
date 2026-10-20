@@ -27,10 +27,9 @@ test("the godfather only breaks a tie", () => {
   assert.equal(tied.tied, true);
 });
 
-test("only confirmed votes decide, but drafts are shown", () => {
-  const tally = tallyMafiaKill({ maf: vote("ana", false), cons: vote("bia") }, team);
-  assert.equal(tally.projectedTargetUid, "bia");
-  assert.deepEqual(tally.votesByTarget.ana, [{ uid: "maf", locked: false }]);
+test("every saved pick counts, locked or not", () => {
+  const tally = tallyMafiaKill({ maf: vote("ana", false), cons: vote("ana", false), gf: vote("bia") }, team);
+  assert.equal(tally.projectedTargetUid, "ana");
 });
 
 test("picks from outside the team are ignored", () => {

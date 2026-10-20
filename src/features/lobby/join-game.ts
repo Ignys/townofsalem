@@ -4,6 +4,7 @@ import { ensureAnonymousUser } from "@/features/auth";
 import { firebaseAuth } from "@/lib/firebase/auth";
 import {
   readPublicGame,
+  readPublicPlayer,
   readRoomCode,
   writePublicPlayer,
 } from "@/lib/firebase/game-access-repository";
@@ -112,9 +113,13 @@ export async function joinGame(input: JoinGameInput): Promise<LocatedGame> {
   }
 
   try {
+    // Quem saiu e volta mantém a casa (seat) que o mestre já deu; as regras exigem isso.
+    const existingPlayer = await readPublicPlayer(locatedGame.gameId, uid);
+
     await writePublicPlayer(locatedGame.gameId, uid, {
+      ...existingPlayer,
       name: nickname,
-      alive: true,
+      alive: existingPlayer?.alive ?? true,
       disconnected: false,
       experience: input.experience,
     });

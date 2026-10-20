@@ -26,6 +26,11 @@ test("a running or paused timer is left alone", () => {
 
 test("expired timers move the day along", () => {
   assert.deepEqual(decideHostlessStep({ ...base, phase: "night" }, "expired", alive, NOW), { kind: "end-night" });
+  assert.equal(decideHostlessStep({ ...base, phase: "day" }, "idle", alive, NOW), null);
+  assert.deepEqual(
+    decideHostlessStep({ ...base, phase: "day" }, "running", alive, NOW, null, null, "relaxed", undefined, true),
+    { kind: "start-discussion" },
+  );
   assert.deepEqual(decideHostlessStep({ ...base, phase: "discussion" }, "expired", alive, NOW), { kind: "start-night" });
   assert.deepEqual(decideHostlessStep({ ...base, phase: "trial", accusedPlayerUid: "ana" }, "expired", alive, NOW), { kind: "start-verdict" });
   assert.deepEqual(decideHostlessStep({ ...base, phase: "verdict", accusedPlayerUid: "ana" }, "expired", alive, NOW), { kind: "close-verdict" });
@@ -78,24 +83,26 @@ test("a lynch that wins the game still shows the vote result first", () => {
   );
 });
 
-test("a lynched jester gets 30s to take revenge before night", () => {
+test("a lynched jester takes revenge during the following night", () => {
   const closed = { ...base, phase: "verdict" as const, accusedPlayerUid: "jess", verdictOutcome: "guilty" as const };
+  const night = { ...base, phase: "night" as const };
   const dead = () => false;
-  const winner = { gameOver: true, winningFactions: ["town"], winningPlayerUids: [] };
+  const pending = { jesterUid: "jess", targetUid: null };
 
-  // Esperando a escolha: nada acontece, nem a vitória.
-  assert.equal(
-    decideHostlessStep({ ...closed, verdictClosedAt: NOW - 12_000 }, "expired", dead, NOW, winner, { jesterUid: "jess", targetUid: null }),
-    null,
-  );
-  // Escolheu: resolve na hora.
+  // O dia não espera a vingança: depois do resultado, a noite começa.
   assert.deepEqual(
-    decideHostlessStep({ ...closed, verdictClosedAt: NOW - 1_000 }, "expired", dead, NOW, null, { jesterUid: "jess", targetUid: "ana" }),
+    decideHostlessStep({ ...closed, verdictClosedAt: NOW - 10_000 }, "expired", dead, NOW, null, pending),
+    { kind: "start-night" },
+  );
+  // Durante a noite, nada se resolve antes da hora.
+  assert.equal(decideHostlessStep(night, "running", alive, NOW, null, pending), null);
+  // Fim da noite: a vingança vem antes da resolução, com ou sem escolha.
+  assert.deepEqual(
+    decideHostlessStep(night, "expired", alive, NOW, null, { jesterUid: "jess", targetUid: "ana" }),
     { kind: "resolve-jester-revenge", jesterUid: "jess", targetUid: "ana" },
   );
-  // Prazo acabou sem escolha: resolve sem vingança.
   assert.deepEqual(
-    decideHostlessStep({ ...closed, verdictClosedAt: NOW - 30_000 }, "expired", dead, NOW, null, { jesterUid: "jess", targetUid: null }),
+    decideHostlessStep(night, "expired", alive, NOW, null, pending),
     { kind: "resolve-jester-revenge", jesterUid: "jess", targetUid: null },
   );
 });
@@ -137,4 +144,22 @@ test("every pace gives 30s of defense and 30s of voting", () => {
 test("nothing happens outside a running game", () => {
   assert.equal(decideHostlessStep({ ...base, status: "finished", phase: "night" }, "expired", alive, NOW), null);
   assert.equal(decideHostlessStep({ ...base, status: "lobby", phase: "lobby" }, "idle", alive, NOW), null);
+});
+
+test("a win reached at night waits for the dawn and for everyone to be ready", () => {
+  const winner = { gameOver: true, winningFactions: ["town"], winningPlayerUids: [] };
+  const night = { ...base, phase: "night" as const };
+  const dawn = { ...base, phase: "day" as const };
+
+  // A noite segue até o fim, com a resolução e os anúncios.
+  assert.deepEqual(decideHostlessStep(night, "expired", alive, NOW, winner), { kind: "end-night" });
+  // Na preparação, ninguém vence enquanto falta alguém apertar "Pronto".
+  assert.notEqual(
+    decideHostlessStep(dawn, "idle", alive, NOW, winner, null, "relaxed", undefined, false)?.kind,
+    "declare-winner",
+  );
+  assert.equal(
+    decideHostlessStep(dawn, "idle", alive, NOW, winner, null, "relaxed", undefined, true)?.kind,
+    "declare-winner",
+  );
 });

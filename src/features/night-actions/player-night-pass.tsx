@@ -13,8 +13,8 @@ function savePass(gameId: string, nightId: string): Promise<void> {
 }
 
 /**
- * Ritmo rápido: a noite acaba quando todo mundo agiu. Quem não quer agir (ex.: Veteran que
- * não vai entrar em alerta) avisa aqui, senão a noite espera o timer.
+ * Ritmo rápido: a noite acaba quando todo mundo avisou que está pronto. Como a escolha
+ * pode mudar até o fim, só esse aviso (definitivo) encerra a noite antes do timer.
  */
 export function PlayerNightPass({ gameId, nightId }: Readonly<{ gameId: string; nightId: string }>) {
   const [passed, setPassed] = useState(false);
@@ -30,7 +30,7 @@ export function PlayerNightPass({ gameId, nightId }: Readonly<{ gameId: string; 
   );
 
   if (passed) {
-    return <p className="mt-3 text-sm text-[#bfe0c5]">Você passou esta noite.</p>;
+    return <p className="mt-3 text-sm text-[#bfe0c5]">Você está pronto. A noite acaba quando todos estiverem.</p>;
   }
 
   return (
@@ -45,13 +45,13 @@ export function PlayerNightPass({ gameId, nightId }: Readonly<{ gameId: string; 
             .catch(() => setError(true))
             .finally(() => setSaving(false));
         }}
-        className="min-h-11 w-full rounded-xl border border-white/10 px-4 text-sm font-bold text-[#bdb7ad] disabled:opacity-50"
+        className="btn-quiet-dark w-full"
       >
-        Passar a noite
+        Estou pronto
       </button>
       {error && (
         <p role="alert" className="mt-2 text-sm text-[#f0b9bd]">
-          Não foi possível passar a noite.
+          Não foi possível avisar que você está pronto.
         </p>
       )}
     </div>

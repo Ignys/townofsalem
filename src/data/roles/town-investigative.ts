@@ -26,14 +26,14 @@ export const TOWN_INVESTIGATIVE_ROLES = [
     faction: "town",
     alignment: "Town Investigative",
     description:
-      "Enquanto o Sheriff estiver vivo, você não investiga. Na noite seguinte à morte dele, um Deputy vivo é promovido — por sorteio, se houver mais de um — e passa a verificar se uma pessoa aparece como Good (boa) ou Evil (má).",
+      "Enquanto o Sheriff estiver vivo, você não investiga. Na noite seguinte à morte dele, você pode ser promovido e passa a verificar se uma pessoa aparece como Good (boa) ou Evil (má).",
     playTip:
       "O moderador avisará em segredo quando você passar a agir como Sheriff.",
     goal: TOWN_GOAL,
     virtueValue: 4,
     cardCount: 1,
     importantInteractions: [
-      "Só ganha a investigação depois da morte do Sheriff.",
+      "Se houver mais de um Deputy vivo, a promoção é por sorteio.",
       "Como Sheriff, vê Politician como Evil e Godfather como Good.",
     ],
     canDieAtNight: true,
@@ -50,9 +50,9 @@ export const TOWN_INVESTIGATIVE_ROLES = [
     faction: "town",
     alignment: "Town Investigative",
     description:
-      "À noite, escolha uma pessoa para descobrir exatamente qual é a role dela. A quantidade total de investigações depende do número de jogadores da partida.",
+      "À noite, escolha uma pessoa para descobrir exatamente qual é a role dela.",
     playTip:
-      "Diferente do Sheriff, você recebe o nome exato da role. Use suas investigações com cuidado.",
+      "Guarde as investigações para quem está no centro das discussões: uma role exata pode decidir um julgamento.",
     goal: TOWN_GOAL,
     virtueValue: 6,
     cardCount: 1,
@@ -73,13 +73,14 @@ export const TOWN_INVESTIGATIVE_ROLES = [
     faction: "town",
     alignment: "Town Investigative",
     description:
-      "Toda noite, escolha uma pessoa. O moderador informa somente se ela aparece como Good (boa) ou Evil (má), sem revelar a role exata. Mafia e Serial Killer aparecem como Evil, exceto o Godfather.",
+      "Toda noite, escolha uma pessoa. O moderador informa somente se ela aparece como Good (boa) ou Evil (má), sem revelar a role exata.",
     playTip:
-      "Lembre-se das exceções: o Politician aparece como Evil, e o Godfather aparece como Good.",
+      "Um resultado Evil sozinho não é prova: antes de levar alguém a julgamento, considere se pode ser um Politician.",
     goal: TOWN_GOAL,
     virtueValue: 7,
     cardCount: 1,
     importantInteractions: [
+      "Mafia e Serial Killer aparecem como Evil.",
       "Politician é Town, mas aparece como Evil.",
       "Godfather é Mafia, mas aparece como Good.",
       "Se morrer, um Deputy vivo assume sua habilidade.",

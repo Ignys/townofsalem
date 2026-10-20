@@ -1,5 +1,6 @@
 "use client";
 
+import { createId } from "@/lib/utils/create-id";
 import {
   readGraveyardEntry,
   readHostPrivatePlayer,
@@ -37,10 +38,11 @@ export async function updatePlayerStatus(
             active ? undefined : privatePlayer?.roleId,
             active,
             graveyardEntry.diedAt,
+            graveyardEntry,
           ),
         }
       : {}),
-    [firebasePaths.gameEvent(gameId, crypto.randomUUID())]: {
+    [firebasePaths.gameEvent(gameId, createId())]: {
       type: "PLAYER_STATUS_CHANGED", timestamp: now, actorUid: hostUid, visibility: "host-only", payload: { playerUid, statusId, active, source: "administrative-override" },
     },
   });

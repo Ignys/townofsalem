@@ -1,5 +1,6 @@
 "use client";
 
+import { createId as newId } from "@/lib/utils/create-id";
 import {
   readGamePlayers,
   readHostPrivatePlayers,
@@ -49,7 +50,7 @@ export function buildStartHostPhaseUpdates({
   players = null,
   privatePlayers = null,
   startedAt,
-  createId = () => crypto.randomUUID(),
+  createId = () => newId(),
   random = Math.random,
 }: BuildStartHostPhaseUpdatesInput): AtomicUpdateMap {
   const phaseSessionId = createId();
@@ -154,7 +155,7 @@ export async function startHostPhase(
   gameId: string,
   input: StartHostPhaseInput,
   now: () => number = Date.now,
-  createId: () => string = () => crypto.randomUUID(),
+  createId: () => string = () => newId(),
   random: () => number = Math.random,
 ): Promise<void> {
   const hostUid = await requireAuthenticatedGameHost(gameId);

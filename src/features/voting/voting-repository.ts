@@ -30,7 +30,8 @@ export function saveAccusationVote(
 export function saveVerdictVote(
   gameId: string,
   dayNumber: number,
-  verdict: VerdictVote,
+  /** `null` tira o voto: quem não vota se abstém. */
+  verdict: VerdictVote | null,
 ): Promise<void> {
   const uid = requireAuthenticatedPlayerUid();
 

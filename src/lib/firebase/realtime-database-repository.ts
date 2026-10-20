@@ -127,6 +127,13 @@ export function observeGameSettings(
   return observePath("observe-game-settings", path, observer);
 }
 
+export function observeForcedRoles(
+  gameId: string,
+  observer: RealtimeValueObserver<Record<string, string>>,
+): Unsubscribe {
+  return observePath("observe-forced-roles", firebasePaths.gameForcedRoles(gameId), observer);
+}
+
 export function observeGamePlayers(
   gameId: string,
   observer: RealtimeValueObserver<Record<string, PublicPlayerRecord>>,
@@ -511,6 +518,19 @@ export function observePublicVerdicts(
 }
 
 /** Escolhas de vingança do Jester no dia. Só o mestre lê todas. */
+/** A vingança que o próprio Jester escolheu nesta noite (a regra só libera a dele). */
+export function observeAuthenticatedJesterRevenge(
+  gameId: string,
+  dayNumber: number,
+  observer: RealtimeValueObserver<string>,
+): Unsubscribe {
+  return observeAuthenticatedPlayerPath(
+    "observe-player-jester-revenge",
+    (uid) => firebasePaths.gameJesterRevenge(gameId, dayNumber, uid),
+    observer,
+  );
+}
+
 export function observeHostJesterRevenges(
   gameId: string,
   dayNumber: number,
@@ -567,6 +587,15 @@ export function observeHostNightPasses(
   observer: RealtimeValueObserver<Record<string, number>>,
 ): Unsubscribe {
   return observeVerifiedHostPath("observe-host-night-passes", firebasePaths.gameNightPasses(gameId, nightId), verifiedHostUid, observer);
+}
+
+/** Quem já apertou "Pronto" na preparação. Todos os jogadores da partida leem. */
+export function observeDawnReady(
+  gameId: string,
+  day: number,
+  observer: RealtimeValueObserver<Record<string, number>>,
+): Unsubscribe {
+  return observePath("observe-dawn-ready", firebasePaths.gameDawnReadyDay(gameId, day), observer);
 }
 
 /** Se o próprio jogador já passou esta noite (ritmo rápido). */

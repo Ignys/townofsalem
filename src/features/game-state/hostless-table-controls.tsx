@@ -6,7 +6,8 @@ import { HostGameTimer } from "@/features/timer/host-game-timer";
 import type { GamePublicRecord } from "@/lib/firebase/schema";
 
 import { CurrentGamePhase } from "./current-game-phase";
-import { GAME_PACE_LABELS } from "./hostless-autopilot";
+import { GAME_PACE_LABELS, HOSTLESS_PACE_SECONDS } from "./hostless-autopilot";
+import { getPhaseDefinition } from "./phase-definitions";
 import { EndGameButton } from "./end-game-button";
 
 interface HostlessTableControlsProps {
@@ -22,11 +23,30 @@ export function HostlessTableControls({ gameId, game }: HostlessTableControlsPro
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(false);
 
+  // Alguém sem conseguir apertar "Pronto" (celular sem bateria, saiu da mesa) não trava o dia.
+  const handleSkipDawn = async () => {
+    if (busy || !window.confirm("Pular a preparação e começar a discussão agora?")) return;
+    setBusy(true);
+    setError(false);
+    try {
+      const { startHostPhase } = await import("./start-host-phase");
+      await startHostPhase(gameId, {
+        phaseId: "discussion",
+        label: getPhaseDefinition("discussion").label,
+        durationSeconds: HOSTLESS_PACE_SECONDS[game.gamePace ?? "relaxed"].discussion ?? null,
+      });
+    } catch {
+      setError(true);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const handleEndGame = async () => {
     if (
       busy ||
       (game.status !== "finished" &&
-        !window.confirm("Encerrar a partida? Todos os jogadores voltarão ao lobby para uma nova composição de roles."))
+        !window.confirm("Encerrar a partida? Todos verão o resultado e as roles de cada um. Depois, use Nova partida para voltar ao lobby."))
     ) {
       return;
     }
@@ -45,7 +65,18 @@ export function HostlessTableControls({ gameId, game }: HostlessTableControlsPro
   return (
     <section className="items-center rounded-2xl border border-[#d3b88c]/20 bg-black/20 px-5 py-4 sm:min-w-80">
       <CurrentGamePhase game={game} />
-      {game.phase !== "game-over" && <HostGameTimer gameId={gameId} game={game} />}
+      {game.phase === "day" ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={handleSkipDawn}
+          className="mt-3 min-h-11 w-full rounded-xl border border-[#f2c879]/40 bg-[#f2c879]/10 px-4 text-sm font-bold text-[#fffaf0] disabled:opacity-50"
+        >
+          Pular preparação
+        </button>
+      ) : (
+        game.phase !== "game-over" && <HostGameTimer gameId={gameId} game={game} />
+      )}
       <p className="mt-4 text-xs leading-5 text-zinc-500">
         Partida sem mestre · ritmo {GAME_PACE_LABELS[game.gamePace ?? "relaxed"].title}: as fases avançam sozinhas.
       </p>
@@ -65,7 +96,7 @@ export function HostlessTableControls({ gameId, game }: HostlessTableControlsPro
       </div>
       {error && (
         <p role="alert" className="mt-3 text-sm text-[#f0b9bd]">
-          Não foi possível encerrar a partida.
+          Não foi possível concluir a ação. Tente de novo.
         </p>
       )}
     </section>

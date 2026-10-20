@@ -12,8 +12,8 @@ import type {
 } from "./night-resolution-message-types";
 
 /**
- * Resultado que o jogador recebe na hora em que confirma a ação. Só entra aqui o que não
- * depende das outras ações da noite: investigações e pistas do Medium.
+ * Resultado que só depende da própria ação: investigações e pistas do Medium. Entra no
+ * resultado do amanhecer junto com o resto.
  */
 export interface PlayerInstantNightResult {
   key: string;
@@ -177,6 +177,14 @@ export function buildPlayerDawnNightResults(
 
   (resolution.individualWinnerUids ?? []).forEach((playerUid) => {
     add(playerUid, resolutionTextMessage("Você cumpriu sua condição individual de vitória."));
+  });
+
+  // Investigações e pistas também só chegam ao amanhecer: até lá a escolha ainda pode mudar.
+  new Set([
+    ...(resolution.investigationResults ?? []).map(({ actorUid }) => actorUid),
+    ...(resolution.mediumClues ?? []).map(({ mediumUid }) => mediumUid),
+  ]).forEach((actorUid) => {
+    buildPlayerInstantNightResults(resolution, actorUid, playerNames).forEach(({ line }) => add(actorUid, line));
   });
 
   return linesByPlayer;

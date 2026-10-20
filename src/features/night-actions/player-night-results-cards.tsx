@@ -1,38 +1,47 @@
 "use client";
 
+import { Moon, Sunrise } from "lucide-react";
+import type { ReactNode } from "react";
+
 import type { PlayerNightResultLine } from "@/types";
 
 import { NightResolutionMessage } from "./night-resolution-message";
-import { usePlayerDawnNightResults, usePlayerInstantNightResults } from "./use-player-night-results";
+import { usePlayerDawnNightResults } from "./use-player-night-results";
 
-function ResultLines({ lines }: Readonly<{ lines: readonly PlayerNightResultLine[] }>) {
+function ResultLines({
+  lines,
+  light = false,
+}: Readonly<{ lines: readonly PlayerNightResultLine[]; light?: boolean }>) {
   return (
-    <ul className="mt-2 grid gap-1 text-sm leading-6 text-[#e5ded2]">
+    <ul className="mt-3 grid gap-1.5 text-sm leading-6">
       {lines.map((line, index) => (
-        <li key={index}>
-          <NightResolutionMessage line={line} />
+        <li
+          key={index}
+          className={`border-l-2 pl-3 ${light ? "border-[#7d2330]/60" : "border-[#c9d4ef]/40"}`}
+        >
+          <NightResolutionMessage line={line} light={light} />
         </li>
       ))}
     </ul>
   );
 }
 
-/** Investigações e pistas que o jogador recebe na hora em que confirma a ação. */
-export function PlayerInstantNightResults({
-  gameId,
-  nightId,
-}: Readonly<{ gameId: string; nightId: string | null | undefined }>) {
-  const results = usePlayerInstantNightResults(gameId, nightId);
-  if (results.length === 0) return null;
-
+function CardTitle({
+  icon,
+  title,
+  nightNumber,
+  light = false,
+}: Readonly<{ icon: ReactNode; title: string; nightNumber: number; light?: boolean }>) {
   return (
-    <section
-      aria-label="Resultado da sua ação"
-      className="mt-4 rounded-2xl border border-[#6f9b77]/30 bg-[#6f9b77]/10 p-4 text-left"
-    >
-      <h2 className="text-xs font-bold tracking-[0.15em] text-[#bfe0c5] uppercase">Resultado</h2>
-      <ResultLines lines={results.map(({ line }) => line)} />
-    </section>
+    <div className="flex items-center gap-2">
+      <span aria-hidden="true" className={light ? "text-[#7d2330]" : "text-[#c9d4ef]"}>
+        {icon}
+      </span>
+      <h2 className={`font-serif text-lg font-semibold ${light ? "" : "text-[#fffaf0]"}`}>{title}</h2>
+      <span className={`ml-auto text-xs font-semibold ${light ? "text-[#75685f]" : "text-[#a9b3cc]"}`}>
+        Noite {nightNumber}
+      </span>
+    </div>
   );
 }
 
@@ -46,25 +55,28 @@ export function PlayerDawnNightResults({
 
   return (
     <>
-      <section
-        aria-label="Anúncios do dia"
-        className="mt-4 rounded-2xl border border-[#d3b88c]/25 bg-[#1f1c17] p-4"
-      >
-        <h2 className="text-xs font-bold tracking-[0.15em] text-[#9f9990] uppercase">
-          Anúncios do dia · Noite {announcement.nightNumber}
-        </h2>
-        <ResultLines lines={announcement.lines} />
-      </section>
-
       {dawnResult && (
         <section
           aria-label="Sua noite"
-          className="mt-4 rounded-2xl border border-[#3b4a6b]/40 bg-[#151a26] p-4"
+          className="panel-private mt-4"
         >
-          <h2 className="text-xs font-bold tracking-[0.15em] text-[#a9b3cc] uppercase">Sua noite</h2>
+          <CardTitle icon={<Moon className="size-4" />} title="Sua noite" nightNumber={dawnResult.nightNumber} />
           <ResultLines lines={dawnResult.lines} />
         </section>
       )}
+
+      <section
+        aria-label="Anúncios do dia"
+        className="panel-public mt-4"
+      >
+        <CardTitle
+          icon={<Sunrise className="size-4" />}
+          title="Anúncios desse dia"
+          nightNumber={announcement.nightNumber}
+          light
+        />
+        <ResultLines lines={announcement.lines} light />
+      </section>
     </>
   );
 }

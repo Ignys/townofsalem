@@ -77,8 +77,12 @@ export function getAvailableNightTargets(
   const allowDoctorSelf = interaction.role.id === "doctor"
     && withDefaultVariants(variants).doctorCanSelfHealOnce;
 
+  // O Doctor não cura um Mayor revelado, então ele nem aparece como alvo.
+  const blocksRevealedMayor = interaction.role.id === "doctor";
+
   return players.filter(
     (player) =>
+      (!blocksRevealedMayor || !player.statuses?.some(({ type }) => type === "mayor-revealed")) &&
       (action.allowSelfTarget || allowDoctorSelf || player.uid !== actor.uid) &&
       (action.allowDeadTarget || player.alive) &&
       (!action.requireDeadTarget || !player.alive),

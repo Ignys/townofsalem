@@ -19,6 +19,7 @@ import type {
 } from "@/lib/firebase/schema";
 import type { HostNightActionEntry, RoleDefinition } from "@/types";
 
+import { HostForcedRoleControl } from "./host-forced-role-control";
 import { HostPlayerInteractionHistory } from "./host-player-interaction-history";
 import { HostPlayerNameEditor } from "./host-player-name-editor";
 
@@ -143,6 +144,10 @@ export function HostPlayerDetailsDialog({
         </header>
 
         <div className="max-h-[min(75vh,42rem)] space-y-2 overflow-y-auto p-5">
+          {!gameStarted && (
+            <HostForcedRoleControl gameId={gameId} playerUid={playerUid} />
+          )}
+          {gameStarted && (
           <section className="rounded-xl border border-white/8 bg-black/15 p-4">
             <p className="text-xs font-semibold tracking-[0.14em] text-[#9f9990] uppercase">
               Role
@@ -162,14 +167,17 @@ export function HostPlayerDetailsDialog({
                 <p className="mt-2 text-sm leading-6 text-[#bdb7ad]">
                   {role.description}
                 </p>
-                <RoleInteractionLimitNotice
-                  roleId={role.id}
-                  playerCount={playerCount}
-                  resourceUsage={resourceUsage}
-                />
+                <div className="mt-4">
+                  <RoleInteractionLimitNotice
+                    roleId={role.id}
+                    playerCount={playerCount}
+                    resourceUsage={resourceUsage}
+                  />
+                </div>
               </>
             )}
           </section>
+          )}
           <section className="grid grid-cols-2 gap-3">
             <div className="rounded-xl border border-white/8 bg-black/15 p-3">
               <p className="flex items-center gap-2 text-xs text-[#9f9990]">

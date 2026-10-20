@@ -17,15 +17,15 @@ export function RoleInteractionLimitNotice({
   const playerLabel = playerCount === 1 ? "jogador" : "jogadores";
 
   return (
-    <div className="mt-4 rounded-xl border border-[#6f9b77]/30 bg-[#6f9b77]/10 p-4">
-      <h3 className="text-xs font-bold tracking-wide text-[#bfe0c5] uppercase">
+    <div className="rounded-xl border-l-4 border-[#6f9b77] bg-[#6f9b77]/10 py-2 pr-3 pl-3">
+      <h3 className="text-xs font-semibold text-[#bfe0c5]">
         Limite nesta partida · {playerCount} {playerLabel}
       </h3>
-      <p className="mt-2 text-sm leading-6 text-[#e5ded2]">
+      <p className="mt-1 text-sm leading-6 text-[#e5ded2]">
         {interactionLimit.description}
       </p>
       {resourceUsage && (
-        <p className="mt-3 border-t border-[#6f9b77]/20 pt-3 text-sm font-bold text-[#bfe0c5]">
+        <p className="mt-2 border-t border-[#6f9b77]/20 pt-2 text-sm font-bold text-[#bfe0c5]">
           Restantes: {resourceUsage.remaining} de {resourceUsage.limit}{" "}
           {resourceUsage.label}
         </p>

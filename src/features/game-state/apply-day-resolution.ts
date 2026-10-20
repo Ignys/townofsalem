@@ -1,5 +1,6 @@
 "use client";
 
+import { createId } from "@/lib/utils/create-id";
 import { getRoleById, ROLE_DEFINITIONS } from "@/data/roles";
 import { createEngineGameState } from "@/game-engine/host-action-adapter";
 import {
@@ -19,6 +20,7 @@ import {
 } from "@/lib/firebase/realtime-database-repository";
 import type { Player } from "@/types";
 
+import { getFinalRoles } from "./end-game-updates";
 import { buildGraveyardEntry } from "./graveyard-entry";
 import { requireAuthenticatedGameHost } from "./require-authenticated-game-host";
 
@@ -78,7 +80,7 @@ export async function applyDayResolution(
   }
 
   const updates: AtomicUpdateMap = {
-    [firebasePaths.gameEvent(gameId, crypto.randomUUID())]: {
+    [firebasePaths.gameEvent(gameId, createId())]: {
       type: "DAY_RESOLUTION_APPLIED",
       timestamp: now,
       actorUid: hostUid,
@@ -105,6 +107,7 @@ export async function applyDayResolution(
       privatePlayers?.[death.targetUid]?.roleId,
       Boolean(privatePlayers?.[death.targetUid]?.statuses?.cleaned),
       now,
+      { diedPhase: "day", diedNumber: game.day ?? 0, cause: death.cause },
     );
   }
   for (const status of resolution.appliedStatuses) {
@@ -133,6 +136,7 @@ export async function applyDayResolution(
       ...resolution.individualWinnerUids,
     ];
     updates[firebasePaths.gamePublicField(gameId, "gameEndedAt")] = now;
+    updates[firebasePaths.gamePublicField(gameId, "finalRoles")] = getFinalRoles(privatePlayers);
   }
 
   await applyAtomicUpdate(updates);

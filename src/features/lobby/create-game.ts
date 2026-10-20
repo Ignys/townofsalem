@@ -1,5 +1,6 @@
 "use client";
 
+import { createId } from "@/lib/utils/create-id";
 import { ensureAnonymousUser } from "@/features/auth";
 import { firebaseAuth } from "@/lib/firebase/auth";
 import { firebasePaths } from "@/lib/firebase/paths";
@@ -52,7 +53,15 @@ async function reserveAvailableCode(
   throw new CreateGameError("code-generation-exhausted");
 }
 
-export async function createGame(): Promise<CreateGameResult> {
+export const ROOM_NAME_MAX_LENGTH = 30;
+
+export async function createGame(roomNameInput: string): Promise<CreateGameResult> {
+  const name = roomNameInput.trim().replace(/\s+/g, " ");
+
+  if (name.length === 0 || name.length > ROOM_NAME_MAX_LENGTH) {
+    throw new CreateGameError("invalid-room-name");
+  }
+
   let uid: string;
 
   try {
@@ -61,7 +70,7 @@ export async function createGame(): Promise<CreateGameResult> {
     throw new CreateGameError("authentication-failed", error);
   }
 
-  const gameId = globalThis.crypto.randomUUID();
+  const gameId = createId();
   let reservedCode: Awaited<ReturnType<typeof reserveAvailableCode>>;
 
   try {
@@ -81,6 +90,7 @@ export async function createGame(): Promise<CreateGameResult> {
       [firebasePaths.roomCode(code)]: gameId,
       [firebasePaths.gameHostUid(gameId)]: uid,
       [firebasePaths.gamePublic(gameId)]: createInitialPublicGame(code),
+      [firebasePaths.openRoom(code)]: { name, createdAt: Date.now() },
     });
   } catch (error: unknown) {
     try {

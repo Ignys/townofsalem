@@ -4,38 +4,17 @@ import { useEffect, useState } from "react";
 
 import {
   observeAuthenticatedPlayerDawnResults,
-  observeAuthenticatedPlayerInstantResults,
   observeDayAnnouncements,
 } from "@/lib/firebase/realtime-database-repository";
 import type {
   DayAnnouncementRecord,
   PlayerDawnNightResultRecord,
-  PlayerInstantNightResultRecord,
 } from "@/types";
-
-type InstantResults = Record<string, Record<string, PlayerInstantNightResultRecord>>;
 
 function latestByNightNumber<Value extends { nightNumber: number }>(
   records: Readonly<Record<string, Value>>,
 ): Value | undefined {
   return Object.values(records).sort((left, right) => right.nightNumber - left.nightNumber)[0];
-}
-
-/** Resultados instantâneos de uma noite, na ordem em que foram entregues. */
-export function usePlayerInstantNightResults(gameId: string, nightId: string | null | undefined) {
-  const [results, setResults] = useState<InstantResults>({});
-
-  useEffect(
-    () => observeAuthenticatedPlayerInstantResults(gameId, {
-      onData: (value) => setResults(value ?? {}),
-      onError: () => setResults({}),
-    }),
-    [gameId],
-  );
-
-  return nightId
-    ? Object.values(results[nightId] ?? {}).sort((left, right) => left.createdAt - right.createdAt)
-    : [];
 }
 
 /**

@@ -1,5 +1,6 @@
 "use client";
 
+import { createId } from "@/lib/utils/create-id";
 import {
   readHostPrivatePlayer,
   readPublicGame,
@@ -8,7 +9,7 @@ import {
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 
-import { buildGraveyardEntry } from "./graveyard-entry";
+import { buildGraveyardEntry, getGraveyardDeathContext } from "./graveyard-entry";
 import { requireAuthenticatedGameHost } from "./require-authenticated-game-host";
 
 export async function updatePlayerAliveStatus(
@@ -45,8 +46,9 @@ export async function updatePlayerAliveStatus(
           privatePlayer?.roleId,
           Boolean(privatePlayer?.statuses?.cleaned),
           Date.now(),
+          getGraveyardDeathContext(game, "host"),
         ),
-    [firebasePaths.gameEvent(gameId, crypto.randomUUID())]: {
+    [firebasePaths.gameEvent(gameId, createId())]: {
       type: alive ? "PLAYER_REVIVED_BY_HOST" : "PLAYER_DIED",
       timestamp: Date.now(),
       actorUid: hostUid,

@@ -1,9 +1,11 @@
 "use client";
 
-import { readPublicGame } from "@/lib/firebase/game-access-repository";
+import { createId } from "@/lib/utils/create-id";
+import { readHostPrivatePlayers, readPublicGame } from "@/lib/firebase/game-access-repository";
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 
+import { getFinalRoles } from "./end-game-updates";
 import { requireAuthenticatedGameHost } from "./require-authenticated-game-host";
 
 export interface DeclaredWinners {
@@ -23,6 +25,7 @@ export async function declareWinner(
   const hostUid = await requireAuthenticatedGameHost(gameId);
   const game = await readPublicGame(gameId);
   if (game?.status !== "in-progress") return;
+  const privatePlayers = await readHostPrivatePlayers(gameId);
 
   await applyAtomicUpdate({
     [firebasePaths.gamePublicField(gameId, "status")]: "finished",
@@ -33,7 +36,8 @@ export async function declareWinner(
     [firebasePaths.gamePublicField(gameId, "winningFactions")]: [...winners.winningFactions],
     [firebasePaths.gamePublicField(gameId, "winningPlayerUids")]: [...winners.winningPlayerUids],
     [firebasePaths.gamePublicField(gameId, "gameEndedAt")]: now,
-    [firebasePaths.gameEvent(gameId, crypto.randomUUID())]: {
+    [firebasePaths.gamePublicField(gameId, "finalRoles")]: getFinalRoles(privatePlayers),
+    [firebasePaths.gameEvent(gameId, createId())]: {
       type: "GAME_WON",
       timestamp: now,
       actorUid: hostUid,

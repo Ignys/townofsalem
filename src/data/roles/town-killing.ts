@@ -31,14 +31,14 @@ export const TOWN_KILLING_ROLES = [
     faction: "town",
     alignment: "Town Killing",
     description:
-      "À noite, você pode entrar em Alert (alerta). Enquanto estiver alerta, não pode ser morto e ataca todas as pessoas que o visitarem. A quantidade total de alertas depende do número de jogadores da partida.",
+      "À noite, você pode entrar em Alert (alerta). Enquanto estiver alerta, não pode ser morto e ataca todas as pessoas que o visitarem.",
     playTip:
-      "O alerta protege você, mas também pode matar visitantes aliados. Escolha suas noites com cuidado.",
+      "Entre em alerta nas noites em que espera ser atacado: o atacante morre na sua porta.",
     goal: TOWN_GOAL,
     virtueValue: 3,
     cardCount: 1,
     importantInteractions: [
-      "Mata qualquer visitante durante Alert, inclusive aliados.",
+      "Aliados que visitarem você durante o Alert também morrem.",
       "Pode usar Alert na primeira noite e atingir uma Witch visitante.",
       "No ataque coletivo da Mafia, somente um representante aleatório recebe o ataque.",
     ],
@@ -56,14 +56,13 @@ export const TOWN_KILLING_ROLES = [
     faction: "town",
     alignment: "Town Killing",
     description:
-      "A partir da segunda noite, escolha uma pessoa para atirar e matar. A quantidade total de tiros depende do número de jogadores da partida.",
+      "A partir da segunda noite, escolha uma pessoa para atirar e matar.",
     playTip:
-      "Use seus tiros com cuidado. Nesta edição, você não se mata automaticamente se atingir alguém da Town.",
+      "Atire só quando tiver bons motivos: um tiro errado mata alguém da Town.",
     goal: TOWN_GOAL,
     virtueValue: 5,
     cardCount: 1,
     importantInteractions: [
-      "Não pode matar na primeira noite.",
       "Não se suicida automaticamente se atingir uma role da Town.",
     ],
     canDieAtNight: true,

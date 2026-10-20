@@ -40,13 +40,12 @@ export function canActTonight(
 }
 
 /**
- * Ritmo rápido: a noite acaba quando todo mundo que tem ação já confirmou alguma ou passou.
+ * Ritmo rápido: a noite acaba quando todo mundo que tem ação avisou que está pronto.
  * Sem ninguém para agir, também conta como completa.
  */
 export function isNightComplete(
   actorUids: readonly string[],
-  submittedUids: ReadonlySet<string>,
-  passedUids: ReadonlySet<string>,
+  readyUids: ReadonlySet<string>,
 ): boolean {
-  return actorUids.every((uid) => submittedUids.has(uid) || passedUids.has(uid));
+  return actorUids.every((uid) => readyUids.has(uid));
 }

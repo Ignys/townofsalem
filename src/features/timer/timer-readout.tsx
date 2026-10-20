@@ -40,13 +40,9 @@ export function TimerReadout({
   return (
     <div>
       <div className="flex w-full items-end justify-between gap-4">
-        <div className="min-w-0">
-          <p className="text-xs font-bold tracking-wide text-[#9f9990] uppercase">
-            {TIMER_STATUS_LABELS[timer.status]}
-          </p>
-
+        <div className="flex min-w-0 items-baseline gap-3">
           <div
-            className={`mt-1 font-mono text-5xl font-bold tabular-nums transition-colors duration-300 ${
+            className={`font-mono text-5xl font-bold tabular-nums transition-colors duration-300 ${
               timer.status === "expired"
                 ? "text-[#f0b9bd]"
                 : isCritical
@@ -66,6 +62,9 @@ export function TimerReadout({
               </span>
             )}
           </div>
+          <p className="text-xs font-semibold text-[#a9a297]">
+            {TIMER_STATUS_LABELS[timer.status]}
+          </p>
         </div>
 
         {controls}

@@ -29,7 +29,7 @@ export type RoleCompositionValidationError =
       occurrences: number;
     }
   | {
-      code: "random-pool-exhausted";
+      code: "random-pool-exhausted" | "forced-role-unavailable";
       message: string;
       roleId: string;
     }

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx -y firebase-tools@13:*)",
+      "PowerShell(npx -y firebase-tools@13:*)"
+    ]
+  }
+}
