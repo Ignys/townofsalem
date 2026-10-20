@@ -60,3 +60,18 @@ body {
     @apply min-h-12 rounded-xl border border-white/12 bg-white/[0.04] px-4 py-3 text-left font-bold text-[#e5ded2] transition-colors hover:border-[#d3b88c]/50 focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-40 aria-pressed:border-[#d3b88c] aria-pressed:bg-[#7d2330] aria-pressed:text-white aria-pressed:disabled:opacity-100;
   }
 }
+
+@keyframes candle-flicker {
+  0%, 100% { transform: scale(1, 1) rotate(-1deg); opacity: 1; }
+  30% { transform: scale(0.94, 1.06) rotate(2deg); opacity: 0.92; }
+  60% { transform: scale(1.04, 0.95) rotate(-2deg); opacity: 1; }
+}
+@keyframes candle-halo {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 0.8; transform: scale(1.08); }
+}
+.candle-flame { transform-origin: 50% 90%; animation: candle-flicker 1.6s ease-in-out infinite; }
+.candle-halo { animation: candle-halo 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .candle-flame, .candle-halo { animation: none; }
+}
