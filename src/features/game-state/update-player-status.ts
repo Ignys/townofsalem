@@ -10,7 +10,7 @@ import {
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 
-import { buildGraveyardEntry } from "./graveyard-entry";
+import { buildGraveyardEntry, getPublicRoleId } from "./graveyard-entry";
 import { requireAuthenticatedGameHost } from "./require-authenticated-game-host";
 
 export async function updatePlayerStatus(
@@ -35,7 +35,7 @@ export async function updatePlayerStatus(
     ...(graveyardEntry
       ? {
           [firebasePaths.gameGraveyardEntry(gameId, playerUid)]: buildGraveyardEntry(
-            active ? undefined : privatePlayer?.roleId,
+            active ? undefined : getPublicRoleId(privatePlayer),
             active,
             graveyardEntry.diedAt,
             graveyardEntry,

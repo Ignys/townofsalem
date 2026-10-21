@@ -13,7 +13,7 @@ import {
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate, type AtomicUpdateMap } from "@/lib/firebase/realtime-database-repository";
 
-import { buildGraveyardEntry, getGraveyardDeathContext } from "./graveyard-entry";
+import { buildGraveyardEntry, getPublicRoleId, getGraveyardDeathContext } from "./graveyard-entry";
 import { requireAuthenticatedGameHost } from "./require-authenticated-game-host";
 
 export const JESTER_REVENGE_STATUS = "jester-revenge-pending";
@@ -61,7 +61,7 @@ export async function applyJesterRevenge(
   if (eligible && targetUid) {
     updates[firebasePaths.gamePlayerField(gameId, targetUid, "alive")] = false;
     updates[firebasePaths.gameGraveyardEntry(gameId, targetUid)] = buildGraveyardEntry(
-      privatePlayers[targetUid]?.roleId,
+      getPublicRoleId(privatePlayers[targetUid]),
       false,
       now,
       getGraveyardDeathContext(game, "jester-revenge"),

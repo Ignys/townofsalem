@@ -47,14 +47,6 @@ const forgeAction = nightAction({
   engineEffectType: "role-trigger",
 });
 
-const hypnotizeAction = nightAction({
-  id: "hypnotize",
-  label: "Hipnotizar",
-  verb: "hipnotiza",
-  priority: 38,
-  engineEffectType: "role-trigger",
-});
-
 const mafiaRoleBase = {
   faction: "mafia",
   alignment: "Mafia",
@@ -107,15 +99,15 @@ export const MAFIA_ROLES = [
     id: "disguiser",
     name: "Disguiser",
     description:
-      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa. Até o amanhecer, quem investigar ou vigiar você recebe o resultado dessa pessoa no seu lugar.",
+      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa que não seja da Mafia para copiar o disfarce. Quando você morrer, de noite ou de dia, a cidade verá na sua lápide a role da última pessoa que você escolheu.",
     playTip:
-      "Disfarce-se de alguém confirmado como Town nas noites em que você acha que será investigado.",
+      "Copie uma role que a Town já sabe que existe: se você for enforcado, a cidade acha que matou um aliado.",
     virtueValue: -6,
     cardCount: 1,
     importantInteractions: [
-      "Sheriff e Investigator recebem o resultado da pessoa escolhida.",
-      "O Lookout vê a pessoa escolhida no lugar do Disguiser.",
-      "O Consigliere não é enganado.",
+      "O disfarce não muda investigações nem o que o Lookout vê.",
+      "Vale a role da pessoa no momento em que você a escolheu.",
+      "Não é possível copiar alguém da Mafia.",
     ],
     actionDefinitions: [disguiseAction, mafiaAttackOrderAction],
     investigativeAppearance: investigativeAppearance("Disguiser", "mafia"),
@@ -145,9 +137,9 @@ export const MAFIA_ROLES = [
     id: "forger",
     name: "Forger",
     description:
-      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa. Se ela morrer nesta noite, a cidade verá no lugar da role dela uma role aleatória da Town que está na partida.",
+      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa. Se ela morrer nesta noite, a cidade verá no lugar da role dela uma role aleatória da Mafia ou neutra que está na partida.",
     playTip:
-      "Falsifique o alvo do ataque da Mafia para esconder que vocês mataram um Sheriff ou um Doctor.",
+      "Falsifique o alvo do ataque da Mafia: a cidade vai achar que eliminou uma ameaça, não um Sheriff ou um Doctor.",
     virtueValue: -7,
     cardCount: 1,
     importantInteractions: [
@@ -157,24 +149,6 @@ export const MAFIA_ROLES = [
     ],
     actionDefinitions: [forgeAction, mafiaAttackOrderAction],
     investigativeAppearance: investigativeAppearance("Forger", "mafia"),
-    verificationStatus: "verified",
-  },
-  {
-    ...mafiaRoleBase,
-    id: "hypnotist",
-    name: "Hypnotist",
-    description:
-      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa. Ao amanhecer, ela recebe uma mensagem falsa: que foi bloqueada, curada, protegida ou trocada de lugar.",
-    playTip:
-      "Hipnotize quem fala muito sobre as próprias noites: uma mensagem falsa pode desacreditar uma role importante.",
-    virtueValue: -5,
-    cardCount: 1,
-    importantInteractions: [
-      "A mensagem é sorteada e não muda o que aconteceu de verdade na noite.",
-      "A mensagem de bloqueio pode fazer um investigador duvidar do próprio resultado.",
-    ],
-    actionDefinitions: [hypnotizeAction, mafiaAttackOrderAction],
-    investigativeAppearance: investigativeAppearance("Hypnotist", "mafia"),
     verificationStatus: "verified",
   },
   {

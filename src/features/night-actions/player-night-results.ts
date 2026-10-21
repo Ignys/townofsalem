@@ -186,10 +186,6 @@ export function buildPlayerDawnNightResults(
     .flatMap(({ targetUids }) => targetUids))
     .forEach((playerUid) => add(playerUid, resolutionTextMessage("Você foi trocado de lugar por um Transporter nesta noite.")));
 
-  (resolution.hypnotizedMessages ?? []).forEach(({ targetUid, message }) => {
-    add(targetUid, resolutionTextMessage(message));
-  });
-
   (resolution.revivedUids ?? []).forEach((playerUid) => {
     add(playerUid, resolutionTextMessage("Um Retributionist te trouxe de volta à vida!"));
   });

@@ -149,8 +149,6 @@ export interface NightResolution {
   revivedUids?: readonly string[];
   /** Vítimas do Forger e a role da Town (da composição) que a cidade vê no lugar da real. */
   forgedRoles?: readonly { targetUid: string; roleId: string }[];
-  /** Mensagens falsas do Hypnotist, entregues ao amanhecer. */
-  hypnotizedMessages?: readonly { targetUid: string; message: string }[];
   mediumClues?: readonly EngineMediumClue[];
   partial: boolean;
 }

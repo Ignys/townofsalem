@@ -21,7 +21,7 @@ import {
 import type { Player } from "@/types";
 
 import { getFinalRoles } from "./end-game-updates";
-import { buildGraveyardEntry } from "./graveyard-entry";
+import { buildGraveyardEntry, getPublicRoleId } from "./graveyard-entry";
 import { requireAuthenticatedGameHost } from "./require-authenticated-game-host";
 
 /**
@@ -104,7 +104,7 @@ export async function applyDayResolution(
     if (!playerRecords?.[death.targetUid]?.alive) continue;
     updates[firebasePaths.gamePlayerField(gameId, death.targetUid, "alive")] = false;
     updates[firebasePaths.gameGraveyardEntry(gameId, death.targetUid)] = buildGraveyardEntry(
-      privatePlayers?.[death.targetUid]?.roleId,
+      getPublicRoleId(privatePlayers?.[death.targetUid]),
       Boolean(privatePlayers?.[death.targetUid]?.statuses?.cleaned),
       now,
       { diedPhase: "day", diedNumber: game.day ?? 0, cause: death.cause },

@@ -43,15 +43,22 @@ test("framed target appears as Mafia to town investigators only", () => {
   assert.equal(resultOf(resolution, "investigator"), "Mafioso");
 });
 
-test("disguiser borrows the chosen player's results and name", () => {
-  const resolution = resolveNight(engineGame(players), [
+test("disguiser keeps only the last non-Mafia disguise for its tombstone", () => {
+  const disguised = players.map((player) => player.uid === "disguiser"
+    ? { ...player, statuses: ["disguised-as:sheriff"] }
+    : player);
+  const resolution = resolveNight(engineGame(disguised), [
     engineAction("disguise", "disguiser", "disguiser", "disguise", ["townie"], { effectType: "role-trigger", priority: 36 }),
     sheriffCheck("disguiser"),
-    engineAction("watch", "lookout", "lookout", "watch", ["survivor"], { effectType: "investigate", priority: 42, investigationType: "lookout" }),
-    engineAction("visit", "disguiser", "disguiser", "frame", ["survivor"], { effectType: "role-trigger", priority: 35 }),
   ]);
-  assert.equal(resultOf(resolution, "sheriff"), "Good");
-  assert.equal(resultOf(resolution, "lookout"), "visitado por townie");
+  assert.equal(resultOf(resolution, "sheriff"), "Evil");
+  assert.deepEqual(resolution.appliedStatuses?.map(({ statusType }) => statusType), ["disguised-as:townie"]);
+  assert.ok(resolution.removedStatuses?.some(({ statusType }) => statusType === "disguised-as:sheriff"));
+
+  const onMafia = resolveNight(engineGame(players), [
+    engineAction("disguise", "disguiser", "disguiser", "disguise", ["framer"], { effectType: "role-trigger", priority: 36 }),
+  ]);
+  assert.deepEqual(onMafia.appliedStatuses, []);
 });
 
 test("lookout sees named visitors and the Mafia as a group", () => {
@@ -62,7 +69,7 @@ test("lookout sees named visitors and the Mafia as a group", () => {
       sourceType: "faction", sourceFaction: "mafia", participantUids: ["mafioso"],
     }),
   ]);
-  assert.equal(resultOf(resolution, "lookout"), "visitado por a Mafia, sheriff");
+  assert.equal(resultOf(resolution, "lookout"), "visitado por mafioso, sheriff");
 });
 
 test("retributionist revives only dead Town players", () => {
@@ -80,17 +87,13 @@ test("retributionist revives only dead Town players", () => {
   assert.deepEqual(resolution.consumedResources, [{ playerUid: "retributionist", resource: "retributionist", amount: 1 }]);
 });
 
-test("forger disguises only victims that die; hypnotist sends one false message", () => {
-  const resolution = resolveNight(engineGame([...players, enginePlayer("forger", "forger", "mafia"), enginePlayer("hypnotist", "hypnotist", "mafia")]), [
+test("forger shows a random Mafia or neutral role from the game", () => {
+  const resolution = resolveNight(engineGame([...players, enginePlayer("forger", "forger", "mafia")]), [
     engineAction("forge-a", "forger", "forger", "forge", ["townie"], { effectType: "role-trigger", priority: 37 }),
     engineAction("forge-b", "forger", "forger", "forge", ["sheriff"], { effectType: "role-trigger", priority: 37 }),
     engineAction("kill", "mafioso", "mafioso", "attack", ["townie"]),
-    engineAction("hypnotize", "hypnotist", "hypnotist", "hypnotize", ["lookout"], { effectType: "role-trigger", priority: 38 }),
   ]);
   assert.equal(resolution.forgedRoles?.length, 1);
   assert.equal(resolution.forgedRoles?.[0].targetUid, "townie");
-  assert.notEqual(resolution.forgedRoles?.[0].roleId, "townie");
-  assert.ok(["sheriff", "investigator", "lookout", "transporter", "survivor"].includes(resolution.forgedRoles![0].roleId));
-  assert.equal(resolution.hypnotizedMessages?.length, 1);
-  assert.equal(resolution.hypnotizedMessages?.[0].targetUid, "lookout");
+  assert.ok(["mafioso", "framer", "disguiser", "forger"].includes(resolution.forgedRoles![0].roleId));
 });

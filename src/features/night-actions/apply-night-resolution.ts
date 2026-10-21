@@ -16,7 +16,7 @@ import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate, type AtomicUpdateMap } from "@/lib/firebase/realtime-database-repository";
 import { getDatabaseReference } from "@/lib/firebase/references";
 import { omitUndefinedValues } from "@/lib/firebase/omit-undefined-values";
-import { buildGraveyardEntry } from "@/features/game-state/graveyard-entry";
+import { buildGraveyardEntry, getPublicRoleId } from "@/features/game-state/graveyard-entry";
 import type {
   DayAnnouncementRecord,
   NightResolutionRecord,
@@ -93,7 +93,7 @@ export async function applyNightResolution(
     revivedGraveyardBefore: Object.fromEntries(
       revivedUids.flatMap((uid) => graveyard?.[uid] ? [[uid, graveyard[uid]]] : []),
     ),
-    cleanStatusBefore: Object.fromEntries(resolution.cleanedPlayerUids.map((uid) => [uid, privatePlayers?.[uid]?.statuses?.cleaned ?? null])),
+    cleanStatusBefore: Object.fromEntries([...resolution.cleanedPlayerUids, ...revivedUids].map((uid) => [uid, privatePlayers?.[uid]?.statuses?.cleaned ?? null])),
     appliedStatusBefore: Object.fromEntries(
       [...new Set(statusChanges.map(({ targetUid }) => targetUid))].map((targetUid) => [
         targetUid,
@@ -154,7 +154,8 @@ export async function applyNightResolution(
     Object.entries(players).map(([uid, player]) => [uid, player.name]),
   );
   const assignments = Object.fromEntries(
-    Object.entries(privatePlayers ?? {}).map(([uid, privatePlayer]) => [uid, privatePlayer.roleId]),
+    // O anúncio mostra a role pública: o Disguiser aparece com o disfarce.
+    Object.entries(privatePlayers ?? {}).map(([uid, privatePlayer]) => [uid, getPublicRoleId(privatePlayer) ?? privatePlayer.roleId]),
   );
   const nightNumber = game.nightNumber ?? 0;
   for (const [uid, lines] of Object.entries(buildPlayerDawnNightResults(record.resolution, playerNames))) {
@@ -183,7 +184,7 @@ export async function applyNightResolution(
       : undefined;
     updates[firebasePaths.gamePlayerField(gameId, uid, "alive")] = false;
     updates[firebasePaths.gameGraveyardEntry(gameId, uid)] = buildGraveyardEntry(
-      forgedRoles.get(uid) ?? privatePlayers?.[uid]?.roleId,
+      forgedRoles.get(uid) ?? getPublicRoleId(privatePlayers?.[uid]),
       cleanedUids.has(uid),
       now,
       {
@@ -200,6 +201,8 @@ export async function applyNightResolution(
   for (const uid of revivedUids) {
     updates[firebasePaths.gamePlayerField(gameId, uid, "alive")] = true;
     updates[firebasePaths.gameGraveyardEntry(gameId, uid)] = null;
+    // Volta sem o corpo limpo; só uma nova limpeza do Janitor esconde a role de novo.
+    updates[firebasePaths.gamePrivatePlayerStatus(gameId, uid, "cleaned")] = null;
   }
   for (const uid of record.resolution.cleanedPlayerUids) {
     if (!privatePlayers?.[uid]) continue;

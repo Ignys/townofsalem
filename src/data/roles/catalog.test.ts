@@ -9,7 +9,7 @@ import {
 } from "./index";
 
 test("catalog contains every physical-card role with unique ids", () => {
-  assert.equal(ROLE_DEFINITIONS.length, 32);
+  assert.equal(ROLE_DEFINITIONS.length, 31);
   assert.equal(
     new Set(ROLE_DEFINITIONS.map((role) => role.id)).size,
     ROLE_DEFINITIONS.length,
@@ -19,7 +19,7 @@ test("catalog contains every physical-card role with unique ids", () => {
 test("catalog represents all 39 physical cards and their Virtue Values", () => {
   assert.equal(
     ROLE_DEFINITIONS.reduce((total, role) => total + role.cardCount, 0),
-    46,
+    45,
   );
   assert.equal(getRoleById("mayor")?.virtueValue, 8);
   assert.equal(getRoleById("consigliere")?.virtueValue, -10);
@@ -41,7 +41,7 @@ test("getRoleById returns a known role", () => {
 test("getRolesByFaction returns only roles from that faction", () => {
   const mafiaRoles = getRolesByFaction("mafia");
 
-  assert.equal(mafiaRoles.length, 9);
+  assert.equal(mafiaRoles.length, 8);
   assert.ok(mafiaRoles.every((role) => role.faction === "mafia"));
 });
 

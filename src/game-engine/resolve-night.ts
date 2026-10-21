@@ -27,12 +27,8 @@ import type {
 import { withDefaultVariants } from "./variants";
 import { collectVisits } from "./visits";
 
-const HYPNOTIST_MESSAGES = [
-  "Você foi bloqueado nesta noite e sua ação não teve efeito.",
-  "Você foi atacado nesta noite, mas um Doctor te curou!",
-  "Você foi atacado nesta noite, mas alguém te protegeu!",
-  "Você foi trocado de lugar por um Transporter nesta noite.",
-];
+/** Status do Disguiser; o sufixo é a role que a lápide dele vai mostrar. */
+export const DISGUISE_STATUS_PREFIX = "disguised-as:";
 
 export interface ResolveNightOptions {
   randomSource?: RandomSource;
@@ -183,13 +179,10 @@ export function resolveNight(
   }
 
   const visits = collectVisits(activeEffects);
-  // Framer e Disguiser só enganam investigações da Town (e neutras), nunca a própria Mafia.
+  // O Framer só engana investigações da Town (e neutras), nunca a própria Mafia.
   const framedUids = new Set(activeEffects
     .filter(({ roleId }) => roleId === "framer")
     .flatMap(({ targetUids }) => targetUids));
-  const disguises = new Map(activeEffects
-    .filter(({ roleId, targetUids }) => roleId === "disguiser" && targetUids[0])
-    .map(({ actorUid, targetUids }) => [actorUid, targetUids[0]]));
   const appearanceFor = (uid: string, investigatorUid: string) => {
     const player = playersByUid.get(uid)!;
     if (playersByUid.get(investigatorUid)?.faction === "mafia") return player;
@@ -201,15 +194,19 @@ export function resolveNight(
         investigativeAppearance: { sheriff: "Evil", "exact-role": "Mafioso" },
       };
     }
-    const disguiseUid = disguises.get(uid);
-    return disguiseUid ? playersByUid.get(disguiseUid)! : player;
+    return player;
   };
   const lookoutResult = (watchedUid: string, effect: EngineEffect) => {
     const visitors = [...new Set(visits
       .filter((visit) => visit.targetUid === watchedUid && visit.sourceActionId !== effect.id)
-      .map((visit) => visit.visitorUid
-        ? appearanceFor(visit.visitorUid, effect.actorUid).name
-        : "a Mafia"))].sort();
+      .flatMap((visit) => {
+        if (visit.visitorUid) return [playersByUid.get(visit.visitorUid)!.name];
+        // Ataque coletivo: um participante vivo vai até o alvo, o mesmo que o combate sorteia.
+        const eligible = visit.participantUids.filter((uid) => playersByUid.get(uid)?.alive);
+        return eligible.length > 0
+          ? [playersByUid.get(choose(`mafia-attack-representative:${visit.sourceActionId}:${visit.targetUid}`, eligible))!.name]
+          : [];
+      }))].sort();
     return visitors.length > 0 ? `visitado por ${visitors.join(", ")}` : "ninguém visitou";
   };
 
@@ -339,27 +336,32 @@ export function resolveNight(
       const target = playersByUid.get(uid);
       return target && !target.alive && target.faction === "town";
     }))].sort();
-  const townRoleIds = [...new Set(gameState.players
-    .filter(({ faction }) => faction === "town")
+  const nonTownRoleIds = [...new Set(gameState.players
+    .filter(({ faction }) => faction !== "town")
     .map(({ roleId }) => roleId))].sort();
   const forgedRoles = [...new Set(activeEffects
     .filter(({ roleId }) => roleId === "forger")
     .flatMap(({ targetUids }) => targetUids)
     .filter((uid) => deaths.includes(uid)))].sort().flatMap((targetUid) => {
-    // Sorteia uma role da Town da partida, de preferência diferente da verdadeira.
+    // Sorteia uma role da Mafia ou neutra da partida, de preferência diferente da verdadeira.
     const realRoleId = playersByUid.get(targetUid)?.roleId;
-    const others = townRoleIds.filter((roleId) => roleId !== realRoleId);
-    const candidates = others.length > 0 ? others : townRoleIds;
+    const others = nonTownRoleIds.filter((roleId) => roleId !== realRoleId);
+    const candidates = others.length > 0 ? others : nonTownRoleIds;
     return candidates.length > 0
       ? [{ targetUid, roleId: choose(`forger-role:${targetUid}`, candidates) }]
       : [];
   });
-  const hypnotizedMessages = activeEffects
-    .filter(({ roleId, targetUids }) => roleId === "hypnotist" && targetUids[0])
-    .map(({ id, targetUids }) => ({
-      targetUid: targetUids[0],
-      message: choose(`hypnotist-message:${id}`, HYPNOTIST_MESSAGES),
-    }));
+  // Disguiser: guarda a role do último disfarce (Town ou neutro) para a própria lápide.
+  const disguiseRemovals: Array<{ targetUid: string; statusType: string }> = [];
+  for (const effect of activeEffects) {
+    const target = effect.roleId === "disguiser" ? playersByUid.get(effect.targetUids[0]) : undefined;
+    if (!target || target.faction === "mafia") continue;
+    const statusType = `${DISGUISE_STATUS_PREFIX}${target.roleId}`;
+    appliedStatuses.push({ targetUid: effect.actorUid, statusType, sourceActionId: effect.id });
+    playersByUid.get(effect.actorUid)?.statuses
+      .filter((status) => status.startsWith(DISGUISE_STATUS_PREFIX) && status !== statusType)
+      .forEach((status) => disguiseRemovals.push({ targetUid: effect.actorUid, statusType: status }));
+  }
   revivedUids.forEach((targetUid) => events.push({
     type: "PLAYER_REVIVED",
     targetUid,
@@ -398,13 +400,13 @@ export function resolveNight(
       .map(({ uid }) => ({
         targetUid: uid,
         statusType: "town-blocked-next-night",
-      })),
+      }))
+      .concat(disguiseRemovals),
     randomDecisions,
     roleChanges: triggers.roleChanges,
     individualWinnerUids: triggers.individualWinnerUids,
     revivedUids,
     forgedRoles,
-    hypnotizedMessages,
     partial: warnings.length > 0,
   };
 }

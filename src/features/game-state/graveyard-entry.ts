@@ -14,6 +14,12 @@ import type {
  * role entirely, so the role stays counted among the ones still unaccounted
  * for on every player's screen.
  */
+/** Role que a cidade vê ao morrer: o Disguiser mostra a do último disfarce. */
+export function getPublicRoleId(privatePlayer: PrivatePlayerRecord | null | undefined): string | undefined {
+  const disguise = Object.keys(privatePlayer?.statuses ?? {}).find((status) => status.startsWith("disguised-as:"));
+  return disguise ? disguise.slice("disguised-as:".length) : privatePlayer?.roleId;
+}
+
 export type GraveyardDeathContext = Pick<GraveyardEntryRecord, "diedPhase" | "diedNumber" | "cause" | "killerRoleId">;
 
 export function buildGraveyardEntry(
@@ -62,7 +68,7 @@ export function getMissingGraveyardEntries(
       .map(([uid]) => [
         uid,
         buildGraveyardEntry(
-          privatePlayers?.[uid]?.roleId,
+          getPublicRoleId(privatePlayers?.[uid]),
           Boolean(privatePlayers?.[uid]?.statuses?.cleaned),
           diedAt,
         ),
