@@ -39,6 +39,22 @@ const frameAction = nightAction({
   engineEffectType: "role-trigger",
 });
 
+const forgeAction = nightAction({
+  id: "forge",
+  label: "Falsificar",
+  verb: "falsifica",
+  priority: 37,
+  engineEffectType: "role-trigger",
+});
+
+const hypnotizeAction = nightAction({
+  id: "hypnotize",
+  label: "Hipnotizar",
+  verb: "hipnotiza",
+  priority: 38,
+  engineEffectType: "role-trigger",
+});
+
 const mafiaRoleBase = {
   faction: "mafia",
   alignment: "Mafia",
@@ -122,6 +138,43 @@ export const MAFIA_ROLES = [
     ],
     actionDefinitions: [frameAction, mafiaAttackOrderAction],
     investigativeAppearance: investigativeAppearance("Framer", "mafia"),
+    verificationStatus: "verified",
+  },
+  {
+    ...mafiaRoleBase,
+    id: "forger",
+    name: "Forger",
+    description:
+      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa. Se ela morrer nesta noite, a cidade verá a role dela como Townie.",
+    playTip:
+      "Falsifique o alvo do ataque da Mafia para esconder que vocês mataram um Sheriff ou um Doctor.",
+    virtueValue: -7,
+    cardCount: 1,
+    importantInteractions: [
+      "Os usos são limitados conforme o tamanho da mesa e são gastos mesmo se o alvo sobreviver.",
+      "Se o Janitor também limpar a vítima, a role fica escondida.",
+      "O Medium ainda pode buscar pistas sobre a vítima.",
+    ],
+    actionDefinitions: [forgeAction, mafiaAttackOrderAction],
+    investigativeAppearance: investigativeAppearance("Forger", "mafia"),
+    verificationStatus: "verified",
+  },
+  {
+    ...mafiaRoleBase,
+    id: "hypnotist",
+    name: "Hypnotist",
+    description:
+      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa. Ao amanhecer, ela recebe uma mensagem falsa: que foi bloqueada, curada, protegida ou trocada de lugar.",
+    playTip:
+      "Hipnotize quem fala muito sobre as próprias noites: uma mensagem falsa pode desacreditar uma role importante.",
+    virtueValue: -5,
+    cardCount: 1,
+    importantInteractions: [
+      "A mensagem é sorteada e não muda o que aconteceu de verdade na noite.",
+      "A mensagem de bloqueio pode fazer um investigador duvidar do próprio resultado.",
+    ],
+    actionDefinitions: [hypnotizeAction, mafiaAttackOrderAction],
+    investigativeAppearance: investigativeAppearance("Hypnotist", "mafia"),
     verificationStatus: "verified",
   },
   {

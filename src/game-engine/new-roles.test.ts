@@ -79,3 +79,15 @@ test("retributionist revives only dead Town players", () => {
   assert.deepEqual(resolution.revivedUids, ["dead-doctor"]);
   assert.deepEqual(resolution.consumedResources, [{ playerUid: "retributionist", resource: "retributionist", amount: 1 }]);
 });
+
+test("forger disguises only victims that die; hypnotist sends one false message", () => {
+  const resolution = resolveNight(engineGame([...players, enginePlayer("forger", "forger", "mafia"), enginePlayer("hypnotist", "hypnotist", "mafia")]), [
+    engineAction("forge-a", "forger", "forger", "forge", ["townie"], { effectType: "role-trigger", priority: 37 }),
+    engineAction("forge-b", "forger", "forger", "forge", ["sheriff"], { effectType: "role-trigger", priority: 37 }),
+    engineAction("kill", "mafioso", "mafioso", "attack", ["townie"]),
+    engineAction("hypnotize", "hypnotist", "hypnotist", "hypnotize", ["lookout"], { effectType: "role-trigger", priority: 38 }),
+  ]);
+  assert.deepEqual(resolution.forgedPlayerUids, ["townie"]);
+  assert.equal(resolution.hypnotizedMessages?.length, 1);
+  assert.equal(resolution.hypnotizedMessages?.[0].targetUid, "lookout");
+});

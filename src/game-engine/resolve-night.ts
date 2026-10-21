@@ -27,6 +27,13 @@ import type {
 import { withDefaultVariants } from "./variants";
 import { collectVisits } from "./visits";
 
+const HYPNOTIST_MESSAGES = [
+  "Você foi bloqueado nesta noite e sua ação não teve efeito.",
+  "Você foi atacado nesta noite, mas um Doctor te curou!",
+  "Você foi atacado nesta noite, mas alguém te protegeu!",
+  "Você foi trocado de lugar por um Transporter nesta noite.",
+];
+
 export interface ResolveNightOptions {
   randomSource?: RandomSource;
 }
@@ -332,6 +339,16 @@ export function resolveNight(
       const target = playersByUid.get(uid);
       return target && !target.alive && target.faction === "town";
     }))].sort();
+  const forgedPlayerUids = [...new Set(activeEffects
+    .filter(({ roleId }) => roleId === "forger")
+    .flatMap(({ targetUids }) => targetUids)
+    .filter((uid) => deaths.includes(uid)))].sort();
+  const hypnotizedMessages = activeEffects
+    .filter(({ roleId, targetUids }) => roleId === "hypnotist" && targetUids[0])
+    .map(({ id, targetUids }) => ({
+      targetUid: targetUids[0],
+      message: choose(`hypnotist-message:${id}`, HYPNOTIST_MESSAGES),
+    }));
   revivedUids.forEach((targetUid) => events.push({
     type: "PLAYER_REVIVED",
     targetUid,
@@ -375,6 +392,8 @@ export function resolveNight(
     roleChanges: triggers.roleChanges,
     individualWinnerUids: triggers.individualWinnerUids,
     revivedUids,
+    forgedPlayerUids,
+    hypnotizedMessages,
     partial: warnings.length > 0,
   };
 }

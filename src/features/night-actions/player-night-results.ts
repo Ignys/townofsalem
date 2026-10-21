@@ -180,6 +180,10 @@ export function buildPlayerDawnNightResults(
       : resolutionTextMessage(`Sua nova role é ${change.toRoleId}.`));
   });
 
+  (resolution.hypnotizedMessages ?? []).forEach(({ targetUid, message }) => {
+    add(targetUid, resolutionTextMessage(message));
+  });
+
   (resolution.revivedUids ?? []).forEach((playerUid) => {
     add(playerUid, resolutionTextMessage("Um Retributionist te trouxe de volta à vida!"));
   });

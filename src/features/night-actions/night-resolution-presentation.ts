@@ -44,6 +44,9 @@ export function presentNightResolution(
   const deaths = resolution.deaths ?? [];
   const deathRecords = resolution.deathRecords ?? [];
   const cleanedPlayerUids = new Set(resolution.cleanedPlayerUids ?? []);
+  const forgedPlayerUids = new Set(resolution.forgedPlayerUids ?? []);
+  const publicRoleId = (playerUid: string) =>
+    forgedPlayerUids.has(playerUid) ? "townie" : assignments[playerUid];
   const announcements = deaths.length === 0
     ? [resolutionTextMessage("Ninguém morreu nesta noite.")]
     : deaths.map((playerUid) => {
@@ -54,7 +57,7 @@ export function presentNightResolution(
         ? presentPublicNightDeath({
           death,
           playerNames,
-          roleId: assignments[playerUid],
+          roleId: publicRoleId(playerUid),
           attackerRoleId: death.attackerUid ? assignments[death.attackerUid] : undefined,
           resolution,
           cleaned,
@@ -62,7 +65,7 @@ export function presentNightResolution(
         : presentFallbackPublicDeath(
           playerUid,
           playerNames,
-          assignments[playerUid],
+          publicRoleId(playerUid),
           cleaned,
         );
     });

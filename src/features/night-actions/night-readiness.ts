@@ -14,6 +14,7 @@ export const RESOURCE_BY_ROLE: Readonly<Record<string, string>> = {
   vigilante: "vigilante-shot",
   transporter: "transporter",
   retributionist: "retributionist",
+  forger: "forger",
 };
 
 /** A role já gastou todos os usos (o Janitor limpa sozinho, então nunca "esgota" a ação). */

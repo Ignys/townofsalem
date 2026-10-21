@@ -18,6 +18,6 @@ export const BOOLEAN_GAME_VARIANT_OPTIONS: readonly {
   { key: "randomRolesRespectCardCount", label: "Roles aleatórias respeitam as cartas", description: "Um slot aleatório só sorteia roles com cartas sobrando no baralho. Desativado, os slots podem repetir roles mesmo com a composição respeitando as cartas. Começa ativada por padrão." },
   { key: "amnesiacPicksRole", label: "Amnesiac escolhe a role", description: "Na noite 3, o Amnesiac escolhe a dedo uma das roles possíveis. Desativado, ele recebe uma delas por sorteio." },
   { key: "amnesiacRoleAnnounced", label: "Anunciar a role do Amnesiac", description: "Ao amanhecer, todos ficam sabendo qual role o Amnesiac lembrou, mas não quem ele é." },
-  { key: "disableNewRoles", label: "Desativar roles novas do painel", description: "Tira Lookout, Transporter, Retributionist, Disguiser e Framer do painel do moderador, dos slots aleatórios e das roles possíveis do Amnesiac. Começa desativada por padrão." },
+  { key: "disableNewRoles", label: "Desativar roles novas do painel", description: "Tira Lookout, Transporter, Retributionist, Disguiser, Framer, Forger e Hypnotist do painel do moderador, dos slots aleatórios e das roles possíveis do Amnesiac. Começa desativada por padrão." },
   { key: "executionerWinEndsGame", label: "Vitória do Executioner encerra", description: "Encerra a partida quando o alvo é enforcado." },
 ];

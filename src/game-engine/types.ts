@@ -147,6 +147,10 @@ export interface NightResolution {
   individualWinnerUids?: readonly string[];
   /** Mortos da Town que o Retributionist trouxe de volta. */
   revivedUids?: readonly string[];
+  /** Vítimas do Forger: a cidade vê a role delas como Townie. */
+  forgedPlayerUids?: readonly string[];
+  /** Mensagens falsas do Hypnotist, entregues ao amanhecer. */
+  hypnotizedMessages?: readonly { targetUid: string; message: string }[];
   mediumClues?: readonly EngineMediumClue[];
   partial: boolean;
 }

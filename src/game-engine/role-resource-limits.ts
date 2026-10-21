@@ -6,7 +6,8 @@ export type LimitedRoleResource =
   | "veteran-alert"
   | "vigilante-shot"
   | "transporter"
-  | "retributionist";
+  | "retributionist"
+  | "forger";
 
 export type MediumClueCandidateCount = 2 | 3 | 4;
 
@@ -19,6 +20,7 @@ const RESOURCE_BY_ROLE: Readonly<Record<string, LimitedRoleResource>> = {
   vigilante: "vigilante-shot",
   transporter: "transporter",
   retributionist: "retributionist",
+  forger: "forger",
 };
 
 /**

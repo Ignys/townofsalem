@@ -68,6 +68,13 @@ export function getRoleInteractionLimit(
     };
   }
 
+  if (roleId === "forger") {
+    return {
+      amount,
+      description: `Você pode falsificar a role de alguém até ${amount} ${pluralize(amount, "vez", "vezes")} durante toda a partida.`,
+    };
+  }
+
   if (roleId === "janitor") {
     return {
       amount,
