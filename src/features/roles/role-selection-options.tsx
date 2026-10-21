@@ -41,7 +41,10 @@ export function RoleSelectionOptions({ roles, selectedRoleCounts, allowDuplicate
     return (
         <div className="grid gap-6">
             {FACTION_ORDER.map((faction) => {
-                const factionRoles = roles.filter((role) => role.faction === faction);
+                // Roles novas ficam no fim de cada facção.
+                const factionRoles = roles
+                    .filter((role) => role.faction === faction)
+                    .sort((left, right) => Number(NEW_ROLE_IDS.has(left.id)) - Number(NEW_ROLE_IDS.has(right.id)));
                 if (factionRoles.length === 0) return null;
 
                 return (
