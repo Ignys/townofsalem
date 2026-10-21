@@ -19,6 +19,15 @@ const exactInvestigation = nightAction({
   ...exactInvestigationConfig,
 });
 
+const lookoutWatch = nightAction({
+  id: "watch",
+  label: "Vigiar",
+  verb: "vigia",
+  priority: 42,
+  engineEffectType: "investigate",
+  engineEffectConfig: { investigationType: "lookout" },
+});
+
 export const TOWN_INVESTIGATIVE_ROLES = [
   {
     id: "deputy",
@@ -65,6 +74,31 @@ export const TOWN_INVESTIGATIVE_ROLES = [
     actionDefinitions: [exactInvestigation],
     action: exactInvestigation,
     investigativeAppearance: investigativeAppearance("Investigator", "town"),
+    verificationStatus: "verified",
+  },
+  {
+    id: "lookout",
+    name: "Lookout",
+    faction: "town",
+    alignment: "Town Investigative",
+    description:
+      "À noite, escolha uma pessoa para vigiar. Ao amanhecer, você descobre quem a visitou naquela noite, mas não o que cada um fez.",
+    playTip:
+      "Vigie quem você acha que será atacado: quem aparecer na porta dele pode ser da Mafia.",
+    goal: TOWN_GOAL,
+    virtueValue: 5,
+    cardCount: 1,
+    importantInteractions: [
+      "O ataque coletivo da Mafia aparece apenas como \"a Mafia\", sem nomes.",
+      "Doctor, Bodyguard, Framer e Transporter também contam como visitas.",
+      "Um Disguiser aparece com o nome da pessoa de quem se disfarçou.",
+    ],
+    canDieAtNight: true,
+    wakesAtNight: true,
+    wakeOrder: 42,
+    actionDefinitions: [lookoutWatch],
+    action: lookoutWatch,
+    investigativeAppearance: investigativeAppearance("Lookout", "town"),
     verificationStatus: "verified",
   },
   {

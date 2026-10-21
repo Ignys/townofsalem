@@ -13,6 +13,16 @@ const seanceAction = nightAction({
   engineEffectType: "role-trigger",
 });
 
+const transportAction = nightAction({
+  id: "transport",
+  label: "Trocar de lugar",
+  verb: "troca de lugar",
+  targetCount: 2,
+  allowSelfTarget: true,
+  priority: 1,
+  engineEffectType: "redirect",
+});
+
 export const TOWN_SUPPORT_ROLES = [
   {
     id: "mayor",
@@ -131,6 +141,31 @@ export const TOWN_SUPPORT_ROLES = [
     ],
     canDieAtNight: false,
     investigativeAppearance: investigativeAppearance("Survivor", "town"),
+    verificationStatus: "verified",
+  },
+  {
+    id: "transporter",
+    name: "Transporter",
+    faction: "town",
+    alignment: "Town Support",
+    description:
+      "À noite, escolha duas pessoas para trocar de lugar. Toda ação que miraria uma delas acerta a outra no lugar.",
+    playTip:
+      "Troque um alvo provável da Mafia com alguém que não pode morrer à noite, como um Survivor.",
+    goal: TOWN_GOAL,
+    virtueValue: 3,
+    cardCount: 1,
+    importantInteractions: [
+      "Você age antes de todos: ataques, curas e investigações seguem a troca.",
+      "Pode se incluir em uma das trocas.",
+      "Os usos são limitados conforme o tamanho da mesa.",
+    ],
+    canDieAtNight: true,
+    wakesAtNight: true,
+    wakeOrder: 1,
+    actionDefinitions: [transportAction],
+    action: transportAction,
+    investigativeAppearance: investigativeAppearance("Transporter", "town"),
     verificationStatus: "verified",
   },
   {

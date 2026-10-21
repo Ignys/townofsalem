@@ -26,7 +26,7 @@ test("fills each slot with a role of its faction and keeps fixed roles", () => {
 test("never rolls an excluded role", () => {
   for (let run = 0; run < 200; run += 1) {
     const [rolled] = resolveRandomRoles(["random-mafia"], {
-      excludedRoleIds: ["godfather", "mafioso", "janitor", "consigliere"],
+      excludedRoleIds: ["godfather", "mafioso", "janitor", "consigliere", "disguiser", "framer"],
       respectCardCount: true,
     });
     assert.equal(rolled, "blackmailer");
@@ -34,7 +34,7 @@ test("never rolls an excluded role", () => {
 });
 
 test("the card cap counts fixed copies; without it roles may repeat", () => {
-  const onlyBlackmailer = ["godfather", "mafioso", "janitor", "consigliere"];
+  const onlyBlackmailer = ["godfather", "mafioso", "janitor", "consigliere", "disguiser", "framer"];
 
   assert.throws(
     () => resolveRandomRoles(["blackmailer", "random-mafia"], { excludedRoleIds: onlyBlackmailer, respectCardCount: true }),
@@ -63,7 +63,7 @@ test("an empty stored exclusion list stays empty; absent means defaults", () => 
 });
 
 test("the virtue estimate adds each slot's pool average, min and max", () => {
-  const mafia = ["blackmailer", "consigliere", "godfather", "janitor", "mafioso"]
+  const mafia = ["blackmailer", "consigliere", "disguiser", "framer", "godfather", "janitor", "mafioso"]
     .map((roleId) => getRoleById(roleId)!.virtueValue);
   const sheriff = getRoleById("sheriff")!.virtueValue;
 

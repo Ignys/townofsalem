@@ -46,7 +46,7 @@ export function buildPlayerInstantNightResults(
       key: `investigation-${result.sourceActionId}`,
       line: {
         parts: [
-          resolutionTextPart("Você investigou "),
+          resolutionTextPart(result.investigationType === "lookout" ? "Você vigiou " : "Você investigou "),
           resolutionPlayerPart(result.targetUid, playerNames),
           ...investigationResultParts(result),
         ],

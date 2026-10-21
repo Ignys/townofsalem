@@ -54,6 +54,13 @@ export function getRoleInteractionLimit(
     };
   }
 
+  if (roleId === "transporter") {
+    return {
+      amount,
+      description: `Você pode trocar pessoas de lugar até ${amount} ${pluralize(amount, "vez", "vezes")} durante toda a partida.`,
+    };
+  }
+
   if (roleId === "janitor") {
     return {
       amount,

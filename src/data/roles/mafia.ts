@@ -23,6 +23,22 @@ const consigliereInvestigation = nightAction({
   ...exactInvestigationConfig,
 });
 
+const disguiseAction = nightAction({
+  id: "disguise",
+  label: "Disfarçar-se",
+  verb: "se disfarça de",
+  priority: 36,
+  engineEffectType: "role-trigger",
+});
+
+const frameAction = nightAction({
+  id: "frame",
+  label: "Incriminar",
+  verb: "incrimina",
+  priority: 35,
+  engineEffectType: "role-trigger",
+});
+
 const mafiaRoleBase = {
   faction: "mafia",
   alignment: "Mafia",
@@ -68,6 +84,44 @@ export const MAFIA_ROLES = [
     ],
     actionDefinitions: [consigliereInvestigation, mafiaAttackOrderAction],
     investigativeAppearance: investigativeAppearance("Consigliere", "mafia"),
+    verificationStatus: "verified",
+  },
+  {
+    ...mafiaRoleBase,
+    id: "disguiser",
+    name: "Disguiser",
+    description:
+      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa. Até o amanhecer, quem investigar ou vigiar você recebe o resultado dessa pessoa no seu lugar.",
+    playTip:
+      "Disfarce-se de alguém confirmado como Town nas noites em que você acha que será investigado.",
+    virtueValue: -6,
+    cardCount: 1,
+    importantInteractions: [
+      "Sheriff e Investigator recebem o resultado da pessoa escolhida.",
+      "O Lookout vê a pessoa escolhida no lugar do Disguiser.",
+      "O Consigliere não é enganado.",
+    ],
+    actionDefinitions: [disguiseAction, mafiaAttackOrderAction],
+    investigativeAppearance: investigativeAppearance("Disguiser", "mafia"),
+    verificationStatus: "verified",
+  },
+  {
+    ...mafiaRoleBase,
+    id: "framer",
+    name: "Framer",
+    description:
+      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa para incriminar. Até o amanhecer, ela aparece como Evil (má) para o Sheriff e como Mafioso para o Investigator.",
+    playTip:
+      "Incrimine quem está prestes a ser investigado para jogar a Town contra si mesma.",
+    virtueValue: -7,
+    cardCount: 1,
+    importantInteractions: [
+      "A incriminação vale só para a noite em que foi feita.",
+      "O Lookout ainda vê o Framer visitando o alvo.",
+      "O Consigliere não é enganado.",
+    ],
+    actionDefinitions: [frameAction, mafiaAttackOrderAction],
+    investigativeAppearance: investigativeAppearance("Framer", "mafia"),
     verificationStatus: "verified",
   },
   {
