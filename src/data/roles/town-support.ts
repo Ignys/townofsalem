@@ -195,6 +195,7 @@ export const TOWN_SUPPORT_ROLES = [
     importantInteractions: [
       "Você age antes de todos: ataques, curas e investigações seguem a troca.",
       "Pode se incluir em uma das trocas.",
+      "Os dois trocados ficam sabendo da troca ao amanhecer.",
       "Os usos são limitados conforme o tamanho da mesa.",
     ],
     canDieAtNight: true,

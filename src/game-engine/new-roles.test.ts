@@ -87,7 +87,10 @@ test("forger disguises only victims that die; hypnotist sends one false message"
     engineAction("kill", "mafioso", "mafioso", "attack", ["townie"]),
     engineAction("hypnotize", "hypnotist", "hypnotist", "hypnotize", ["lookout"], { effectType: "role-trigger", priority: 38 }),
   ]);
-  assert.deepEqual(resolution.forgedPlayerUids, ["townie"]);
+  assert.equal(resolution.forgedRoles?.length, 1);
+  assert.equal(resolution.forgedRoles?.[0].targetUid, "townie");
+  assert.notEqual(resolution.forgedRoles?.[0].roleId, "townie");
+  assert.ok(["sheriff", "investigator", "lookout", "transporter", "survivor"].includes(resolution.forgedRoles![0].roleId));
   assert.equal(resolution.hypnotizedMessages?.length, 1);
   assert.equal(resolution.hypnotizedMessages?.[0].targetUid, "lookout");
 });

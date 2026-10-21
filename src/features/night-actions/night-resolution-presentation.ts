@@ -44,9 +44,8 @@ export function presentNightResolution(
   const deaths = resolution.deaths ?? [];
   const deathRecords = resolution.deathRecords ?? [];
   const cleanedPlayerUids = new Set(resolution.cleanedPlayerUids ?? []);
-  const forgedPlayerUids = new Set(resolution.forgedPlayerUids ?? []);
-  const publicRoleId = (playerUid: string) =>
-    forgedPlayerUids.has(playerUid) ? "townie" : assignments[playerUid];
+  const forgedRoles = new Map((resolution.forgedRoles ?? []).map(({ targetUid, roleId }) => [targetUid, roleId]));
+  const publicRoleId = (playerUid: string) => forgedRoles.get(playerUid) ?? assignments[playerUid];
   const announcements = deaths.length === 0
     ? [resolutionTextMessage("Ninguém morreu nesta noite.")]
     : deaths.map((playerUid) => {

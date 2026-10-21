@@ -95,6 +95,31 @@ export function GameVariantsDialog({
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [saving, onCancel]);
 
+  const renderSwitches = (group: "roles" | "game") => (
+    <div className="divide-y divide-white/6 overflow-hidden rounded-xl border border-white/7">
+      {BOOLEAN_GAME_VARIANT_OPTIONS.filter((option) => option.group === group).map((option) => (
+        <label key={option.key} className="flex cursor-pointer items-start justify-between gap-4 px-4 py-3 transition hover:bg-white/2">
+          <span>
+            <span className="block text-sm font-semibold text-[#fffaf0]">{option.label}</span>
+            <span className="mt-0.5 block text-xs leading-5 text-[#8f897f]">{option.description}</span>
+          </span>
+          <input
+            type="checkbox"
+            role="switch"
+            checked={draft[option.key]}
+            disabled={saving}
+            onChange={(event) => setDraft((current) => ({ ...current, [option.key]: event.target.checked }))}
+            className="peer sr-only"
+          />
+          <span
+            aria-hidden
+            className="relative mt-0.5 h-6 w-10 shrink-0 rounded-full bg-white/10 transition after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-[#d8d2c8] after:transition-transform peer-checked:bg-[#7d2330] peer-checked:after:translate-x-4 peer-checked:after:bg-white peer-focus-visible:ring-2 peer-focus-visible:ring-[#c9a46a]/50"
+          />
+        </label>
+      ))}
+    </div>
+  );
+
   return (
     <div
       className="fixed inset-0 z-50 grid place-items-center bg-black/75 p-4 backdrop-blur-sm"
@@ -128,52 +153,29 @@ export function GameVariantsDialog({
         </header>
 
         <div className="flex-1 overflow-y-auto px-6">
-          <Section title="Mesa">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="grid gap-1.5 text-sm text-[#e5ded2]">
-                Sheriff investigando Werewolf
-                <select value={draft.sheriffWerewolfDetection} disabled={saving} onChange={(event) => setDraft((current) => ({ ...current, sheriffWerewolfDetection: event.target.value as GameVariants["sheriffWerewolfDetection"] }))} className={selectClass}>
-                  <option value="normal">Normal — sempre Good</option>
-                  <option value="full-moon">Evil somente na lua cheia</option>
-                  <option value="always">Sempre Evil</option>
-                </select>
-              </label>
-              <label className="grid gap-1.5 text-sm text-[#e5ded2]">
-                Sons de noite e julgamento
-                <select value={draft.announcementSounds} disabled={saving} onChange={(event) => setDraft((current) => ({ ...current, announcementSounds: event.target.value as GameVariants["announcementSounds"] }))} className={selectClass}>
-                  <option value="both">Jogadores e host</option>
-                  <option value="players">Só nos celulares dos jogadores</option>
-                  <option value="host">Só no dispositivo do host</option>
-                </select>
-              </label>
-            </div>
+          <Section title="Jogo e painel" hint="Começam desativadas, exceto quando indicado.">
+            <label className="mb-4 grid gap-1.5 text-sm text-[#e5ded2]">
+              Sons de noite e julgamento
+              <select value={draft.announcementSounds} disabled={saving} onChange={(event) => setDraft((current) => ({ ...current, announcementSounds: event.target.value as GameVariants["announcementSounds"] }))} className={selectClass}>
+                <option value="both">Jogadores e host</option>
+                <option value="players">Só nos celulares dos jogadores</option>
+                <option value="host">Só no dispositivo do host</option>
+              </select>
+            </label>
+            {renderSwitches("game")}
           </Section>
 
-          <Section title="Regras opcionais" hint="Começam desativadas, exceto quando indicado.">
-            <div className="divide-y divide-white/6 overflow-hidden rounded-xl border border-white/7">
-              {BOOLEAN_GAME_VARIANT_OPTIONS.map((option) => (
-                <label key={option.key} className="flex cursor-pointer items-start justify-between gap-4 px-4 py-3 transition hover:bg-white/2">
-                  <span>
-                    <span className="block text-sm font-semibold text-[#fffaf0]">{option.label}</span>
-                    <span className="mt-0.5 block text-xs leading-5 text-[#8f897f]">{option.description}</span>
-                  </span>
-                  <input
-                    type="checkbox"
-                    role="switch"
-                    checked={draft[option.key]}
-                    disabled={saving}
-                    onChange={(event) => setDraft((current) => ({ ...current, [option.key]: event.target.checked }))}
-                    className="peer sr-only"
-                  />
-                  <span
-                    aria-hidden
-                    className="relative mt-0.5 h-6 w-10 shrink-0 rounded-full bg-white/10 transition after:absolute after:left-0.5 after:top-0.5 after:size-5 after:rounded-full after:bg-[#d8d2c8] after:transition-transform peer-checked:bg-[#7d2330] peer-checked:after:translate-x-4 peer-checked:after:bg-white peer-focus-visible:ring-2 peer-focus-visible:ring-[#c9a46a]/50"
-                  />
-                </label>
-              ))}
-            </div>
+          <Section title="Variantes de roles" hint="Começam desativadas, exceto quando indicado.">
+            <label className="mb-4 grid gap-1.5 text-sm text-[#e5ded2]">
+              Sheriff investigando Werewolf
+              <select value={draft.sheriffWerewolfDetection} disabled={saving} onChange={(event) => setDraft((current) => ({ ...current, sheriffWerewolfDetection: event.target.value as GameVariants["sheriffWerewolfDetection"] }))} className={selectClass}>
+                <option value="normal">Normal — sempre Good</option>
+                <option value="full-moon">Evil somente na lua cheia</option>
+                <option value="always">Sempre Evil</option>
+              </select>
+            </label>
+            {renderSwitches("roles")}
           </Section>
-
           <Section title="Roles possíveis do Amnesiac" hint="Cartas que poderão ser sorteadas na Night 3.">
             <RoleChips
               roles={availableRoles.filter(({ id }) => id !== "amnesiac")}

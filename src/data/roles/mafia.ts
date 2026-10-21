@@ -145,7 +145,7 @@ export const MAFIA_ROLES = [
     id: "forger",
     name: "Forger",
     description:
-      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa. Se ela morrer nesta noite, a cidade verá a role dela como Townie.",
+      "À noite, antes da votação de ataque da Mafia, escolha uma pessoa. Se ela morrer nesta noite, a cidade verá no lugar da role dela uma role aleatória da Town que está na partida.",
     playTip:
       "Falsifique o alvo do ataque da Mafia para esconder que vocês mataram um Sheriff ou um Doctor.",
     virtueValue: -7,

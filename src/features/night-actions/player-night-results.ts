@@ -180,6 +180,12 @@ export function buildPlayerDawnNightResults(
       : resolutionTextMessage(`Sua nova role é ${change.toRoleId}.`));
   });
 
+  // Quem o Transporter trocou de lugar fica sabendo, sem saber por quem foi trocado.
+  new Set((resolution.appliedEffects ?? [])
+    .filter(({ effectType }) => effectType === "redirect")
+    .flatMap(({ targetUids }) => targetUids))
+    .forEach((playerUid) => add(playerUid, resolutionTextMessage("Você foi trocado de lugar por um Transporter nesta noite.")));
+
   (resolution.hypnotizedMessages ?? []).forEach(({ targetUid, message }) => {
     add(targetUid, resolutionTextMessage(message));
   });

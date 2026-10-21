@@ -172,7 +172,7 @@ export async function applyNightResolution(
   } satisfies DayAnnouncementRecord;
 
   const cleanedUids = new Set(record.resolution.cleanedPlayerUids);
-  const forgedUids = new Set(record.resolution.forgedPlayerUids ?? []);
+  const forgedRoles = new Map((record.resolution.forgedRoles ?? []).map(({ targetUid, roleId }) => [targetUid, roleId]));
   for (const uid of record.resolution.deaths) {
     if (!players[uid]) continue;
     const death = record.resolution.deathRecords?.find(({ targetUid }) => targetUid === uid);
@@ -183,7 +183,7 @@ export async function applyNightResolution(
       : undefined;
     updates[firebasePaths.gamePlayerField(gameId, uid, "alive")] = false;
     updates[firebasePaths.gameGraveyardEntry(gameId, uid)] = buildGraveyardEntry(
-      forgedUids.has(uid) ? "townie" : privatePlayers?.[uid]?.roleId,
+      forgedRoles.get(uid) ?? privatePlayers?.[uid]?.roleId,
       cleanedUids.has(uid),
       now,
       {

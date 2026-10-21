@@ -339,10 +339,21 @@ export function resolveNight(
       const target = playersByUid.get(uid);
       return target && !target.alive && target.faction === "town";
     }))].sort();
-  const forgedPlayerUids = [...new Set(activeEffects
+  const townRoleIds = [...new Set(gameState.players
+    .filter(({ faction }) => faction === "town")
+    .map(({ roleId }) => roleId))].sort();
+  const forgedRoles = [...new Set(activeEffects
     .filter(({ roleId }) => roleId === "forger")
     .flatMap(({ targetUids }) => targetUids)
-    .filter((uid) => deaths.includes(uid)))].sort();
+    .filter((uid) => deaths.includes(uid)))].sort().flatMap((targetUid) => {
+    // Sorteia uma role da Town da partida, de preferência diferente da verdadeira.
+    const realRoleId = playersByUid.get(targetUid)?.roleId;
+    const others = townRoleIds.filter((roleId) => roleId !== realRoleId);
+    const candidates = others.length > 0 ? others : townRoleIds;
+    return candidates.length > 0
+      ? [{ targetUid, roleId: choose(`forger-role:${targetUid}`, candidates) }]
+      : [];
+  });
   const hypnotizedMessages = activeEffects
     .filter(({ roleId, targetUids }) => roleId === "hypnotist" && targetUids[0])
     .map(({ id, targetUids }) => ({
@@ -392,7 +403,7 @@ export function resolveNight(
     roleChanges: triggers.roleChanges,
     individualWinnerUids: triggers.individualWinnerUids,
     revivedUids,
-    forgedPlayerUids,
+    forgedRoles,
     hypnotizedMessages,
     partial: warnings.length > 0,
   };
