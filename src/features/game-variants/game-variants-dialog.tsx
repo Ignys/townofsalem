@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from "react";
 
+import { NEW_ROLE_IDS } from "@/data/roles";
 import type { GameVariants } from "@/game-engine/variants";
 import { useBodyScrollLock } from "@/lib/utils/use-body-scroll-lock";
 import type { RoleDefinition } from "@/types";
@@ -84,6 +85,7 @@ export function GameVariantsDialog({
   const [draft, setDraft] = useState(initialVariants);
   const [amnesiacRolePool, setAmnesiacRolePool] = useState(initialAmnesiacRolePool);
   const [randomRoleExclusions, setRandomRoleExclusions] = useState(initialRandomRoleExclusions);
+  const availableRoles = draft.disableNewRoles ? roles.filter(({ id }) => !NEW_ROLE_IDS.has(id)) : roles;
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -174,7 +176,7 @@ export function GameVariantsDialog({
 
           <Section title="Roles possíveis do Amnesiac" hint="Cartas que poderão ser sorteadas na Night 3.">
             <RoleChips
-              roles={roles.filter(({ id }) => id !== "amnesiac")}
+              roles={availableRoles.filter(({ id }) => id !== "amnesiac")}
               selected={amnesiacRolePool}
               disabled={saving}
               onToggle={(id) => setAmnesiacRolePool((current) => toggleIn(current, id))}
@@ -183,7 +185,7 @@ export function GameVariantsDialog({
 
           <Section title="Fora dos slots aleatórios" hint="Nunca saem de um slot aleatório, mas ainda podem entrar como role fixa.">
             <RoleChips
-              roles={roles}
+              roles={availableRoles}
               selected={randomRoleExclusions}
               disabled={saving}
               onToggle={(id) => setRandomRoleExclusions((current) => toggleIn(current, id))}
@@ -195,7 +197,11 @@ export function GameVariantsDialog({
           <button type="button" disabled={saving} onClick={onCancel} className="min-h-11 rounded-lg px-4 text-sm font-semibold text-[#d8d2c8] transition hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a46a]/50">
             Cancelar
           </button>
-          <button type="button" disabled={saving} onClick={() => onConfirm(draft, amnesiacRolePool, randomRoleExclusions)} className="min-h-11 rounded-lg bg-[#7d2330] px-5 text-sm font-bold text-white transition hover:bg-[#93293a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a46a]/60 disabled:opacity-50">
+          <button type="button" disabled={saving} onClick={() => onConfirm(
+            draft,
+            draft.disableNewRoles ? amnesiacRolePool.filter((id) => !NEW_ROLE_IDS.has(id)) : amnesiacRolePool,
+            randomRoleExclusions,
+          )} className="min-h-11 rounded-lg bg-[#7d2330] px-5 text-sm font-bold text-white transition hover:bg-[#93293a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#c9a46a]/60 disabled:opacity-50">
             {saving ? "Salvando…" : "Salvar configurações"}
           </button>
         </footer>

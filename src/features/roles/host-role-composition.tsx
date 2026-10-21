@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 
 import { useMemo, useState } from "react";
 
-import { ROLE_DEFINITIONS } from "@/data/roles";
+import { getAvailableRoles, NEW_ROLE_IDS, ROLE_DEFINITIONS } from "@/data/roles";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
 
 import { CompositionTools } from "./composition-tools";
@@ -56,8 +56,10 @@ export function HostRoleComposition({ gameId, playerCount, editable, playModeSel
         playerCount,
         rules: { ...ROLE_COMPOSITION_RULES, enforceCardCounts: respectCardCount },
     });
+    const disableNewRoles = gameVariants.variants.disableNewRoles;
+    const availableRoles = getAvailableRoles(disableNewRoles);
     const randomOptions = {
-        excludedRoleIds: gameVariants.randomRoleExclusions,
+        excludedRoleIds: [...gameVariants.randomRoleExclusions, ...(disableNewRoles ? NEW_ROLE_IDS : [])],
         respectCardCount: respectCardCount && gameVariants.variants.randomRolesRespectCardCount,
     };
     const virtue = estimateVirtue(composition.roleIds, randomOptions);
@@ -149,7 +151,7 @@ export function HostRoleComposition({ gameId, playerCount, editable, playModeSel
                             </ul>
                         </section>
                         <RoleSelectionOptions
-                            roles={ROLE_DEFINITIONS}
+                            roles={availableRoles}
                             selectedRoleCounts={selectedRoleCounts}
                             allowDuplicateRoleIds={ROLE_COMPOSITION_RULES.allowDuplicateRoleIds}
                             respectCardCount={respectCardCount}
@@ -200,7 +202,7 @@ export function HostRoleComposition({ gameId, playerCount, editable, playModeSel
                     <div className="panel-private grid grid-cols-[minmax(0,1fr)] divide-y divide-white/10 [&>*]:py-5 [&>*:first-child]:pt-0 [&>*:last-child]:pb-0">
                     <RoleCompositionSummary roleCount={composition.roleIds.length} playerCount={playerCount} virtue={virtue} />
                     {playModeSelector}
-                    <CompositionTools playerCount={playerCount} roleIds={composition.roleIds} disabled={controlsDisabled} respectCardCount={respectCardCount} onRespectCardCountChange={(value) => void gameVariants.updateVariants({ ...gameVariants.variants, compositionRespectsCardCount: value })} onApply={(roleIds) => void persistRoleIds(roleIds)} />
+                    <CompositionTools roles={availableRoles} playerCount={playerCount} roleIds={composition.roleIds} disabled={controlsDisabled} respectCardCount={respectCardCount} onRespectCardCountChange={(value) => void gameVariants.updateVariants({ ...gameVariants.variants, compositionRespectsCardCount: value })} onApply={(roleIds) => void persistRoleIds(roleIds)} />
                     </div>
                 </section>
             </div>

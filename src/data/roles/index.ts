@@ -16,6 +16,21 @@ const rolesById = new Map<string, RoleDefinition>(
   ROLE_DEFINITIONS.map((role) => [role.id, role]),
 );
 
+/** Roles adaptadas do jogo digital, fora do baralho físico; ganham a tag "Nova". */
+export const NEW_ROLE_IDS: ReadonlySet<string> = new Set([
+  "lookout",
+  "transporter",
+  "disguiser",
+  "framer",
+]);
+
+/** Catálogo que o moderador pode usar, sem as roles novas quando elas estão desativadas. */
+export function getAvailableRoles(disableNewRoles: boolean): readonly RoleDefinition[] {
+  return disableNewRoles
+    ? ROLE_DEFINITIONS.filter(({ id }) => !NEW_ROLE_IDS.has(id))
+    : ROLE_DEFINITIONS;
+}
+
 export function getRoleById(roleId: string): RoleDefinition | undefined {
   return rolesById.get(roleId);
 }

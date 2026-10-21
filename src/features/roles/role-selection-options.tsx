@@ -1,3 +1,4 @@
+import { NEW_ROLE_IDS } from "@/data/roles";
 import type { RoleDefinition } from "@/types";
 
 import { NEUTRAL_ROLE_COLORS, roleNameColor } from "@/features/game-state/game-composition-board";
@@ -65,7 +66,12 @@ export function RoleSelectionOptions({ roles, selectedRoleCounts, allowDuplicate
                                             className={`flex min-h-14 w-full items-center justify-between gap-3 rounded-lg border border-l-4 border-white/10 bg-white/[0.03] px-3 py-2 text-left transition-colors hover:border-white/20 hover:bg-white/[0.07] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-40 ${FACTION_STRIPES[faction]}`}
                                         >
                                             <span className="min-w-0">
-                                                <span className="block truncate font-semibold text-[#f8f1e5]" style={{ color: roleNameColor(role.id, role.faction) }}>{role.name}</span>
+                                                <span className="flex min-w-0 items-center gap-2">
+                                                    <span className="truncate font-semibold text-[#f8f1e5]" style={{ color: roleNameColor(role.id, role.faction) }}>{role.name}</span>
+                                                    {NEW_ROLE_IDS.has(role.id) && (
+                                                        <span className="shrink-0 rounded border border-[#c9a46a]/50 bg-[#c9a46a]/15 px-1.5 text-[10px] font-bold uppercase tracking-wide text-[#e6c992]">Nova</span>
+                                                    )}
+                                                </span>
                                                 <span className="block text-xs text-[#a9a297]">
                                                     {`${selectedCount} ${selectedCount === 1 ? "selecionada" : "selecionadas"}`}
                                                     {respectCardCount && ` · ${cardsLeft > 0 ? `${cardsLeft} ${cardsLeft === 1 ? "carta" : "cartas"}` : "sem cartas"}`}

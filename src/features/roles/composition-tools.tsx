@@ -3,7 +3,7 @@
 import { Bookmark, SlidersHorizontal, Trash2, WandSparkles } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
-import { ROLE_DEFINITIONS } from "@/data/roles";
+import type { RoleDefinition } from "@/types";
 import { firebaseAuth } from "@/lib/firebase/auth";
 
 import { generateBalancedRoleComposition } from "./balanced-composition-generator";
@@ -24,6 +24,8 @@ import {
 } from "./suggested-faction-counts";
 
 interface CompositionToolsProps {
+  /** Roles que o moderador pode usar (sem as novas quando desativadas). */
+  roles: readonly RoleDefinition[];
   playerCount: number;
   /** Composição atual, que o moderador pode salvar para usar em outras salas. */
   roleIds: readonly string[];
@@ -34,6 +36,7 @@ interface CompositionToolsProps {
 }
 
 export function CompositionTools({
+  roles,
   playerCount,
   roleIds,
   disabled,
@@ -86,7 +89,7 @@ export function CompositionTools({
     exactRoleCounts: Readonly<Record<string, number>> = {},
   ) => {
     // Without the card cap any role can repeat, so every role gets enough copies.
-    const catalog = ROLE_DEFINITIONS.filter((role) => !excludedRoleIds.includes(role.id)).map((role) =>
+    const catalog = roles.filter((role) => !excludedRoleIds.includes(role.id)).map((role) =>
       exactRoleCounts[role.id] !== undefined
         ? { ...role, cardCount: exactRoleCounts[role.id] }
         : respectCardCount ? role : { ...role, cardCount: Math.max(role.cardCount, requestedPlayerCount) },
@@ -234,7 +237,7 @@ export function CompositionTools({
       {dialogOpen && (
         <SemiAutomaticCompositionDialog
           initialPlayerCount={autoUnavailable ? 10 : playerCount}
-          roles={ROLE_DEFINITIONS}
+          roles={roles}
           respectCardCount={respectCardCount}
           onRespectCardCountChange={onRespectCardCountChange}
           onCancel={() => setDialogOpen(false)}

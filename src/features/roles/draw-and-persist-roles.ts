@@ -12,7 +12,7 @@ import {
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 import { drawRoles, nextRoleHistory, type RandomSource } from "@/game-engine/draw-roles";
-import { getRoleById } from "@/data/roles";
+import { getRoleById, NEW_ROLE_IDS } from "@/data/roles";
 import { withDefaultVariants } from "@/game-engine/variants";
 
 import {
@@ -99,7 +99,10 @@ export async function drawAndPersistRoles(
   let resolvedRoleIds: string[];
   try {
     resolvedRoleIds = resolveRandomRoles(roleIds, {
-      excludedRoleIds: parseRandomRoleExclusions(settings?.randomRoleExclusions),
+      excludedRoleIds: [
+        ...parseRandomRoleExclusions(settings?.randomRoleExclusions),
+        ...(variants.disableNewRoles ? NEW_ROLE_IDS : []),
+      ],
       respectCardCount: variants.compositionRespectsCardCount && variants.randomRolesRespectCardCount,
       random: options.random,
     });

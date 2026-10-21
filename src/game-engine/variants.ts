@@ -20,6 +20,8 @@ export interface GameVariants {
   amnesiacPicksRole: boolean;
   /** Anuncia a todos qual role o Amnesiac lembrou, sem dizer quem ele é. */
   amnesiacRoleAnnounced: boolean;
+  /** Tira as roles novas do painel, dos slots aleatórios e das roles do Amnesiac. */
+  disableNewRoles: boolean;
 }
 
 export const DEFAULT_GAME_VARIANTS: Readonly<GameVariants> = {
@@ -39,6 +41,7 @@ export const DEFAULT_GAME_VARIANTS: Readonly<GameVariants> = {
   randomRolesRespectCardCount: true,
   amnesiacPicksRole: false,
   amnesiacRoleAnnounced: false,
+  disableNewRoles: false,
 };
 
 export function withDefaultVariants(

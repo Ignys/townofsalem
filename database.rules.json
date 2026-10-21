@@ -208,6 +208,9 @@
           "amnesiacRoleAnnounced": {
             ".validate": "newData.isBoolean()"
           },
+          "disableNewRoles": {
+            ".validate": "newData.isBoolean()"
+          },
           "announcementSounds": {
               ".validate": "newData.isString() && (newData.val() === 'players' || newData.val() === 'host' || newData.val() === 'both')"
             },
