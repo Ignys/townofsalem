@@ -69,7 +69,7 @@ test("lookout sees named visitors and the Mafia as a group", () => {
       sourceType: "faction", sourceFaction: "mafia", participantUids: ["mafioso"],
     }),
   ]);
-  assert.equal(resultOf(resolution, "lookout"), "visitado por mafioso, sheriff");
+  assert.equal(resultOf(resolution, "lookout"), "Seu alvo foi visitado por mafioso e sheriff.");
 });
 
 test("retributionist revives only dead Town players", () => {

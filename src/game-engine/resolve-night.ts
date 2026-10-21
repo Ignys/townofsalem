@@ -207,7 +207,11 @@ export function resolveNight(
           ? [playersByUid.get(choose(`mafia-attack-representative:${visit.sourceActionId}:${visit.targetUid}`, eligible))!.name]
           : [];
       }))].sort();
-    return visitors.length > 0 ? `visitado por ${visitors.join(", ")}` : "ninguém visitou";
+    if (visitors.length === 0) return "Seu alvo não foi visitado por ninguém.";
+    const names = visitors.length === 1
+      ? visitors[0]
+      : `${visitors.slice(0, -1).join(", ")} e ${visitors[visitors.length - 1]}`;
+    return `Seu alvo foi visitado por ${names}.`;
   };
 
   for (const effect of activeEffects) {

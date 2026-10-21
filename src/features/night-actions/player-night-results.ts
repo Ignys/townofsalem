@@ -44,13 +44,15 @@ export function buildPlayerInstantNightResults(
     .filter((result) => result.actorUid === actorUid)
     .map((result) => ({
       key: `investigation-${result.sourceActionId}`,
-      line: {
-        parts: [
-          resolutionTextPart(result.investigationType === "lookout" ? "Você vigiou " : "Você investigou "),
-          resolutionPlayerPart(result.targetUid, playerNames),
-          ...investigationResultParts(result),
-        ],
-      },
+      line: result.investigationType === "lookout"
+        ? resolutionTextMessage(result.result)
+        : {
+          parts: [
+            resolutionTextPart("Você investigou "),
+            resolutionPlayerPart(result.targetUid, playerNames),
+            ...investigationResultParts(result),
+          ],
+        },
     }));
 
   // Sem destacar o responsável: isso é informação só do mestre.
