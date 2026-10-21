@@ -5,7 +5,8 @@ export type LimitedRoleResource =
   | "janitor"
   | "veteran-alert"
   | "vigilante-shot"
-  | "transporter";
+  | "transporter"
+  | "retributionist";
 
 export type MediumClueCandidateCount = 2 | 3 | 4;
 
@@ -17,6 +18,7 @@ const RESOURCE_BY_ROLE: Readonly<Record<string, LimitedRoleResource>> = {
   veteran: "veteran-alert",
   vigilante: "vigilante-shot",
   transporter: "transporter",
+  retributionist: "retributionist",
 };
 
 /**
@@ -42,6 +44,7 @@ export function getRoleResourceLimit(
   const resource = RESOURCE_BY_ROLE[roleId] ?? roleId as LimitedRoleResource;
 
   if (resource === "vigilante-shot") return [1, 2, 3][tier];
+  if (resource === "retributionist") return 1;
   if (Object.values(RESOURCE_BY_ROLE).includes(resource)) return [2, 3, 4][tier];
   return null;
 }

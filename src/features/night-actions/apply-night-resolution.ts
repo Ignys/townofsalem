@@ -6,6 +6,7 @@ import { runTransaction } from "firebase/database";
 import { requireAuthenticatedGameHost } from "@/features/game-state/require-authenticated-game-host";
 import {
   readGamePlayers,
+  readGameGraveyard,
   readHostPrivatePlayers,
   readNightResolution,
   readNightSession,
@@ -68,11 +69,13 @@ export async function applyNightResolution(
 ): Promise<void> {
   const hostUid = await requireAuthenticatedGameHost(gameId);
   const resolution = omitUndefinedValues(draft.resolution);
-  const [game, players, privatePlayers] = await Promise.all([
+  const [game, players, privatePlayers, graveyard] = await Promise.all([
     readPublicGame(gameId),
     readGamePlayers(gameId),
     readHostPrivatePlayers(gameId),
+    readGameGraveyard(gameId),
   ]);
+  const revivedUids = (resolution.revivedUids ?? []).filter((uid) => players?.[uid]);
   if (!game || !players || game.currentNightId !== draft.nightId || game.status !== "in-progress") throw new Error("night-unavailable");
 
   const statusChanges = [
@@ -86,7 +89,10 @@ export async function applyNightResolution(
   const record: NightResolutionRecord = {
     ...draft,
     resolution,
-    playerAliveBefore: captureAliveBefore(players, resolution.deaths),
+    playerAliveBefore: captureAliveBefore(players, [...resolution.deaths, ...revivedUids]),
+    revivedGraveyardBefore: Object.fromEntries(
+      revivedUids.flatMap((uid) => graveyard?.[uid] ? [[uid, graveyard[uid]]] : []),
+    ),
     cleanStatusBefore: Object.fromEntries(resolution.cleanedPlayerUids.map((uid) => [uid, privatePlayers?.[uid]?.statuses?.cleaned ?? null])),
     appliedStatusBefore: Object.fromEntries(
       [...new Set(statusChanges.map(({ targetUid }) => targetUid))].map((targetUid) => [
@@ -190,6 +196,10 @@ export async function applyNightResolution(
       type: "PLAYER_DIED", timestamp: now, actorUid: hostUid, visibility: "host-only", payload: { playerUid: uid, nightId: draft.nightId },
     };
   }
+  for (const uid of revivedUids) {
+    updates[firebasePaths.gamePlayerField(gameId, uid, "alive")] = true;
+    updates[firebasePaths.gameGraveyardEntry(gameId, uid)] = null;
+  }
   for (const uid of record.resolution.cleanedPlayerUids) {
     if (!privatePlayers?.[uid]) continue;
     const cleanStatus: PlayerStatus = { type: "cleaned" };
@@ -253,6 +263,9 @@ export async function rollbackNightResolution(gameId: string, nightId: string, n
     if (alive) {
       updates[firebasePaths.gameGraveyardEntry(gameId, uid)] = null;
     }
+  }
+  for (const [uid, entry] of Object.entries(record.revivedGraveyardBefore ?? {})) {
+    updates[firebasePaths.gameGraveyardEntry(gameId, uid)] = entry;
   }
   for (const [uid, status] of Object.entries(record.cleanStatusBefore ?? {})) {
     updates[firebasePaths.gamePrivatePlayerStatus(gameId, uid, "cleaned")] = status;

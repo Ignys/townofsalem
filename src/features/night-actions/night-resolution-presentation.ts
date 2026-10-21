@@ -68,6 +68,14 @@ export function presentNightResolution(
     });
 
   // Variante: todos sabem qual role o Amnesiac lembrou, sem saber quem é.
+  (resolution.revivedUids ?? []).forEach((playerUid) => {
+    announcements.push({
+      parts: [
+        resolutionPlayerPart(playerUid, playerNames),
+        resolutionTextPart(" voltou dos mortos!"),
+      ],
+    });
+  });
   (resolution.engineEvents ?? []).forEach((event) => {
     const roleId = event.details?.rememberedRoleId;
     if (event.type !== "AMNESIAC_REMEMBERED_ROLE" || !event.details?.announced || typeof roleId !== "string") return;

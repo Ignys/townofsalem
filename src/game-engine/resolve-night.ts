@@ -325,6 +325,18 @@ export function resolveNight(
     variants,
   });
   const deaths = [...new Set(combat.deathRecords.map(({ targetUid }) => targetUid))].sort();
+  const revivedUids = [...new Set(activeEffects
+    .filter(({ roleId, actionId }) => roleId === "retributionist" && actionId === "revive")
+    .flatMap(({ targetUids }) => targetUids)
+    .filter((uid) => {
+      const target = playersByUid.get(uid);
+      return target && !target.alive && target.faction === "town";
+    }))].sort();
+  revivedUids.forEach((targetUid) => events.push({
+    type: "PLAYER_REVIVED",
+    targetUid,
+    reasonCode: "RETRIBUTIONIST_REVIVED_TOWN_MEMBER",
+  }));
   deaths.forEach((targetUid) => events.push({
     type: "PLAYER_DIED",
     targetUid,
@@ -362,6 +374,7 @@ export function resolveNight(
     randomDecisions,
     roleChanges: triggers.roleChanges,
     individualWinnerUids: triggers.individualWinnerUids,
+    revivedUids,
     partial: warnings.length > 0,
   };
 }

@@ -22,6 +22,7 @@ export const NEW_ROLE_IDS: ReadonlySet<string> = new Set([
   "transporter",
   "disguiser",
   "framer",
+  "retributionist",
 ]);
 
 /** Catálogo que o moderador pode usar, sem as roles novas quando elas estão desativadas. */

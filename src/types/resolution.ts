@@ -1,6 +1,7 @@
 import type { NightResolution } from "@/game-engine/types";
 import type { PlayerStatus } from "./player";
 import type { Faction } from "./role";
+import type { GraveyardEntryRecord } from "@/lib/firebase/schema";
 
 export interface NightResolutionRecord {
   id: string;
@@ -14,6 +15,8 @@ export interface NightResolutionRecord {
     Record<string, Readonly<Record<string, PlayerStatus | null>>>
   >;
   roleStateBefore?: Readonly<Record<string, { roleId: string; faction: Faction }>>;
+  /** Lápides apagadas pela ressurreição, para o rollback devolver. */
+  revivedGraveyardBefore?: Readonly<Record<string, GraveyardEntryRecord>>;
   resourceUsesBefore?: Readonly<Record<string, Readonly<Record<string, number>>>>;
   appliedAt?: number;
   rolledBackAt?: number;

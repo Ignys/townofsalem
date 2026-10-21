@@ -61,6 +61,13 @@ export function getRoleInteractionLimit(
     };
   }
 
+  if (roleId === "retributionist") {
+    return {
+      amount,
+      description: "Você pode ressuscitar 1 pessoa morta da Town durante toda a partida.",
+    };
+  }
+
   if (roleId === "janitor") {
     return {
       amount,

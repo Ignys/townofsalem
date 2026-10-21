@@ -45,6 +45,11 @@ const TRACKED_ROLE_RESOURCES: Readonly<Record<string, TrackedRoleResource>> = {
     label: "trocas",
     resourceId: "transporter",
   },
+  retributionist: {
+    actionId: "revive",
+    label: "ressurreições",
+    resourceId: "retributionist",
+  },
 };
 
 interface GetRoleResourceUsageOptions {

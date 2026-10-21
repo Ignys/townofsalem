@@ -145,6 +145,8 @@ export interface NightResolution {
     amount: number;
   }[];
   individualWinnerUids?: readonly string[];
+  /** Mortos da Town que o Retributionist trouxe de volta. */
+  revivedUids?: readonly string[];
   mediumClues?: readonly EngineMediumClue[];
   partial: boolean;
 }

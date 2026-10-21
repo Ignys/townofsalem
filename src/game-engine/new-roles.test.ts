@@ -64,3 +64,18 @@ test("lookout sees named visitors and the Mafia as a group", () => {
   ]);
   assert.equal(resultOf(resolution, "lookout"), "visitado por a Mafia, sheriff");
 });
+
+test("retributionist revives only dead Town players", () => {
+  const resolution = resolveNight(engineGame([
+    ...players,
+    enginePlayer("retributionist", "retributionist"),
+    enginePlayer("dead-doctor", "doctor", "town", { alive: false }),
+    enginePlayer("dead-mafioso", "mafioso", "mafia", { alive: false }),
+  ]), [
+    engineAction("revive", "retributionist", "retributionist", "revive", ["dead-doctor", "dead-mafioso"], {
+      effectType: "role-trigger", priority: 70, countsAsVisit: false,
+    }),
+  ]);
+  assert.deepEqual(resolution.revivedUids, ["dead-doctor"]);
+  assert.deepEqual(resolution.consumedResources, [{ playerUid: "retributionist", resource: "retributionist", amount: 1 }]);
+});
