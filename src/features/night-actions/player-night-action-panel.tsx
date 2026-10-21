@@ -28,7 +28,7 @@ interface PlayerNightActionPanelProps {
   /** Ritmo rápido: oferece "Estou pronto" para a noite acabar antes do timer. */
   fastTrack?: boolean;
   /** Parceiros da Máfia: não aparecem como alvo. */
-  mafiaTeamUids?: readonly string[];
+  teamUids?: readonly string[];
   /** Roles que o Amnesiac pode lembrar na noite 3. */
   amnesiacRolePool?: readonly string[];
   /** Sem mestre: não manda aguardar o mestre. */
@@ -48,7 +48,7 @@ export function PlayerNightActionPanel({
   playerCount,
   resourceUses,
   fastTrack = false,
-  mafiaTeamUids = [],
+  teamUids = [],
   amnesiacRolePool = [],
   hostless = false,
   onPickerChange,
@@ -171,8 +171,8 @@ export function PlayerNightActionPanel({
             variants={variants}
             disabled={false}
             exhausted={exhausted}
-            shareWithMafia={getRoleById(roleId)?.faction === "mafia"}
-            excludedTargetUids={mafiaTeamUids}
+            shareWithTeam={roleId === "vampire" ? "vampire" : getRoleById(roleId)?.faction === "mafia" ? "mafia" : undefined}
+            excludedTargetUids={teamUids}
             amnesiacRolePool={amnesiacRolePool}
             active={interaction.id === activeId}
             onActivate={() => setChosenActiveId(interaction.id)}

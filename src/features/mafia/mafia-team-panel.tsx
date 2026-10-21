@@ -3,6 +3,7 @@
 import { createId } from "@/lib/utils/create-id";
 import { X } from "lucide-react";
 import { useEffect, useState } from "react";
+import { GiCoffin, GiFangs } from "react-icons/gi";
 import { PiKnife } from "react-icons/pi";
 
 import { getRoleById } from "@/data/roles";
@@ -15,7 +16,7 @@ import {
   observeMafiaTeam,
 } from "@/lib/firebase/realtime-database-repository";
 import type { PublicPlayerRecord } from "@/lib/firebase/schema";
-import type { MafiaBoardPickRecord, MafiaReactionRecord, MafiaTeamMemberRecord } from "@/types";
+import type { MafiaBoardPickRecord, MafiaReactionRecord, MafiaTeamMemberRecord, NightTeam } from "@/types";
 
 import { MAFIA_KILL_ACTION_ID, tallyMafiaKill } from "./mafia-kill-projection";
 
@@ -32,23 +33,60 @@ const VISIBLE_REACTIONS = 4;
 
 export type MafiaBoard = Record<string, Record<string, MafiaBoardPickRecord>>;
 
+export const VAMPIRE_BITE_ACTION_ID = "vampire-bite-vote";
+
+/** O que muda entre o painel da Máfia e o dos Vampiros. */
+const TEAM_PANEL = {
+  mafia: {
+    title: "Sua Máfia",
+    killActionId: MAFIA_KILL_ACTION_ID,
+    killLabel: "Ataque",
+    Icon: PiKnife,
+    sectionClass: "border-[#a33843]/60 bg-[#2a1517]",
+    iconClass: "bg-[#db4242]/15 text-[#f0b9bd]",
+    accentText: "text-[#e6c3c6]",
+    killPick: "bg-[#db4242]/18",
+    killText: "text-[#f0b9bd]",
+    ownBubble: "bg-[#7d2330]",
+    mentionPill: "border-[#db4242]/30 bg-[#7d2330]/25 hover:bg-[#7d2330]/45",
+  },
+  vampire: {
+    title: "Seus Vampiros",
+    killActionId: VAMPIRE_BITE_ACTION_ID,
+    killLabel: "Mordida",
+    Icon: GiFangs,
+    sectionClass: "border-[#6f7d5c]/60 bg-[#181d15]",
+    iconClass: "bg-[#9aab84]/15 text-[#c9d6b8]",
+    accentText: "text-[#c9d6b8]",
+    killPick: "bg-[#9aab84]/18",
+    killText: "text-[#c9d6b8]",
+    ownBubble: "bg-[#4c5a3c]",
+    mentionPill: "border-[#9aab84]/30 bg-[#4c5a3c]/25 hover:bg-[#4c5a3c]/45",
+  },
+} as const;
+
+/** Ação que vira o voto do grupo (ataque da Máfia ou mordida dos Vampiros). */
+export function teamKillActionId(team: NightTeam): string {
+  return TEAM_PANEL[team].killActionId;
+}
+
 /** Quem é da Máfia; vazio para quem não é (a regra do RTDB nega a leitura). */
-export function useMafiaTeam(gameId: string, enabled: boolean) {
+export function useMafiaTeam(gameId: string, nightTeam: NightTeam | null) {
   const [team, setTeam] = useState<Record<string, MafiaTeamMemberRecord>>({});
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!nightTeam) return;
     return observeMafiaTeam(gameId, {
       onData: (value) => setTeam(value ?? {}),
       onError: () => setTeam({}),
-    });
-  }, [enabled, gameId]);
+    }, nightTeam);
+  }, [nightTeam, gameId]);
 
-  return enabled ? team : {};
+  return nightTeam ? team : {};
 }
 
 /** As escolhas ao vivo da Máfia nesta noite (vazio fora da noite ou para quem não é da Máfia). */
-export function useMafiaBoard(gameId: string, nightId: string | null | undefined) {
+export function useMafiaBoard(gameId: string, nightId: string | null | undefined, nightTeam: NightTeam = "mafia") {
   const [board, setBoard] = useState<{ nightId: string; value: MafiaBoard } | null>(null);
 
   useEffect(() => {
@@ -56,8 +94,8 @@ export function useMafiaBoard(gameId: string, nightId: string | null | undefined
     return observeMafiaBoard(gameId, nightId, {
       onData: (value) => setBoard({ nightId, value: value ?? {} }),
       onError: () => setBoard({ nightId, value: {} }),
-    });
-  }, [gameId, nightId]);
+    }, nightTeam);
+  }, [gameId, nightId, nightTeam]);
 
   return nightId && board?.nightId === nightId ? board.value : {};
 }
@@ -68,9 +106,10 @@ function sendMafiaReaction(
   uid: string,
   key: string,
   targetUid: string | null,
+  nightTeam: NightTeam,
 ): Promise<void> {
   return applyAtomicUpdate({
-    [firebasePaths.gameMafiaReaction(gameId, nightId, createId())]: {
+    [firebasePaths.gameMafiaReaction(gameId, nightId, createId(), nightTeam)]: {
       uid,
       key,
       at: Date.now(),
@@ -79,8 +118,8 @@ function sendMafiaReaction(
   });
 }
 
-function actionVerb(roleId: string, actionId: string): string {
-  if (actionId === MAFIA_KILL_ACTION_ID) return "Ataque";
+function actionVerb(roleId: string, actionId: string, nightTeam: NightTeam): string {
+  if (actionId === TEAM_PANEL[nightTeam].killActionId) return TEAM_PANEL[nightTeam].killLabel;
   const role = getRoleById(roleId);
   const action = role?.actionDefinitions?.find(({ id }) => id === actionId) ?? role?.action;
   return action?.label ?? actionId;
@@ -95,13 +134,17 @@ interface MafiaTeamPanelProps {
   players: Readonly<Record<string, PublicPlayerRecord>>;
   team: Readonly<Record<string, MafiaTeamMemberRecord>>;
   board: MafiaBoard;
+  nightTeam?: NightTeam;
+  /** Vampiros na noite de descanso depois de uma conversão: não há mordida. */
+  resting?: boolean;
 }
 
 /**
  * A Máfia acorda junta: o alvo que o grupo está levando, o que cada parceiro escolheu e as
  * reações rápidas. Os alvos em si são escolhidos na lista de jogadores.
  */
-export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, players, team, board }: MafiaTeamPanelProps) {
+export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, players, team, board, nightTeam = "mafia", resting = false }: MafiaTeamPanelProps) {
+  const look = TEAM_PANEL[nightTeam];
   const [reactions, setReactions] = useState<Record<string, MafiaReactionRecord>>({});
   const [sending, setSending] = useState(false);
   // Reação escolhida, esperando o segundo toque: sobre quem ela é.
@@ -112,14 +155,14 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
     return observeMafiaReactions(gameId, nightId, {
       onData: (value) => setReactions(value ?? {}),
       onError: () => setReactions({}),
-    });
-  }, [gameId, nightId]);
+    }, nightTeam);
+  }, [gameId, nightId, nightTeam]);
 
   const members = Object.entries(team).sort(([left], [right]) =>
     (players[left]?.name ?? "").localeCompare(players[right]?.name ?? "", "pt-BR"),
   );
   const nameOf = (uid: string) => players[uid]?.name ?? "?";
-  const tally = tallyMafiaKill(board, team);
+  const tally = tallyMafiaKill(board, team, look.killActionId);
   const projectedVotes = tally.projectedTargetUid ? tally.votesByTarget[tally.projectedTargetUid]?.length ?? 0 : 0;
   const recentReactions = nightId
     ? Object.values(reactions).sort((left, right) => right.at - left.at).slice(0, VISIBLE_REACTIONS)
@@ -129,7 +172,7 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
     if (!nightId || sending) return;
     setSending(true);
     setPendingKey(null);
-    sendMafiaReaction(gameId, nightId, viewerUid, key, targetUid)
+    sendMafiaReaction(gameId, nightId, viewerUid, key, targetUid, nightTeam)
       .catch(() => undefined)
       .finally(() => setSending(false));
   };
@@ -145,19 +188,21 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
     "rounded-full border px-3 py-1 text-xs font-semibold transition-colors focus-visible:outline-3 focus-visible:outline-[#d3b88c] disabled:opacity-50";
 
   return (
-    <section aria-label="Sua Máfia" className="panel-private mt-4 border-[#a33843]/60 bg-[#2a1517] text-left">
+    <section aria-label={look.title} className={`panel-private mt-4 ${look.sectionClass} text-left`}>
       <div className="flex items-center gap-3">
         <span
           aria-hidden="true"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-[#db4242]/15 text-[#f0b9bd]"
+          className={`flex size-10 shrink-0 items-center justify-center rounded-full ${look.iconClass}`}
         >
-          <PiKnife className="size-5" />
+          <look.Icon className="size-5" />
         </span>
         <div className="min-w-0 flex-1">
-          <h2 className="font-serif text-lg font-semibold text-[#fffaf0]">Sua Máfia</h2>
+          <h2 className="font-serif text-lg font-semibold text-[#fffaf0]">{look.title}</h2>
           {nightId && (
-            <p className="text-sm text-[#e6c3c6]">
-              {tally.projectedTargetUid
+            <p className={`text-sm ${look.accentText}`}>
+              {resting
+                ? "Sem mordida nesta noite."
+                : tally.projectedTargetUid
                 ? `Alvo: ${nameOf(tally.projectedTargetUid)} (${projectedVotes} ${projectedVotes === 1 ? "voto" : "votos"})`
                 : tally.tied
                   ? "Empate: um dos alvos empatados será sorteado."
@@ -166,6 +211,22 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
           )}
         </div>
       </div>
+
+      {nightId && resting && (
+        // A noite de descanso substitui a votação: fica claro que não há o que escolher.
+        <div
+          role="status"
+          className="mt-3 flex items-start gap-3 rounded-xl border border-dashed border-[#9aab84]/45 bg-black/30 px-3.5 py-3"
+        >
+          <GiCoffin aria-hidden="true" className="mt-0.5 size-6 shrink-0 text-[#9aab84]" />
+          <div className="min-w-0">
+            <p className="font-serif text-base font-semibold text-[#e4ecd8]">Noite de descanso</p>
+            <p className="mt-0.5 text-sm leading-6 text-[#b9c6a8]">
+              Vocês converteram alguém na noite passada. Hoje ninguém morde; a mordida volta na próxima noite.
+            </p>
+          </div>
+        </div>
+      )}
 
       <ul className="mt-3 divide-y divide-white/8">
         {members.map(([uid, member]) => {
@@ -181,17 +242,17 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
                 // Cada escolha vira uma etiqueta: a ação em tom apagado, o alvo em destaque.
                 <span className="ml-auto flex flex-wrap justify-end gap-1">
                   {picks.length === 0 ? (
-                    <span className="text-xs text-[#8f8a82] italic">pensando…</span>
+                    <span className="text-xs text-[#8f8a82] italic">{resting ? "descansando" : "pensando…"}</span>
                   ) : (
                     picks.map(([actionId, pick]) => (
                       <span
                         key={actionId}
                         className={`inline-flex max-w-full items-center gap-1.5 rounded-full py-0.5 pr-2.5 pl-2 text-xs ${
-                          actionId === MAFIA_KILL_ACTION_ID ? "bg-[#db4242]/18" : "bg-white/7"
+                          actionId === look.killActionId ? look.killPick : "bg-white/7"
                         }`}
                       >
-                        <span className={actionId === MAFIA_KILL_ACTION_ID ? "text-[#f0b9bd]" : "text-[#bdb7ad]"}>
-                          {actionVerb(member.roleId, actionId)}
+                        <span className={actionId === look.killActionId ? look.killText : "text-[#bdb7ad]"}>
+                          {actionVerb(member.roleId, actionId, nightTeam)}
                         </span>
                         <span className="truncate font-semibold text-[#fffaf0]">
                           {(pick.targetUids ?? []).map(nameOf).join(", ")}
@@ -215,7 +276,7 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
                   key={`${reaction.uid}:${reaction.at}`}
                   className={`w-fit max-w-full rounded-2xl px-3 py-1 text-sm ${
                     reaction.uid === viewerUid
-                      ? "ml-auto bg-[#7d2330] text-white"
+                      ? `ml-auto ${look.ownBubble} text-white`
                       : "bg-white/8 text-[#e5ded2]"
                   }`}
                 >
@@ -230,7 +291,7 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
           )}
           {viewerAlive && pendingKey && (
             <div aria-label="Sobre quem" className="rounded-xl bg-black/25 p-2">
-              <div className="mb-1.5 flex items-center gap-2 px-1 text-xs text-[#e6c3c6]">
+              <div className={`mb-1.5 flex items-center gap-2 px-1 text-xs ${look.accentText}`}>
                 <span className="min-w-0 flex-1 truncate">
                   <strong className="text-[#fffaf0]">{REACTION_LABELS[pendingKey]}</strong> sobre quem?
                 </span>
@@ -258,7 +319,7 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
                     type="button"
                     disabled={sending}
                     onClick={() => react(pendingKey, uid)}
-                    className={`${pillClass} border-[#db4242]/30 bg-[#7d2330]/25 text-[#f3ead9] hover:bg-[#7d2330]/45`}
+                    className={`${pillClass} ${look.mentionPill} text-[#f3ead9]`}
                   >
                     {player.name}
                   </button>

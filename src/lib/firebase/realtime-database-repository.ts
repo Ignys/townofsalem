@@ -12,6 +12,7 @@ import type {
   MafiaBoardPickRecord,
   MafiaReactionRecord,
   MafiaTeamMemberRecord,
+  NightTeam,
   HostNightActionEntry,
   HostNightNote,
   NightSession,
@@ -557,8 +558,9 @@ export function observeMayorReveals(
 export function observeMafiaTeam(
   gameId: string,
   observer: RealtimeValueObserver<Record<string, MafiaTeamMemberRecord>>,
+  team: NightTeam = "mafia",
 ): Unsubscribe {
-  return observePath("observe-mafia-team", firebasePaths.gameMafiaTeam(gameId), observer);
+  return observePath("observe-mafia-team", firebasePaths.gameMafiaTeam(gameId, team), observer);
 }
 
 /** Escolhas ao vivo da Máfia nesta noite. */
@@ -566,8 +568,9 @@ export function observeMafiaBoard(
   gameId: string,
   nightId: string,
   observer: RealtimeValueObserver<Record<string, Record<string, MafiaBoardPickRecord>>>,
+  team: NightTeam = "mafia",
 ): Unsubscribe {
-  return observePath("observe-mafia-board", firebasePaths.gameMafiaBoard(gameId, nightId), observer);
+  return observePath("observe-mafia-board", firebasePaths.gameMafiaBoard(gameId, nightId, team), observer);
 }
 
 /** Reações da Máfia nesta noite. */
@@ -575,8 +578,9 @@ export function observeMafiaReactions(
   gameId: string,
   nightId: string,
   observer: RealtimeValueObserver<Record<string, MafiaReactionRecord>>,
+  team: NightTeam = "mafia",
 ): Unsubscribe {
-  return observePath("observe-mafia-reactions", firebasePaths.gameMafiaReactions(gameId, nightId), observer);
+  return observePath("observe-mafia-reactions", firebasePaths.gameMafiaReactions(gameId, nightId, team), observer);
 }
 
 /** Quem passou a noite (ritmo rápido). Só o mestre lê todos. */

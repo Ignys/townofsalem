@@ -1,11 +1,13 @@
 import type { GamePublicRecord } from "@/lib/firebase/schema";
 
+import { DeleteRoomButton } from "./delete-room-button";
 import { RoomShareCard } from "./room-share-card";
 import type { FirebaseConnectionStatus } from "./use-firebase-connection";
 import { Clock } from "lucide-react";
 
 interface HostLobbyHeaderProps {
     code: string;
+    gameId: string;
     game: GamePublicRecord;
     connectionStatus: FirebaseConnectionStatus;
     updating: boolean;
@@ -30,7 +32,7 @@ function getSessionLabel(game: GamePublicRecord) {
     return "Aguardando jogadores";
 }
 
-export function HostLobbyHeader({ code, game, connectionStatus, updating }: HostLobbyHeaderProps) {
+export function HostLobbyHeader({ code, gameId, game, connectionStatus, updating }: HostLobbyHeaderProps) {
     return (
         <header className="w-full border-b border-[#2e3136]/70 bg-[#16181b] px-5 py-4 shadow-[0_24px_70px_rgba(0,0,0,0.3)]">
             <div className="flex flex-col gap-5 xl:flex-row xl:items-center xl:justify-between">
@@ -46,6 +48,7 @@ export function HostLobbyHeader({ code, game, connectionStatus, updating }: Host
                         className={`size-2 rounded-full ${connectionStatus === "connected" ? "bg-[#6f9b77]" : connectionStatus === "unavailable" ? "bg-[#a33843]" : "bg-[#c18b2f]"}`}
                     />
                     <RoomShareCard code={code} />
+                    <DeleteRoomButton gameId={gameId} code={code} />
                 </div>
             </div>
         </header>

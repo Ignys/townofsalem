@@ -1,5 +1,7 @@
 "use client";
 
+import type { NightTeam } from "@/types";
+
 import { useState } from "react";
 
 import type { NightConsoleInteraction } from "@/features/lobby/night-console-interactions";
@@ -16,7 +18,7 @@ interface UsePlayerNightActionOptions {
   submission?: PlayerNightActionSubmission;
   disabled: boolean;
   /** Membro da Máfia: a escolha aparece ao vivo para o resto da Máfia. */
-  shareWithMafia?: boolean;
+  shareWithTeam?: NightTeam;
 }
 
 /**
@@ -30,7 +32,7 @@ export function usePlayerNightAction({
   interaction,
   submission,
   disabled,
-  shareWithMafia = false,
+  shareWithTeam,
 }: UsePlayerNightActionOptions) {
   // A escolha local só cobre o intervalo até o servidor confirmar a gravação.
   const [draftTargetUids, setDraftTargetUids] = useState<readonly string[] | null>(null);
@@ -58,7 +60,7 @@ export function usePlayerNightAction({
 
     setDraftTargetUids(targetUids);
     setError(null);
-    savePlayerNightChoice(gameId, nightId, interaction.action.id, payload, shareWithMafia)
+    savePlayerNightChoice(gameId, nightId, interaction.action.id, payload, shareWithTeam)
       .catch(() => {
         setError("Não foi possível salvar sua escolha. Tente de novo; se continuar, a noite pode já ter acabado.");
       })

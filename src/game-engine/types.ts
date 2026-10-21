@@ -149,6 +149,8 @@ export interface NightResolution {
   revivedUids?: readonly string[];
   /** Vítimas do Forger e a role da Town (da composição) que a cidade vê no lugar da real. */
   forgedRoles?: readonly { targetUid: string; roleId: string }[];
+  /** Vampiros vivos depois de uma conversão, para que todos se conheçam. */
+  vampireUids?: readonly string[];
   mediumClues?: readonly EngineMediumClue[];
   partial: boolean;
 }

@@ -42,6 +42,7 @@ function MayorRevealMirror({ gameId, hostUid }: Readonly<{ gameId: string; hostU
     useMirrorMayorReveals(gameId, hostUid, true);
     // Mesma lógica de espelho: a Máfia precisa saber quem é da Máfia.
     useMirrorMafiaTeam(gameId, hostUid);
+    useMirrorMafiaTeam(gameId, hostUid, "vampire");
     return null;
 }
 
@@ -165,7 +166,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
     if (tableOnly) {
         return (
             <div className="grid min-w-0 w-full">
-                <HostLobbyHeader code={sessionState.session.code} game={game} connectionStatus={connectionStatus} updating={lobby.isLoading} />
+                <HostLobbyHeader code={sessionState.session.code} gameId={gameId} game={game} connectionStatus={connectionStatus} updating={lobby.isLoading} />
                 <HostlessTableView
                     gameId={gameId}
                     game={game}
@@ -188,7 +189,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
 
     return (
         <div className="grid min-w-0 w-full">
-            <HostLobbyHeader code={sessionState.session.code} game={game} connectionStatus={connectionStatus} updating={lobby.isLoading} />
+            <HostLobbyHeader code={sessionState.session.code} gameId={gameId} game={game} connectionStatus={connectionStatus} updating={lobby.isLoading} />
             <div className="grid min-w-0 items-start gap-4 lg:grid-cols-[minmax(19rem,24rem)_minmax(0,1fr)]">
                 <HostPlayerSidebar
                     gameId={sessionState.session.gameId}

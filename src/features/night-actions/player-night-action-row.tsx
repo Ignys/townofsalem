@@ -1,5 +1,7 @@
 "use client";
 
+import type { NightTeam } from "@/types";
+
 import { Check } from "lucide-react";
 import { useEffect, useRef } from "react";
 
@@ -31,7 +33,7 @@ interface PlayerNightActionRowProps {
   variants: GameVariants;
   disabled: boolean;
   exhausted: boolean;
-  shareWithMafia?: boolean;
+  shareWithTeam?: NightTeam;
   /** Quem não aparece como alvo (ex.: parceiros da Máfia). */
   excludedTargetUids?: readonly string[];
   amnesiacRolePool?: readonly string[];
@@ -53,7 +55,7 @@ export function PlayerNightActionRow({
   variants,
   disabled,
   exhausted,
-  shareWithMafia = false,
+  shareWithTeam,
   excludedTargetUids = [],
   amnesiacRolePool = [],
   active,
@@ -79,7 +81,7 @@ export function PlayerNightActionRow({
     interaction,
     submission,
     disabled: blocked,
-    shareWithMafia,
+    shareWithTeam,
   });
   const allTargets = getPlayerNightTargets(
     interaction,

@@ -321,6 +321,22 @@ test("actions without a target are accepted: the RTDB drops empty lists", async 
   }));
 });
 
+test("only vampires see the vampires: team and live picks", async () => {
+  await environment.withSecurityRulesDisabled(async (context) => {
+    await update(ref(context.database(), `${VOTE}`), {
+      vampireTeam: { player: { roleId: "vampire" } },
+      "players/player/alive": true,
+    });
+  });
+  await setPhase("night", { currentNightId: "night-current" });
+  const vampire = environment.authenticatedContext("player").database();
+  const town = environment.authenticatedContext("other").database();
+  await assertSucceeds(get(ref(vampire, `${VOTE}/vampireTeam`)));
+  await assertFails(get(ref(town, `${VOTE}/vampireTeam`)));
+  await assertSucceeds(set(ref(vampire, `${VOTE}/vampireBoard/night-current/player/vampire-bite-vote`), { targetUids: ["other"], locked: false, updatedAt: 1 }));
+  await assertSucceeds(get(ref(vampire, `${VOTE}/vampireBoard/night-current`)));
+});
+
 test("only the mafia sees the mafia: team, live picks and reactions", async () => {
   await environment.withSecurityRulesDisabled(async (context) => {
     await update(ref(context.database(), `${VOTE}`), {

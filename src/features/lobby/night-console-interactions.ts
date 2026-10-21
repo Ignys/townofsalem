@@ -1,3 +1,4 @@
+import { VAMPIRE_COOLDOWN_STATUS } from "@/game-engine/resolve-night";
 import { canUseActionOnNight, getChosenExecutionTarget } from "@/game-engine/role-rules";
 import { withDefaultVariants, type GameVariants } from "@/game-engine/variants";
 import type {
@@ -43,6 +44,9 @@ export function getNightConsoleInteractions(
       .filter((action) => canUseActionOnNight(action, nightNumber))
       // O Executioner escolhe o alvo em qualquer noite, mas só até escolher.
       .filter((action) => action.id !== "choose-execution-target" || !getChosenExecutionTarget(actor.statuses))
+      // Depois de uma conversão, os Vampiros passam a noite seguinte sem morder.
+      .filter((action) => action.id !== "vampire-bite-vote"
+        || !actor.statuses?.some((status) => (typeof status === "string" ? status : status.type) === VAMPIRE_COOLDOWN_STATUS))
       .map((action) => ({
         id: `${actor.uid}:${action.id}`,
         actor,

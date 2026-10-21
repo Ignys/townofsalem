@@ -97,3 +97,52 @@ test("forger shows a random Mafia or neutral role from the game", () => {
   assert.equal(resolution.forgedRoles?.[0].targetUid, "townie");
   assert.ok(["mafioso", "framer", "disguiser", "forger"].includes(resolution.forgedRoles![0].roleId));
 });
+
+const vampires = [
+  enginePlayer("vamp", "vampire", "neutral"),
+  enginePlayer("young", "vampire", "neutral", { statuses: ["vampire-turned:2"] }),
+  enginePlayer("hunter", "vampire-hunter"),
+  enginePlayer("doctor", "doctor"),
+  enginePlayer("mafioso", "mafioso", "mafia"),
+  enginePlayer("townie", "townie"),
+];
+const bite = (target: string) => engineAction("bite", "vamp", "vampire", "vampire-bite", [target], {
+  effectType: "role-trigger", sourceType: "faction", participantUids: ["vamp", "young"],
+});
+
+test("vampires convert town, attack others and the youngest bites", () => {
+  const converted = resolveNight(engineGame(vampires, { nightNumber: 3 }), [bite("townie")]);
+  assert.deepEqual(converted.roleChanges?.map(({ playerUid, toRoleId }) => [playerUid, toRoleId]), [["townie", "vampire"]]);
+  assert.deepEqual(converted.vampireUids, ["townie", "vamp", "young"]);
+  assert.equal(converted.engineEvents.find(({ type }) => type === "VAMPIRE_CONVERTED")?.actorUid, "young");
+
+  const attacked = resolveNight(engineGame(vampires, { nightNumber: 3 }), [bite("mafioso")]);
+  assert.deepEqual(attacked.deaths, ["mafioso"]);
+
+  const healed = resolveNight(engineGame(vampires, { nightNumber: 3 }), [
+    bite("townie"),
+    engineAction("heal", "doctor", "doctor", "heal", ["townie"], { effectType: "protect", priority: 30 }),
+  ]);
+  assert.deepEqual(healed.roleChanges, []);
+});
+
+test("vampires rest a night after converting", () => {
+  const resting = vampires.map((player) => player.roleId === "vampire"
+    ? { ...player, statuses: [...player.statuses, "vampire-bite-cooldown"] }
+    : player);
+  const resolution = resolveNight(engineGame(resting, { nightNumber: 4 }), [bite("townie")]);
+  assert.deepEqual(resolution.roleChanges, []);
+  assert.ok(resolution.failedActions.includes("bite"));
+});
+
+test("vampire hunter stakes vampires and becomes a vigilante when none remain", () => {
+  const counter = resolveNight(engineGame(vampires, { nightNumber: 3 }), [bite("hunter")]);
+  assert.deepEqual(counter.deaths, ["young"]);
+
+  const lastVampire = [enginePlayer("vamp", "vampire", "neutral"), enginePlayer("hunter", "vampire-hunter"), enginePlayer("townie", "townie")];
+  const staked = resolveNight(engineGame(lastVampire), [
+    engineAction("hunt", "hunter", "vampire-hunter", "hunt", ["vamp"], { effectType: "role-trigger", priority: 45 }),
+  ]);
+  assert.deepEqual(staked.deaths, ["vamp"]);
+  assert.deepEqual(staked.roleChanges?.map(({ playerUid, toRoleId }) => [playerUid, toRoleId]), [["hunter", "vigilante"]]);
+});

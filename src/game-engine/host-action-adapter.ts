@@ -62,8 +62,11 @@ export function adaptHostActions(
   const mafiaVotes = confirmedEntries.filter(
     (entry) => entry.actionId === "mafia-kill-vote" && entry.targetUids[0],
   );
+  const vampireVotes = confirmedEntries.filter(
+    (entry) => entry.actionId === "vampire-bite-vote" && entry.targetUids[0],
+  );
   const regularEntries = confirmedEntries.filter(
-    (entry) => entry.actionId !== "mafia-kill-vote",
+    (entry) => entry.actionId !== "mafia-kill-vote" && entry.actionId !== "vampire-bite-vote",
   );
   const actions: EngineNightAction[] = regularEntries.map((entry) => {
     const role = rolesById.get(entry.roleIdSnapshot);
@@ -153,6 +156,31 @@ export function adaptHostActions(
           countsAsVisit: false,
         });
       }
+    }
+  }
+
+  if (vampireVotes.length > 0) {
+    const targetUid = resolveMafiaVoteTarget(
+      Object.fromEntries(vampireVotes.map((entry) => [entry.actorUid, entry.targetUids[0]])),
+      undefined,
+      vampireVotes[0].nightId,
+    );
+    if (!targetUid) {
+      warnings.push({ code: "VAMPIRE_VOTE_TIE", message: "A votação dos Vampiros empatou." });
+    } else {
+      // Quem morde é decidido pelo motor: o Vampiro convertido mais recentemente.
+      const participantUids = vampireVotes.map(({ actorUid }) => actorUid).sort();
+      actions.push({
+        id: `vampire-bite:${vampireVotes.map(({ id }) => id).sort().join("+")}`,
+        actorUid: participantUids[0],
+        roleId: "vampire",
+        actionId: "vampire-bite",
+        targetUids: [targetUid],
+        effectType: "role-trigger",
+        priority: 50,
+        sourceType: "faction",
+        participantUids,
+      });
     }
   }
 

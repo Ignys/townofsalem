@@ -29,8 +29,8 @@ test("rejects mismatched totals and unavailable physical copies", () => {
   );
   assert.deepEqual(
     generateBalancedRoleComposition(
-      8,
-      { town: 0, mafia: 0, neutral: 8 },
+      9,
+      { town: 0, mafia: 0, neutral: 9 },
       ROLE_DEFINITIONS,
     ),
     { ok: false, code: "INSUFFICIENT_CARDS", faction: "neutral" },

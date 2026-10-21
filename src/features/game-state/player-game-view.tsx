@@ -11,7 +11,8 @@ import { DawnReadyMeter } from "@/features/game-state/dawn-ready-meter";
 import { PlayerDawnReady } from "@/features/game-state/player-dawn-ready";
 import { useGameVariants } from "@/features/game-variants/use-game-variants";
 import { tallyMafiaKill } from "@/features/mafia/mafia-kill-projection";
-import { MafiaTeamPanel, useMafiaBoard, useMafiaTeam } from "@/features/mafia/mafia-team-panel";
+import { VAMPIRE_COOLDOWN_STATUS } from "@/game-engine/resolve-night";
+import { MafiaTeamPanel, teamKillActionId, useMafiaBoard, useMafiaTeam } from "@/features/mafia/mafia-team-panel";
 import type { NightTargetPicker } from "@/features/night-actions/night-target-picker";
 import { PlayerNightActionPanel } from "@/features/night-actions/player-night-action-panel";
 import {
@@ -27,7 +28,7 @@ import { PlayerJesterRevenge } from "@/features/voting/player-jester-revenge";
 import { VerdictVotesBoard } from "@/features/voting/verdict-votes-board";
 import { isAccusationPhase } from "@/features/voting/voting-phases";
 import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
-import type { Player } from "@/types";
+import type { NightTeam, Player } from "@/types";
 
 import { getPlayerEntries } from "./player-roster";
 
@@ -81,10 +82,15 @@ export function PlayerGameView({
   const mayorReveals = useMayorReveals(gameId);
   const accusationVoting = useAccusationVoting(gameId, game.day);
   const { accusations } = usePublicAccusations(gameId, game.day);
-  const mafiaTeam = useMafiaTeam(gameId, privateRole.privatePlayer?.faction === "mafia");
+  // Máfia e Vampiros acordam em grupo e se veem; os outros não leem nada disso.
+  const nightTeam: NightTeam | null = privateRole.privatePlayer?.roleId === "vampire"
+    ? "vampire"
+    : privateRole.privatePlayer?.faction === "mafia" ? "mafia" : null;
+  const mafiaTeam = useMafiaTeam(gameId, nightTeam);
   const mafiaBoard = useMafiaBoard(
     gameId,
-    privateRole.privatePlayer?.faction === "mafia" && game.phase === "night" ? game.currentNightId : null,
+    nightTeam && game.phase === "night" ? game.currentNightId : null,
+    nightTeam ?? "mafia",
   );
   const syncKey = useSessionSyncKey();
   const [syncOpen, setSyncOpen] = useState(false);
@@ -160,7 +166,7 @@ export function PlayerGameView({
   const holdSecrets = mafiaPartnerUids.length > 0 || (role.id === "executioner" && executionTargetUid) ? (
     <>
       {mafiaPartnerUids.length > 0 && (
-        <GuideSection title="Sua Máfia">
+        <GuideSection title={nightTeam === "vampire" ? "Seus Vampiros" : "Sua Máfia"}>
           <ul className="grid gap-1.5">
             {mafiaPartnerUids.map((uid) => (
               <li key={uid} className="flex items-center gap-2">
@@ -231,8 +237,10 @@ export function PlayerGameView({
         </div>
       </PhaseSky>
 
-      {privateRole.privatePlayer.faction === "mafia" && game.status === "in-progress" && isNight && (
+      {nightTeam && game.status === "in-progress" && isNight && (
         <MafiaTeamPanel
+          nightTeam={nightTeam}
+          resting={Boolean(privateRole.privatePlayer.statuses?.[VAMPIRE_COOLDOWN_STATUS])}
           gameId={gameId}
           viewerUid={viewerUid}
           viewerAlive={alive}
@@ -255,7 +263,7 @@ export function PlayerGameView({
           playerCount={playerCount}
           resourceUses={privateRole.privatePlayer.resourceUses}
           fastTrack={game.playMode === "hostless" && game.gamePace === "fast"}
-          mafiaTeamUids={Object.keys(mafiaTeam)}
+          teamUids={Object.keys(mafiaTeam)}
           amnesiacRolePool={gameVariants.amnesiacRolePool}
           onPickerChange={setNightPicker}
           hostless={game.playMode === "hostless"}
@@ -361,10 +369,11 @@ export function PlayerGameView({
           mayorReveals={mayorReveals}
           onSelectPlayer={setSelectedPlayerUid}
           nightPick={isNight ? nightPicker ?? undefined : undefined}
+          nightMarkTeam={nightTeam ?? undefined}
           nightMarks={
             isNight
               ? Object.fromEntries(
-                  Object.entries(tallyMafiaKill(mafiaBoard, mafiaTeam).votesByTarget).map(([uid, votes]) => [uid, votes.length]),
+                  Object.entries(tallyMafiaKill(mafiaBoard, mafiaTeam, teamKillActionId(nightTeam ?? "mafia")).votesByTarget).map(([uid, votes]) => [uid, votes.length]),
                 )
               : undefined
           }

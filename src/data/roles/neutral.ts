@@ -57,6 +57,15 @@ const curseAction = nightAction({
   engineEffectConfig: { statusType: "cursed" },
 });
 
+const vampireBiteVote = nightAction({
+  id: "vampire-bite-vote",
+  label: "Votar mordida",
+  verb: "vota para morder",
+  sharedFactionAction: true,
+  availableFromNight: 2,
+  priority: 50,
+});
+
 export const NEUTRAL_ROLES = [
   {
     id: "amnesiac",
@@ -202,6 +211,33 @@ export const NEUTRAL_ROLES = [
     actionDefinitions: [curseAction],
     action: curseAction,
     investigativeAppearance: investigativeAppearance("Witch", "neutral"),
+    verificationStatus: "verified",
+  },
+  {
+    id: "vampire",
+    name: "Vampire",
+    faction: "neutral",
+    alignment: "Neutral Chaos",
+    description:
+      "A partir da segunda noite, os Vampiros votam em quem morder; o Vampiro convertido mais recentemente faz a mordida. Membros da Town (exceto o Vampire Hunter) e neutros que não matam viram Vampiros; qualquer outro alvo é atacado.",
+    playTip:
+      "Converta roles fortes da Town cedo: cada conversão tira um voto da cidade e soma um ao seu lado.",
+    goal:
+      "Elimine toda a Town e toda a Mafia. Vampiros não vencem junto com nenhuma das duas.",
+    virtueValue: -9,
+    cardCount: 1,
+    importantInteractions: [
+      "No máximo 4 Vampiros vivos ao mesmo tempo; com o limite cheio, a mordida vira ataque.",
+      "Depois de uma conversão, os Vampiros passam uma noite sem morder.",
+      "Uma cura do Doctor, a proteção do Bodyguard ou um Veteran em Alert impedem a conversão.",
+      "Morder o Vampire Hunter mata o Vampiro que mordeu.",
+    ],
+    canDieAtNight: true,
+    wakesAtNight: true,
+    wakeOrder: 52,
+    actionDefinitions: [vampireBiteVote],
+    action: vampireBiteVote,
+    investigativeAppearance: investigativeAppearance("Vampire", "neutral"),
     verificationStatus: "verified",
   },
 ] as const satisfies readonly RoleDefinition[];

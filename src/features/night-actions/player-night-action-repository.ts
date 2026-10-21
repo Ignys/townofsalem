@@ -3,7 +3,7 @@
 import { firebaseAuth } from "@/lib/firebase/auth";
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
-import type { PlayerNightActionSubmission } from "@/types";
+import type { NightTeam, PlayerNightActionSubmission } from "@/types";
 
 function requireAuthenticatedPlayerUid(): string {
   const uid = firebaseAuth.currentUser?.uid;
@@ -27,16 +27,16 @@ export function savePlayerNightChoice(
   nightId: string,
   actionId: string,
   submission: PlayerNightActionSubmission | null,
-  shareWithMafia = false,
+  shareWithTeam?: NightTeam,
 ): Promise<void> {
   const uid = requireAuthenticatedPlayerUid();
 
   return applyAtomicUpdate({
     [firebasePaths.gamePlayerNightAction(gameId, nightId, uid, actionId)]: submission,
-    // A Máfia acompanha a escolha ao vivo.
-    ...(shareWithMafia
+    // A Máfia (ou os Vampiros) acompanha a escolha ao vivo.
+    ...(shareWithTeam
       ? {
-          [firebasePaths.gameMafiaBoardPick(gameId, nightId, uid, actionId)]: {
+          [firebasePaths.gameMafiaBoardPick(gameId, nightId, uid, actionId, shareWithTeam)]: {
             targetUids: [...(submission?.targetUids ?? [])],
             locked: false,
             updatedAt: Date.now(),

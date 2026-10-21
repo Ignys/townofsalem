@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useHostRoleAssignments } from "@/features/roles/use-host-role-assignments";
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate, observeMafiaTeam } from "@/lib/firebase/realtime-database-repository";
-import type { MafiaTeamMemberRecord } from "@/types";
+import type { MafiaTeamMemberRecord, NightTeam } from "@/types";
 
 function sameTeam(
   left: Readonly<Record<string, MafiaTeamMemberRecord>>,
@@ -20,7 +20,7 @@ function sameTeam(
  * No computador do mestre (nos dois modos): publica para a Máfia quem é da Máfia, a partir
  * das roles privadas. Acompanha mudanças de role (ex.: Amnesiac que lembra uma role da Máfia).
  */
-export function useMirrorMafiaTeam(gameId: string, hostUid: string) {
+export function useMirrorMafiaTeam(gameId: string, hostUid: string, nightTeam: NightTeam = "mafia") {
   const privateRoles = useHostRoleAssignments(gameId, hostUid);
   const [published, setPublished] = useState<Record<string, MafiaTeamMemberRecord> | null>(null);
   const writingRef = useRef(false);
@@ -29,17 +29,17 @@ export function useMirrorMafiaTeam(gameId: string, hostUid: string) {
     () => observeMafiaTeam(gameId, {
       onData: (value) => setPublished(value ?? {}),
       onError: () => setPublished(null),
-    }),
-    [gameId],
+    }, nightTeam),
+    [gameId, nightTeam],
   );
 
   const team = useMemo(
     () => Object.fromEntries(
       Object.entries(privateRoles.assignments)
-        .filter(([, assignment]) => assignment.faction === "mafia")
+        .filter(([, assignment]) => nightTeam === "vampire" ? assignment.roleId === "vampire" : assignment.faction === "mafia")
         .map(([uid, assignment]) => [uid, { roleId: assignment.roleId }]),
     ),
-    [privateRoles.assignments],
+    [nightTeam, privateRoles.assignments],
   );
 
   useEffect(() => {
@@ -47,10 +47,10 @@ export function useMirrorMafiaTeam(gameId: string, hostUid: string) {
     if (Object.keys(privateRoles.assignments).length === 0 || sameTeam(team, published)) return;
 
     writingRef.current = true;
-    applyAtomicUpdate({ [firebasePaths.gameMafiaTeam(gameId)]: team })
+    applyAtomicUpdate({ [firebasePaths.gameMafiaTeam(gameId, nightTeam)]: team })
       .catch(() => undefined)
       .finally(() => {
         writingRef.current = false;
       });
-  }, [gameId, privateRoles.assignments, privateRoles.loaded, published, team]);
+  }, [gameId, nightTeam, privateRoles.assignments, privateRoles.loaded, published, team]);
 }

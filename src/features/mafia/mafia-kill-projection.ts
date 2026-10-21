@@ -19,13 +19,14 @@ export interface MafiaKillTally {
 export function tallyMafiaKill(
   board: Readonly<Record<string, Readonly<Record<string, MafiaBoardPickRecord>>>>,
   team: Readonly<Record<string, MafiaTeamMemberRecord>>,
+  actionId: string = MAFIA_KILL_ACTION_ID,
 ): MafiaKillTally {
   const votesByTarget: MafiaKillTally["votesByTarget"] = {};
   const votes: Record<string, string> = {};
 
   for (const [uid, picks] of Object.entries(board)) {
     if (!team[uid]) continue;
-    const pick = picks[MAFIA_KILL_ACTION_ID];
+    const pick = picks[actionId];
     const targetUid = pick?.targetUids?.[0];
     if (!targetUid) continue;
     (votesByTarget[targetUid] ??= []).push({ uid, locked: Boolean(pick.locked) });

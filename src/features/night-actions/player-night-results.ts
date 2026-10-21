@@ -171,6 +171,7 @@ export function buildPlayerDawnNightResults(
   });
 
   (resolution.roleChanges ?? []).forEach((change) => {
+    if (change.reasonCode === "VAMPIRE_CONVERTED") return;
     const role = getRoleById(change.toRoleId);
     add(change.playerUid, role
       ? {
@@ -180,6 +181,19 @@ export function buildPlayerDawnNightResults(
           ],
         }
       : resolutionTextMessage(`Sua nova role é ${change.toRoleId}.`));
+  });
+
+  // Conversão de Vampiro: o novo membro e os demais Vampiros ficam sabendo.
+  (resolution.roleChanges ?? []).filter(({ reasonCode }) => reasonCode === "VAMPIRE_CONVERTED").forEach((change) => {
+    add(change.playerUid, resolutionTextMessage("Você se tornou um vampiro."));
+    (resolution.vampireUids ?? []).filter((uid) => uid !== change.playerUid).forEach((uid) => {
+      add(uid, {
+        parts: [
+          resolutionPlayerPart(change.playerUid, playerNames),
+          resolutionTextPart(" se tornou um vampiro."),
+        ],
+      });
+    });
   });
 
   // Quem o Transporter trocou de lugar fica sabendo, sem saber por quem foi trocado.

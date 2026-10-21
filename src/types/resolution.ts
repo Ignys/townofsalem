@@ -56,7 +56,10 @@ export interface DayAnnouncementRecord {
   createdAt: number;
 }
 
-/** `mafiaTeam/{uid}`: quem é da Máfia, visível só para a Máfia. */
+/** Grupo que acorda junto e se vê à noite: a Máfia ou os Vampiros. */
+export type NightTeam = "mafia" | "vampire";
+
+/** `mafiaTeam/{uid}` (ou `vampireTeam/{uid}`): quem é do grupo, visível só para o grupo. */
 export interface MafiaTeamMemberRecord {
   roleId: string;
 }

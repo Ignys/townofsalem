@@ -24,6 +24,14 @@ const vigilanteShot = nightAction({
   engineEffectType: "attack",
 });
 
+const huntAction = nightAction({
+  id: "hunt",
+  label: "Caçar",
+  verb: "caça",
+  priority: 45,
+  engineEffectType: "role-trigger",
+});
+
 export const TOWN_KILLING_ROLES = [
   {
     id: "veteran",
@@ -71,6 +79,30 @@ export const TOWN_KILLING_ROLES = [
     actionDefinitions: [vigilanteShot],
     action: vigilanteShot,
     investigativeAppearance: investigativeAppearance("Vigilante", "town"),
+    verificationStatus: "verified",
+  },
+  {
+    id: "vampire-hunter",
+    name: "Vampire Hunter",
+    faction: "town",
+    alignment: "Town Killing",
+    description:
+      "À noite, escolha alguém para investigar. Se for um Vampire, você o mata. Qualquer Vampire que tentar te morder também morre.",
+    playTip:
+      "Cace quem a cidade suspeita de ser Vampire: um acerto confirma e elimina ao mesmo tempo.",
+    goal: TOWN_GOAL,
+    virtueValue: 4,
+    cardCount: 1,
+    importantInteractions: [
+      "Não pode ser convertido em Vampire.",
+      "Quando todos os Vampiros morrem, você vira Vigilante com apenas uma bala.",
+    ],
+    canDieAtNight: true,
+    wakesAtNight: true,
+    wakeOrder: 45,
+    actionDefinitions: [huntAction],
+    action: huntAction,
+    investigativeAppearance: investigativeAppearance("Vampire Hunter", "town"),
     verificationStatus: "verified",
   },
 ] as const satisfies readonly RoleDefinition[];

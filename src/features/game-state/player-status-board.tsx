@@ -1,5 +1,6 @@
 "use client";
 
+import { GiFangs } from "react-icons/gi";
 import { PiKnife } from "react-icons/pi";
 import { useMemo } from "react";
 
@@ -24,6 +25,8 @@ interface PlayerStatusBoardProps {
   nightPick?: NightTargetPicker;
   /** Noite, para a Máfia: quantos parceiros votaram para atacar cada jogador. */
   nightMarks?: Readonly<Record<string, number>>;
+  /** De quem são os votos: presas para os Vampiros, faca para a Máfia. */
+  nightMarkTeam?: "mafia" | "vampire";
   accusation?: {
     vote: string | null;
     disabled: boolean;
@@ -74,6 +77,7 @@ export function PlayerStatusBoard({
   accusation,
   nightPick,
   nightMarks,
+  nightMarkTeam = "mafia",
 }: PlayerStatusBoardProps) {
   const { alive, dead } = useMemo(() => {
     const entries = Object.entries(players).sort(bySeat);
@@ -165,10 +169,12 @@ export function PlayerStatusBoard({
       )}
       {nightMarks?.[uid] ? (
         <span
-          aria-label={`${nightMarks[uid]} ${nightMarks[uid] === 1 ? "voto" : "votos"} da Máfia`}
-          className="flex shrink-0 items-center gap-1 rounded-full bg-[#7d2330] px-2 py-0.5 text-xs font-bold text-white tabular-nums"
+          aria-label={`${nightMarks[uid]} ${nightMarks[uid] === 1 ? "voto" : "votos"} ${nightMarkTeam === "vampire" ? "dos Vampiros" : "da Máfia"}`}
+          className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-xs font-bold text-white tabular-nums ${nightMarkTeam === "vampire" ? "bg-[#4c5a3c]" : "bg-[#7d2330]"}`}
         >
-          <PiKnife aria-hidden="true" className="size-3.5" />
+          {nightMarkTeam === "vampire"
+            ? <GiFangs aria-hidden="true" className="size-3.5" />
+            : <PiKnife aria-hidden="true" className="size-3.5" />}
           {nightMarks[uid]}
         </span>
       ) : null}

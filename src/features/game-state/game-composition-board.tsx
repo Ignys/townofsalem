@@ -18,6 +18,7 @@ export const NEUTRAL_ROLE_COLORS: Record<string, string> = {
   executioner: "#acacac",
   witch: "#bf5fff",
   amnesiac: "#22ffff",
+  vampire: "#9aab84", // #7B8968 clareado
 };
 
 /** Cor do nome da role: própria para neutras, da facção para Cidade e Máfia. */

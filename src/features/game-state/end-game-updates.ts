@@ -69,6 +69,9 @@ export function createEndGameUpdates({
     [firebasePaths.gameMafiaTeam(gameId)]: null,
     [firebasePaths.gameMafiaBoards(gameId)]: null,
     [firebasePaths.gameAllMafiaReactions(gameId)]: null,
+    [firebasePaths.gameMafiaTeam(gameId, "vampire")]: null,
+    [firebasePaths.gameMafiaBoards(gameId, "vampire")]: null,
+    [firebasePaths.gameAllMafiaReactions(gameId, "vampire")]: null,
     [firebasePaths.gameAllNightPasses(gameId)]: null,
     [firebasePaths.gameAllDawnReady(gameId)]: null,
     [firebasePaths.gameEvent(gameId, eventId)]: {

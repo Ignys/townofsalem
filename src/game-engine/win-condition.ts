@@ -115,7 +115,7 @@ export const CARD_GAME_STALEMATE_RULES: readonly WinConditionRule[] = [
 
 /** Neutros que não impedem a vitória de ninguém (o regulamento: "may still win if ... alive"). */
 const BENIGN_NEUTRAL_ROLES = new Set(["jester", "executioner", "amnesiac"]);
-const NEUTRAL_KILLER_ROLES = new Set(["serial-killer", "werewolf", "witch"]);
+const NEUTRAL_KILLER_ROLES = new Set(["serial-killer", "werewolf", "witch", "vampire"]);
 
 /** Lado que precisa eliminar os outros para vencer; neutros benignos não têm lado. */
 function getEliminationSide(player: EngineGameState["players"][number]): string | null {

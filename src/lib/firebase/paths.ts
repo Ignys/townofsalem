@@ -1,3 +1,4 @@
+import type { NightTeam } from "@/types";
 import type {
   GamePublicRecord,
   GameSettingsRecord,
@@ -122,15 +123,16 @@ export const firebasePaths = {
   gameMayorReveals: (gameId: string) => `${gamePath(gameId)}/mayorReveals` as const,
   gameMayorReveal: (gameId: string, uid: string) => `${gamePath(gameId)}/mayorReveals/${uid}` as const,
 
-  gameMafiaTeam: (gameId: string) => `${gamePath(gameId)}/mafiaTeam` as const,
-  gameMafiaBoards: (gameId: string) => `${gamePath(gameId)}/mafiaBoard` as const,
-  gameMafiaBoard: (gameId: string, nightId: string) => `${gamePath(gameId)}/mafiaBoard/${nightId}` as const,
-  gameMafiaBoardPick: (gameId: string, nightId: string, uid: string, actionId: string) =>
-    `${gamePath(gameId)}/mafiaBoard/${nightId}/${uid}/${actionId}` as const,
-  gameAllMafiaReactions: (gameId: string) => `${gamePath(gameId)}/mafiaReactions` as const,
-  gameMafiaReactions: (gameId: string, nightId: string) => `${gamePath(gameId)}/mafiaReactions/${nightId}` as const,
-  gameMafiaReaction: (gameId: string, nightId: string, reactionId: string) =>
-    `${gamePath(gameId)}/mafiaReactions/${nightId}/${reactionId}` as const,
+  // A Máfia e os Vampiros usam a mesma estrutura, com o prefixo do grupo.
+  gameMafiaTeam: (gameId: string, team: NightTeam = "mafia") => `${gamePath(gameId)}/${team}Team` as const,
+  gameMafiaBoards: (gameId: string, team: NightTeam = "mafia") => `${gamePath(gameId)}/${team}Board` as const,
+  gameMafiaBoard: (gameId: string, nightId: string, team: NightTeam = "mafia") => `${gamePath(gameId)}/${team}Board/${nightId}` as const,
+  gameMafiaBoardPick: (gameId: string, nightId: string, uid: string, actionId: string, team: NightTeam = "mafia") =>
+    `${gamePath(gameId)}/${team}Board/${nightId}/${uid}/${actionId}` as const,
+  gameAllMafiaReactions: (gameId: string, team: NightTeam = "mafia") => `${gamePath(gameId)}/${team}Reactions` as const,
+  gameMafiaReactions: (gameId: string, nightId: string, team: NightTeam = "mafia") => `${gamePath(gameId)}/${team}Reactions/${nightId}` as const,
+  gameMafiaReaction: (gameId: string, nightId: string, reactionId: string, team: NightTeam = "mafia") =>
+    `${gamePath(gameId)}/${team}Reactions/${nightId}/${reactionId}` as const,
 
   gameNightPasses: (gameId: string, nightId: string) => `${gamePath(gameId)}/nightPasses/${nightId}` as const,
   gameNightPass: (gameId: string, nightId: string, uid: string) =>
