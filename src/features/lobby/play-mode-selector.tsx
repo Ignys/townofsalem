@@ -38,10 +38,12 @@ interface PlayModeSelectorProps {
   code: string;
   /** Só celulares: quem criou a sala já entrou como jogador. */
   hostJoined: boolean;
+  /** Modos que aparecem mas não podem ser escolhidos neste aparelho. */
+  unavailableModes?: readonly GamePlayMode[];
 }
 
 /** Escolha do modo de jogo, só no lobby (a regra do RTDB trava o modo depois do início). */
-export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined }: PlayModeSelectorProps) {
+export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined, unavailableModes = [] }: PlayModeSelectorProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
@@ -86,13 +88,14 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined 
       <div role="radiogroup" aria-label="Modo de jogo" className="mt-4 grid gap-2">
         {OPTIONS.map(({ mode, title, description, icon: Icon }) => {
           const selected = mode === playMode;
+          const unavailable = unavailableModes.includes(mode);
           return (
             <button
               key={mode}
               type="button"
               role="radio"
               aria-checked={selected}
-              disabled={saving}
+              disabled={saving || unavailable}
               onClick={() => select(mode)}
               className={`flex items-center gap-3 rounded-xl border px-3 py-3 text-left transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-60 ${
                 selected ? "border-[#d3b88c]/70 bg-[#d3b88c]/[0.08]" : "border-white/10 hover:border-white/25 hover:bg-white/[0.03]"
@@ -107,6 +110,7 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined 
               <span className="min-w-0 flex-1">
                 <span className="block font-semibold text-[#fffaf0]">{title}</span>
                 {selected && <span className="mt-0.5 block text-xs leading-5 text-[#a9a297]">{description}</span>}
+                {unavailable && <span className="mt-0.5 block text-xs leading-5 text-[#a9a297]">Precisa de um computador na mesa.</span>}
               </span>
               <span
                 aria-hidden="true"

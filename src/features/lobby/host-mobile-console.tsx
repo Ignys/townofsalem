@@ -1,6 +1,6 @@
 "use client";
 
-import { History, LayoutDashboard, Moon, ScrollText, Sun, Users, Vote, X } from "lucide-react";
+import { History, LayoutDashboard, Moon, ScrollText, Settings, Sun, Users, Vote, X } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
 const DESKTOP_QUERY = "(min-width: 1024px)";
@@ -18,7 +18,7 @@ export function useIsDesktop() {
     );
 }
 
-export type HostMobileTabId = "table" | "phase" | "voting" | "history" | "setup";
+export type HostMobileTabId = "players" | "roles" | "settings" | "table" | "phase" | "voting" | "history";
 
 export interface HostMobileTab {
     id: HostMobileTabId;
@@ -29,7 +29,7 @@ export interface HostMobileTab {
 interface HostMobileConsoleProps {
     code: string;
     phase: string | undefined;
-    /** Cabeçalho completo do PC; no celular mora dentro da aba "Mesa"/"Sala". */
+    /** Cabeçalho completo do PC; no celular mora dentro da aba "Mesa" ou "Sala". */
     header: ReactNode;
     sidebar: ReactNode;
     tabs: HostMobileTab[];
@@ -46,13 +46,16 @@ const TAB_ICONS: Record<HostMobileTabId, typeof Moon> = {
     phase: Moon,
     voting: Vote,
     history: History,
-    setup: ScrollText,
+    players: Users,
+    roles: ScrollText,
+    settings: Settings,
 };
 
 export function HostMobileConsole({ code, phase, header, sidebar, tabs, background, activeTab, onTabChange, playersOpen, onPlayersOpenChange }: HostMobileConsoleProps) {
     const drawerRef = useRef<HTMLDialogElement>(null);
     const [scrollPositions] = useState(() => new Map<HostMobileTabId, number>());
     const current = tabs.some((tab) => tab.id === activeTab) ? activeTab : tabs[0].id;
+    const hasPlayersTab = tabs.some((tab) => tab.id === "players");
     const currentLabel = tabs.find((tab) => tab.id === current)?.label;
 
     useEffect(() => {
@@ -77,14 +80,14 @@ export function HostMobileConsole({ code, phase, header, sidebar, tabs, backgrou
             {background}
 
             <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#2e3136]/70 bg-[#16181b]/95 px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] backdrop-blur">
-                <button
+                {!hasPlayersTab && (<button
                     type="button"
                     onClick={() => onPlayersOpenChange(true)}
                     aria-label="Abrir jogadores"
                     className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-white/15 text-[#e6cfa9] focus-visible:outline-3 focus-visible:outline-[#d3b88c]"
                 >
                     <Users aria-hidden="true" className="size-5" />
-                </button>
+                </button>)}
                 <div className="min-w-0 flex-1">
                     <p className="truncate font-serif text-lg font-semibold leading-tight text-[#fffaf0]">{currentLabel}</p>
                     <p className="truncate text-xs text-[#9f9990]">
@@ -104,7 +107,7 @@ export function HostMobileConsole({ code, phase, header, sidebar, tabs, backgrou
                 {tabs.map((tab) => (
                     // Abas escondidas continuam montadas: seleção da noite e votos não se perdem.
                     <section key={tab.id} hidden={tab.id !== current} aria-label={tab.label} className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
-                        {tab.id === "table" || tab.id === "setup" ? <div className="-mx-3 -mt-3">{header}</div> : null}
+                        {tab.id === "table" || tab.id === "settings" ? <div className="-mx-3 -mt-3">{header}</div> : null}
                         {tab.content}
                     </section>
                 ))}

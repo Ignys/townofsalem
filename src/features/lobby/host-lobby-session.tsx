@@ -296,23 +296,26 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
         const tabs: HostMobileTab[] = compositionEditable
             ? [
                   {
-                      id: "setup",
+                      id: "players",
+                      label: "Jogadores",
+                      // A lista vira página inteira: sem o limite de altura da coluna do PC.
+                      content: <div className="[&>aside]:max-h-none [&>aside]:rounded-2xl [&>aside]:border">{sidebar}</div>,
+                  },
+                  { id: "roles", label: "Roles", content: <HostRoleComposition gameId={gameId} playerCount={playerCount} editable /> },
+                  {
+                      id: "settings",
                       label: "Sala",
                       content: (
-                          <HostRoleComposition
-                              gameId={gameId}
-                              playerCount={playerCount}
-                              editable
-                              playModeSelector={
-                                  <PlayModeSelector
-                                      gameId={gameId}
-                                      playMode={game.playMode ?? "hosted"}
-                                      gamePace={game.gamePace ?? "relaxed"}
-                                      code={sessionState.session.code}
-                                      hostJoined={Boolean(lobby.players[hostUid])}
-                                  />
-                              }
-                          />
+                          <div className="panel-private">
+                              <PlayModeSelector
+                                  gameId={gameId}
+                                  playMode={game.playMode ?? "hosted"}
+                                  gamePace={game.gamePace ?? "relaxed"}
+                                  code={sessionState.session.code}
+                                  hostJoined={Boolean(lobby.players[hostUid])}
+                                  unavailableModes={["hostless"]}
+                              />
+                          </div>
                       ),
                   },
               ]
