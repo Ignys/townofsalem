@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowLeft, Dices } from "lucide-react";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { getRoleById } from "@/data/roles";
 import { PlayerRoleCard } from "@/features/game-state/player-role-card";
@@ -19,10 +19,16 @@ export function PlayerLobbyRolesTab({ gameId, playerCount }: Readonly<{ gameId: 
   const composition = useRoleComposition(gameId);
   const { variants } = useGameVariants(gameId);
   const [selected, setSelected] = useState<RoleDefinition | null>(null);
+  // Voltar da role devolve a lista ao ponto em que o jogador estava.
+  const listScroll = useRef(0);
+
+  useLayoutEffect(() => {
+    window.scrollTo({ top: selected ? 0 : listScroll.current });
+  }, [selected]);
 
   const open = (role: RoleDefinition) => {
+    listScroll.current = window.scrollY;
     setSelected(role);
-    window.scrollTo({ top: 0 });
   };
 
   if (selected) {
