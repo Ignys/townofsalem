@@ -3,6 +3,7 @@
 import { Bookmark, SlidersHorizontal, Trash2, WandSparkles } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 
+import { getRoleById } from "@/data/roles";
 import type { RoleDefinition } from "@/types";
 import { firebaseAuth } from "@/lib/firebase/auth";
 
@@ -33,6 +34,25 @@ interface CompositionToolsProps {
   respectCardCount: boolean;
   onRespectCardCountChange: (value: boolean) => void;
   onApply: (roleIds: readonly string[]) => void;
+  /** "mobile": blocos grandes e composições salvas com a proporção das facções. */
+  layout?: "desktop" | "mobile";
+}
+
+const FACTION_BAR = [
+  { faction: "town", color: "#3dd69b" },
+  { faction: "mafia", color: "#db4242" },
+  { faction: "neutral", color: "#a8a8a8" },
+  { faction: "any", color: "#d3b88c" },
+] as const;
+
+/** Proporção de cada facção numa composição salva; slots aleatórios contam pela facção do slot. */
+function factionShares(roleIds: readonly string[]) {
+  const counts: Record<string, number> = {};
+  for (const id of roleIds) {
+    const faction = getRoleById(id)?.faction ?? getRandomRoleSlot(id)?.faction ?? "any";
+    counts[faction] = (counts[faction] ?? 0) + 1;
+  }
+  return FACTION_BAR.map((entry) => ({ ...entry, count: counts[entry.faction] ?? 0 })).filter(({ count }) => count > 0);
 }
 
 export function CompositionTools({
@@ -43,6 +63,7 @@ export function CompositionTools({
   respectCardCount,
   onRespectCardCountChange,
   onApply,
+  layout = "desktop",
 }: CompositionToolsProps) {
   const [feedback, setFeedback] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -137,6 +158,136 @@ export function CompositionTools({
     );
   };
 
+  const completeCurrent = () => {
+    // ponytail: random slots are kept as-is and don't count toward faction balance.
+    const randomSlots = roleIds.filter((id) => getRandomRoleSlot(id));
+    const fixed = roleIds.filter((id) => !getRandomRoleSlot(id));
+    applySuggestedComposition(playerCount - randomSlots.length, fixed, randomSlots);
+  };
+
+  const semiAutomaticDialog = dialogOpen && (
+    <SemiAutomaticCompositionDialog
+      initialPlayerCount={autoUnavailable ? 10 : playerCount}
+      roles={roles}
+      respectCardCount={respectCardCount}
+      onRespectCardCountChange={onRespectCardCountChange}
+      onCancel={() => setDialogOpen(false)}
+      onConfirm={(requestedPlayerCount, requiredRoleIds, excludedRoleIds, exactRoleCounts) => {
+        applySuggestedComposition(requestedPlayerCount, requiredRoleIds, [], excludedRoleIds, exactRoleCounts);
+        setDialogOpen(false);
+      }}
+    />
+  );
+
+  if (layout === "mobile") {
+    const tileClass =
+      "flex min-h-24 flex-col items-start justify-between gap-2 rounded-2xl border border-white/10 bg-white/[0.02] p-3.5 text-left transition-colors active:bg-white/[0.06] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-45";
+    return (
+      <section aria-labelledby="composition-tools-title">
+        <h2 id="composition-tools-title" className="font-serif text-lg font-semibold text-[#fffaf0]">
+          Composições
+        </h2>
+
+        <div className="mt-3 grid grid-cols-2 gap-2.5">
+          <button type="button" disabled={disabled || autoUnavailable} onClick={completeCurrent} className={tileClass}>
+            <span aria-hidden="true" className="grid size-10 place-items-center rounded-xl bg-[#d3b88c]/12 text-[#d3b88c]">
+              <WandSparkles className="size-5" />
+            </span>
+            <span>
+              <span className="block font-semibold text-[#fffaf0]">Automática</span>
+              <span className="block text-xs text-[#8d877e]">Completa para {playerCount}</span>
+            </span>
+          </button>
+          <button type="button" disabled={disabled} onClick={() => setDialogOpen(true)} className={tileClass}>
+            <span aria-hidden="true" className="grid size-10 place-items-center rounded-xl bg-white/[0.06] text-[#d7d0c4]">
+              <SlidersHorizontal className="size-5" />
+            </span>
+            <span>
+              <span className="block font-semibold text-[#fffaf0]">Semiautomática</span>
+              <span className="block text-xs text-[#8d877e]">Você escolhe o que entra</span>
+            </span>
+          </button>
+        </div>
+
+        <h3 className="mt-6 text-sm font-semibold text-[#d7d0c4]">Salvas</h3>
+        {presets === null ? (
+          <p role="status" className="mt-2 text-sm text-[#a9a297]">Carregando composições…</p>
+        ) : presets.length === 0 ? (
+          <p className="mt-2 text-sm text-[#8d877e]">Nenhuma salva ainda.</p>
+        ) : (
+          <ul className="mt-1">
+            {presets.map((preset) => (
+              <li key={preset.id} className="flex items-center gap-1 border-b border-white/7 last:border-b-0">
+                <button
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    onApply(preset.roleIds);
+                    setFeedback(`Composição "${preset.name}" aplicada.`);
+                  }}
+                  className="flex min-h-16 min-w-0 flex-1 items-center gap-3 rounded-xl py-2 text-left transition-colors active:bg-white/[0.04] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-45"
+                >
+                  <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-xl bg-[#d3b88c]/10 text-[#d3b88c]">
+                    <Bookmark className="size-[18px]" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-[15px] font-semibold text-[#fffaf0]">{preset.name}</span>
+                    <span className="mt-1.5 flex items-center gap-2">
+                      <span aria-hidden="true" className="flex h-1.5 w-24 overflow-hidden rounded-full bg-white/8">
+                        {factionShares(preset.roleIds).map(({ faction, color, count }) => (
+                          <span key={faction} style={{ flexGrow: count, backgroundColor: color }} />
+                        ))}
+                      </span>
+                      <span className="text-xs text-[#8d877e] tabular-nums">{preset.roleIds.length} roles</span>
+                    </span>
+                  </span>
+                </button>
+                {preset.createdByUid === viewerUid && (
+                  <button
+                    type="button"
+                    onClick={() => void handleDeletePreset(preset)}
+                    aria-label={`Apagar a composição ${preset.name}`}
+                    className="grid size-11 shrink-0 place-items-center rounded-xl text-[#6f6a63] transition-colors active:bg-[#a33843]/15 active:text-[#f0b9bd] focus-visible:outline-2 focus-visible:outline-[#d3b88c]"
+                  >
+                    <Trash2 aria-hidden="true" className="size-4" />
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <form onSubmit={(event) => void handleSavePreset(event)} className="mt-4 flex gap-2">
+          <label htmlFor="preset-name-mobile" className="sr-only">
+            Nome da composição atual
+          </label>
+          <input
+            id="preset-name-mobile"
+            value={presetName}
+            maxLength={40}
+            onChange={(event) => setPresetName(event.target.value)}
+            placeholder="Salvar a atual como…"
+            enterKeyHint="done"
+            disabled={disabled || roleIds.length === 0}
+            className="min-h-12 min-w-0 flex-1 rounded-xl border border-white/12 bg-black/25 px-3.5 text-base text-[#fffaf0] outline-none placeholder:text-[#6f6a63] focus:border-[#d3b88c]/60 disabled:opacity-50"
+          />
+          <button
+            type="submit"
+            disabled={disabled || savingPreset || roleIds.length === 0 || !presetName.trim()}
+            className="btn-quiet-dark min-h-12 rounded-xl px-4"
+          >
+            {savingPreset ? "Salvando…" : "Salvar"}
+          </button>
+        </form>
+
+        <p role="status" aria-live="polite" className="mt-2 min-h-5 text-xs leading-5 text-[#bdb7ad]">
+          {feedback}
+        </p>
+        {semiAutomaticDialog}
+      </section>
+    );
+  }
+
   return (
     <section>
       <h2 className="font-serif text-xl font-semibold text-[#fffaf0]">Composições</h2>
@@ -145,12 +296,7 @@ export function CompositionTools({
         <button
           type="button"
           disabled={disabled || autoUnavailable}
-          onClick={() => {
-            // ponytail: random slots are kept as-is and don't count toward faction balance.
-            const randomSlots = roleIds.filter((id) => getRandomRoleSlot(id));
-            const fixed = roleIds.filter((id) => !getRandomRoleSlot(id));
-            applySuggestedComposition(playerCount - randomSlots.length, fixed, randomSlots);
-          }}
+          onClick={completeCurrent}
           title={`Completa a composição atual para ${playerCount} jogadores`}
           className="flex min-h-9 items-center gap-2 rounded-lg border border-white/10 px-2.5 text-left text-xs font-semibold text-[#d7d0c4] transition-colors hover:border-white/20 hover:bg-white/[0.04] focus-visible:outline-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:opacity-45"
         >
@@ -234,19 +380,7 @@ export function CompositionTools({
         {feedback}
       </p>
 
-      {dialogOpen && (
-        <SemiAutomaticCompositionDialog
-          initialPlayerCount={autoUnavailable ? 10 : playerCount}
-          roles={roles}
-          respectCardCount={respectCardCount}
-          onRespectCardCountChange={onRespectCardCountChange}
-          onCancel={() => setDialogOpen(false)}
-          onConfirm={(requestedPlayerCount, requiredRoleIds, excludedRoleIds, exactRoleCounts) => {
-            applySuggestedComposition(requestedPlayerCount, requiredRoleIds, [], excludedRoleIds, exactRoleCounts);
-            setDialogOpen(false);
-          }}
-        />
-      )}
+      {semiAutomaticDialog}
     </section>
   );
 }

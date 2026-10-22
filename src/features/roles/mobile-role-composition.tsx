@@ -296,15 +296,11 @@ export function MobileRolePicker({ gameId, playerCount }: MobileRoleCompositionP
                 </ul>
             </section>
 
-            <details className="panel-private group">
-                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between font-serif text-lg font-semibold text-[#fffaf0]">
-                    Composições prontas
-                    <span aria-hidden="true" className="text-sm text-[#a9a297] transition-transform group-open:rotate-180">
-                        ▾
-                    </span>
-                </summary>
-                <div className="mt-3 border-t border-white/10 pt-4">
+            <div aria-hidden="true" className="h-px bg-linear-to-r from-transparent via-[#d3b88c]/35 to-transparent" />
+            <div>
+                <div>
                     <CompositionTools
+                        layout="mobile"
                         roles={availableRoles}
                         playerCount={playerCount}
                         roleIds={composition.roleIds}
@@ -314,7 +310,7 @@ export function MobileRolePicker({ gameId, playerCount }: MobileRoleCompositionP
                         onApply={(roleIds) => void state.setRoleIds(roleIds)}
                     />
                 </div>
-            </details>
+            </div>
         </div>
     );
 }
