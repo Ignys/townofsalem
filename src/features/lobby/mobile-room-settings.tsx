@@ -3,6 +3,7 @@
 import { Check, Clipboard, Share2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
+import { copyText } from "@/lib/utils/copy-text";
 import { buildRoomShareUrl } from "@/lib/utils/room-share-url";
 
 import type { FirebaseConnectionStatus } from "./use-firebase-connection";
@@ -27,7 +28,7 @@ export function MobileRoomSettings({ code, connectionStatus, playModeSelector }:
 
     const copy = async (value: string, kind: "code" | "link") => {
         try {
-            await navigator.clipboard.writeText(value);
+            await copyText(value);
             setFeedback(kind);
         } catch {
             setFeedback("error");
@@ -40,8 +41,9 @@ export function MobileRoomSettings({ code, connectionStatus, playModeSelector }:
         if (!navigator.share) return copy(url, "link");
         try {
             await navigator.share({ title: "Town of Salem", text: `Entre na sala ${code}`, url });
-        } catch {
-            // Fechar o menu sem escolher nada não é erro.
+        } catch (error) {
+            // Fechar o menu sem escolher nada não é erro; qualquer outra falha cai na cópia.
+            if (!(error instanceof DOMException && error.name === "AbortError")) await copy(url, "link");
         }
     };
 

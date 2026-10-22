@@ -1,5 +1,6 @@
 "use client";
 
+import { copyText } from "@/lib/utils/copy-text";
 import { useState } from "react";
 
 interface HostDiagnosticsProps {
@@ -12,7 +13,7 @@ export function HostDiagnostics({ gameId, roomCode }: HostDiagnosticsProps) {
 
   const copy = async (label: string, value: string) => {
     try {
-      await navigator.clipboard.writeText(value);
+      await copyText(value);
       setFeedback(`${label} copiado.`);
     } catch {
       setFeedback(`Não foi possível copiar ${label.toLowerCase()}.`);

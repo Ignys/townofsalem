@@ -2,6 +2,7 @@
 
 import { useState, useSyncExternalStore } from "react";
 
+import { copyText } from "@/lib/utils/copy-text";
 import { buildRoomShareUrl } from "@/lib/utils/room-share-url";
 import { Clipboard, Link2 } from "lucide-react";
 
@@ -26,7 +27,7 @@ export function RoomShareCard({ code }: RoomShareCardProps) {
 
   const copyValue = async (value: string, feedback: "code" | "link") => {
     try {
-      await navigator.clipboard.writeText(value);
+      await copyText(value);
     } catch {
       console.log(feedback)
     }
