@@ -25,7 +25,7 @@ import { firebasePaths } from "@/lib/firebase/paths";
 import { isHostlessGame } from "@/lib/firebase/schema";
 
 import { HostLobbyHeader } from "./host-lobby-header";
-import { HostPlayerSidebar } from "./host-player-sidebar";
+import { HostPlayerCountActions, HostPlayerSidebar } from "./host-player-sidebar";
 import { LobbySessionNotice } from "./lobby-session-notice";
 import { getRestoreHostSessionErrorMessage, RestoreHostSessionError } from "./restore-host-session-error";
 import type { RestoredHostSession } from "./restore-host-session";
@@ -299,7 +299,17 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                       id: "players",
                       label: "Jogadores",
                       // A lista vira página inteira: sem o limite de altura da coluna do PC.
-                      content: <div className="[&>aside]:max-h-none [&>aside]:rounded-2xl [&>aside]:border">{sidebar}</div>,
+                      headerActions: <HostPlayerCountActions gameId={gameId} players={lobby.players} gameStarted={false} />,
+                      content: (
+                          <HostPlayerSidebar
+                              gameId={gameId}
+                              verifiedHostUid={hostUid}
+                              players={lobby.players}
+                              gameStarted={false}
+                              statusEditable={false}
+                              layout="page"
+                          />
+                      ),
                   },
                   { id: "roles", label: "Roles", content: <HostRoleComposition gameId={gameId} playerCount={playerCount} editable layout="mobile" /> },
                   {
@@ -365,6 +375,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
             <HostMobileConsole
                 code={sessionState.session.code}
                 phase={compositionEditable ? undefined : game.phase}
+                roundNumber={game.nightNumber ?? 1}
                 header={header}
                 sidebar={sidebar}
                 tabs={tabs}

@@ -24,16 +24,56 @@ interface HostPlayerSidebarProps {
     gameStarted: boolean;
     statusEditable: boolean;
     onComposeAction?: (playerUid: string) => void;
+    /** "page": a lista é a página inteira (aba do celular); contagem e bot vão para o header de fora. */
+    layout?: "panel" | "page";
 }
 
-export function HostPlayerSidebar({ gameId, verifiedHostUid, players, gameStarted, statusEditable, onComposeAction }: HostPlayerSidebarProps) {
+interface HostPlayerCountActionsProps {
+    gameId: string;
+    players: Record<string, PublicPlayerRecord>;
+    gameStarted: boolean;
+}
+
+/** Contagem de ativos e botão de bot; mora no header da lista ou no header do celular. */
+export function HostPlayerCountActions({ gameId, players, gameStarted }: HostPlayerCountActionsProps) {
+    const [addingBot, setAddingBot] = useState(false);
+    const [botError, setBotError] = useState(false);
+    const connectedCount = getPlayerEntries(players).filter(([, player]) => !player.disconnected).length;
+
+    const handleAddBot = async () => {
+        setAddingBot(true);
+        setBotError(false);
+
+        try {
+            await addBotPlayer(gameId);
+        } catch {
+            setBotError(true);
+        } finally {
+            setAddingBot(false);
+        }
+    };
+
+    return (
+        <div className="flex items-center gap-2">
+            {botError && (
+                <p role="alert" className="text-xs text-[#f0b9bd]">
+                    Bot não adicionado.
+                </p>
+            )}
+            <span className="flex size-8 items-center justify-center rounded-full bg-white/8 text-sm font-bold text-[#e6cfa9]" aria-label={`${connectedCount} jogadores ativos`}>
+                {connectedCount}
+            </span>
+            <HostAddBotButton disabled={gameStarted} adding={addingBot} onAdd={() => void handleAddBot()} />
+        </div>
+    );
+}
+
+export function HostPlayerSidebar({ gameId, verifiedHostUid, players, gameStarted, statusEditable, onComposeAction, layout = "panel" }: HostPlayerSidebarProps) {
     const playerEntries = useMemo(() => getPlayerEntries(players), [players]);
     const incomingOrder = useMemo(() => playerEntries.map(([playerUid]) => playerUid), [playerEntries]);
     const [optimisticOrder, setOptimisticOrder] = useState<string[] | null>(null);
     const [savingOrder, setSavingOrder] = useState(false);
     const [orderError, setOrderError] = useState(false);
-    const [addingBot, setAddingBot] = useState(false);
-    const [botError, setBotError] = useState(false);
     const privateRoles = useHostRoleAssignments(gameId, verifiedHostUid);
     const history = useHostHistory(gameId, verifiedHostUid);
     const actionHistory = useMemo(() => Object.values(history.actions).flatMap((actions) => Object.values(actions)), [history.actions]);
@@ -50,7 +90,6 @@ export function HostPlayerSidebar({ gameId, verifiedHostUid, players, gameStarte
     const witchInGame = Object.values(privateRoles.assignments).some(({ roleId }) => roleId === "witch");
     const assignedPlayerCount = Object.keys(privateRoles.assignments).length;
     const gamePlayerCount = gameStarted && assignedPlayerCount > 0 ? assignedPlayerCount : playerEntries.length;
-    const connectedCount = playerEntries.filter(([, player]) => !player.disconnected).length;
     const playerByUid = useMemo(() => new Map(playerEntries), [playerEntries]);
     const sensors = useSensors(
         useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -62,20 +101,7 @@ export function HostPlayerSidebar({ gameId, verifiedHostUid, players, gameStarte
     const orderedPlayerUids = optimisticOrderMatchesPlayers ? optimisticOrder : incomingOrder;
     const sidebarItems = getHostPlayerSidebarItems(orderedPlayerUids, playerByUid, gameStarted);
     const reorderEnabled = !gameStarted && playerEntries.length > 1 && !savingOrder;
-    const sidebarError = orderError || botError || Boolean(privateRoles.error) || Boolean(history.error);
-
-    const handleAddBot = async () => {
-        setAddingBot(true);
-        setBotError(false);
-
-        try {
-            await addBotPlayer(gameId);
-        } catch {
-            setBotError(true);
-        } finally {
-            setAddingBot(false);
-        }
-    };
+    const sidebarError = orderError || Boolean(privateRoles.error) || Boolean(history.error);
 
     const persistOrderChange = async (previousOrder: string[], nextOrder: string[]) => {
         setOptimisticOrder(nextOrder);
@@ -127,16 +153,13 @@ export function HostPlayerSidebar({ gameId, verifiedHostUid, players, gameStarte
     };
 
     return (
-        <aside className="max-h-[60svh] overflow-y-auto lg:max-h-none lg:h-svh border-r border-[#2e3136]/70 bg-[#16181b] p-3 shadow-[0_24px_70px_rgba(0,0,0,0.3)] lg:sticky lg:top-0">
-            <header className="flex items-center justify-between gap-4 border-b border-white/10 pb-3">
-                <h2 className="font-serif text-lg font-semibold text-[#fffaf0]">Jogadores</h2>
-                <div className="flex items-center gap-2">
-                    <span className="flex size-8 items-center justify-center rounded-full bg-white/8 text-sm font-bold text-[#e6cfa9]" aria-label={`${connectedCount} jogadores ativos`}>
-                        {connectedCount}
-                    </span>
-                    <HostAddBotButton disabled={gameStarted} adding={addingBot} onAdd={() => void handleAddBot()} />
-                </div>
-            </header>
+        <aside className={layout === "page" ? "min-w-0" : "max-h-[60svh] overflow-y-auto lg:max-h-none lg:h-svh border-r border-[#2e3136]/70 bg-[#16181b] p-3 shadow-[0_24px_70px_rgba(0,0,0,0.3)] lg:sticky lg:top-0"}>
+            {layout === "panel" && (
+                <header className="flex items-center justify-between gap-4 border-b border-white/10 pb-3">
+                    <h2 className="font-serif text-lg font-semibold text-[#fffaf0]">Jogadores</h2>
+                    <HostPlayerCountActions gameId={gameId} players={players} gameStarted={gameStarted} />
+                </header>
+            )}
 
             {playerEntries.length === 0 ? (
                 <p className="mt-4 rounded-xl border border-dashed border-white/10 px-4 py-5 text-center text-sm text-[#9f9990]">Nenhum jogador na sala.</p>
@@ -189,9 +212,7 @@ export function HostPlayerSidebar({ gameId, verifiedHostUid, players, gameStarte
                     ? "Não foi possível carregar as roles dos jogadores."
                     : history.error
                       ? "Não foi possível carregar o histórico da partida."
-                      : botError
-                        ? "Não foi possível adicionar o bot. Tente novamente."
-                        : orderError
+                      : orderError
                           ? "Não foi possível salvar a ordem. Tente novamente."
                           : savingOrder
                             ? "Salvando ordem das casas…"

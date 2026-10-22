@@ -24,11 +24,15 @@ export interface HostMobileTab {
     id: HostMobileTabId;
     label: string;
     content: ReactNode;
+    /** Resumo da aba que sobe para o header fixo (contagens, ações rápidas). */
+    headerActions?: ReactNode;
 }
 
 interface HostMobileConsoleProps {
     code: string;
     phase: string | undefined;
+    /** Número da noite atual; o dia leva o mesmo número. */
+    roundNumber?: number;
     /** Cabeçalho completo do PC; no celular mora dentro da aba "Mesa" ou "Sala". */
     header: ReactNode;
     sidebar: ReactNode;
@@ -51,12 +55,13 @@ const TAB_ICONS: Record<HostMobileTabId, typeof Moon> = {
     settings: Settings,
 };
 
-export function HostMobileConsole({ code, phase, header, sidebar, tabs, background, activeTab, onTabChange, playersOpen, onPlayersOpenChange }: HostMobileConsoleProps) {
+export function HostMobileConsole({ code, phase, roundNumber, header, sidebar, tabs, background, activeTab, onTabChange, playersOpen, onPlayersOpenChange }: HostMobileConsoleProps) {
     const drawerRef = useRef<HTMLDialogElement>(null);
     const [scrollPositions] = useState(() => new Map<HostMobileTabId, number>());
     const current = tabs.some((tab) => tab.id === activeTab) ? activeTab : tabs[0].id;
     const hasPlayersTab = tabs.some((tab) => tab.id === "players");
-    const currentLabel = tabs.find((tab) => tab.id === current)?.label;
+    const currentTab = tabs.find((tab) => tab.id === current);
+    const currentLabel = currentTab?.label;
 
     useEffect(() => {
         const drawer = drawerRef.current;
@@ -92,11 +97,12 @@ export function HostMobileConsole({ code, phase, header, sidebar, tabs, backgrou
                     <p className="truncate font-serif text-lg font-semibold leading-tight text-[#fffaf0]">{currentLabel}</p>
                     <p className="truncate text-xs text-[#9f9990]">
                         Sala {code}
-                        {phase === "night" && ", noite"}
-                        {phase === "day" && ", dia"}
+                        {phase === "night" && `, noite ${roundNumber ?? ""}`}
+                        {phase === "day" && `, dia ${roundNumber ?? ""}`}
                     </p>
                 </div>
-                {phase === "night" ? (
+                {currentTab?.headerActions}
+                {currentTab?.headerActions ? null : phase === "night" ? (
                     <Moon aria-hidden="true" className="size-5 shrink-0 text-[#d3b88c]" />
                 ) : phase === "day" ? (
                     <Sun aria-hidden="true" className="size-5 shrink-0 text-[#d3b88c]" />
