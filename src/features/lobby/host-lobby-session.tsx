@@ -78,6 +78,36 @@ function EmergencyControlsButton({ controls }: Readonly<{ controls: ReactNode }>
     );
 }
 
+/** Fim de jogo no modo só celulares: leva todos de volta ao lobby. */
+function ReturnToLobbyButton({ gameId }: Readonly<{ gameId: string }>) {
+    const [busy, setBusy] = useState(false);
+    const [error, setError] = useState(false);
+    const handleClick = async () => {
+        if (busy) return;
+        setBusy(true);
+        setError(false);
+        try {
+            const { endGame } = await import("@/features/game-state/end-game");
+            await endGame(gameId);
+        } catch {
+            setError(true);
+            setBusy(false);
+        }
+    };
+    return (
+        <div>
+            <button type="button" disabled={busy} onClick={handleClick} className="btn-primary w-full disabled:opacity-60">
+                Voltar todos ao lobby
+            </button>
+            {error && (
+                <p role="alert" className="mt-2 text-sm text-[#f0b9bd]">
+                    Não foi possível voltar ao lobby. Tente de novo.
+                </p>
+            )}
+        </div>
+    );
+}
+
 type HostSessionState = { status: "loading" } | { status: "ready"; session: RestoredHostSession } | { status: "error"; message: string };
 
 export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
@@ -219,6 +249,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                     alive={hostPlayer.alive}
                     players={lobby.players}
                     viewerUid={hostUid}
+                    gameOverAction={<ReturnToLobbyButton gameId={gameId} />}
                     footerAction={<EmergencyControlsButton controls={<HostlessTableControls gameId={gameId} game={game} />} />}
                 />
                 <div hidden aria-hidden="true">

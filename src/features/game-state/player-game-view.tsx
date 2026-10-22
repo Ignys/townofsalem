@@ -61,6 +61,8 @@ interface PlayerGameViewProps {
   viewerUid: string;
   /** Botão extra ao lado de "Ver roles do jogo" (controles de emergência do modo só celulares). */
   footerAction?: ReactNode;
+  /** Botão entre o resultado e as roles no fim de jogo. */
+  gameOverAction?: ReactNode;
 }
 
 // O número fica ao lado do ícone; o título mostra só o nome da fase.
@@ -77,6 +79,7 @@ export function PlayerGameView({
   players,
   viewerUid,
   footerAction,
+  gameOverAction,
 }: PlayerGameViewProps) {
   const privateRole = usePrivatePlayerRole(gameId);
   const gameVariants = useGameVariants(gameId);
@@ -194,7 +197,7 @@ export function PlayerGameView({
   if (game.status === "finished") {
     return (
       <div className="w-full max-w-md pb-8">
-        <GameOverCard game={game} players={players} />
+        <GameOverCard game={game} players={players} action={gameOverAction} />
       </div>
     );
   }

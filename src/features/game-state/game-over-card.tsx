@@ -1,4 +1,5 @@
 import { Skull, Trophy } from "lucide-react";
+import type { ReactNode } from "react";
 
 import { getRoleById } from "@/data/roles";
 import { FACTION_LABELS } from "@/features/roles/role-presentation";
@@ -11,10 +12,12 @@ import { RoleTag } from "./player-status-board";
 interface GameOverCardProps {
   game: GamePublicRecord;
   players: Readonly<Record<string, PublicPlayerRecord>>;
+  /** Entre o resultado e as roles (ex.: voltar todos ao lobby). */
+  action?: ReactNode;
 }
 
 /** Fim de jogo, igual para a mesa e para os celulares: vencedores, sobreviventes e as roles. */
-export function GameOverCard({ game, players }: GameOverCardProps) {
+export function GameOverCard({ game, players, action }: GameOverCardProps) {
   if (game.status !== "finished") return null;
 
   const winningFactions = game.winningFactions ?? [];
@@ -55,6 +58,8 @@ export function GameOverCard({ game, players }: GameOverCardProps) {
           </p>
         )}
       </section>
+
+      {action}
 
       {Object.keys(finalRoles).length > 0 && (
         <section aria-label="Roles da partida" className="panel-public">
