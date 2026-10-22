@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChessQueen, Info, Monitor, Smartphone, type LucideIcon } from "lucide-react";
+import { Check, ChessQueen, Hourglass, Info, Monitor, Smartphone, Timer, Zap, type LucideIcon } from "lucide-react";
 import { useRef, useState, type FormEvent } from "react";
 
 import { firebasePaths } from "@/lib/firebase/paths";
@@ -9,6 +9,8 @@ import { GameSettingsButton } from "@/features/game-variants/game-settings-butto
 import { GAME_PACE_LABELS } from "@/features/game-state/hostless-autopilot";
 import { PLAYER_NAME_MAX_LENGTH } from "@/lib/utils/player-name";
 import { GAME_PACES, type GamePace, type GamePlayMode } from "@/lib/firebase/schema";
+
+const PACE_ICONS: Record<GamePace, LucideIcon> = { relaxed: Hourglass, normal: Timer, fast: Zap };
 
 const OPTIONS: readonly { mode: GamePlayMode; title: string; description: string; icon: LucideIcon }[] = [
   {
@@ -193,10 +195,64 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
           {joinError && <p role="alert" className="text-xs text-[#f0b9bd]">{joinError}</p>}
         </form>
       )}
-      {playMode !== "hosted" && (
+      {playMode !== "hosted" && large && (
+        <div className="mt-6">
+          <h3 className="font-serif text-base font-semibold text-[#fffaf0]">Ritmo</h3>
+          {/* Lista, não pílula: no celular cada ritmo mostra seus tempos sem precisar tocar. */}
+          <div role="radiogroup" aria-label="Ritmo" className="mt-2 divide-y divide-white/8">
+            {GAME_PACES.map((pace) => {
+              const selected = pace === gamePace;
+              const { title, description } = GAME_PACE_LABELS[pace];
+              const PaceIcon = PACE_ICONS[pace];
+              const times = description.includes(" · ") ? description.split(" · ") : null;
+              return (
+                <button
+                  key={pace}
+                  type="button"
+                  role="radio"
+                  aria-checked={selected}
+                  disabled={saving}
+                  onClick={() => {
+                    if (!selected) save("gamePace", pace);
+                  }}
+                  className="flex w-full items-start gap-3 py-3.5 text-left transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-60"
+                >
+                  <span
+                    aria-hidden="true"
+                    className={`grid size-10 shrink-0 place-items-center rounded-full transition-colors ${selected ? "bg-[#d3b88c] text-[#1b1d20]" : "bg-white/[0.06] text-[#bdb7ad]"}`}
+                  >
+                    <PaceIcon className="size-[18px]" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className={`block font-semibold ${selected ? "text-[#f6dfb5]" : "text-[#fffaf0]"}`}>{title}</span>
+                    {times ? (
+                      <span className="mt-1.5 flex flex-wrap gap-1">
+                        {times.map((time) => (
+                          <span key={time} className="rounded-md bg-white/[0.05] px-1.5 py-0.5 text-[11px] leading-4 text-[#bdb7ad] tabular-nums">
+                            {time}
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      <span className="mt-0.5 block text-xs leading-[1.125rem] text-[#a9a297]">{description}</span>
+                    )}
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className={`mt-2.5 grid size-5 shrink-0 place-items-center rounded-full border-2 transition-colors ${selected ? "border-[#d3b88c]" : "border-white/20"}`}
+                  >
+                    {selected && <span className="size-2.5 rounded-full bg-[#d3b88c]" />}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+      {playMode !== "hosted" && !large && (
         <div className="mt-3 grid gap-1.5 border-t border-white/10 pt-3">
           <h3 className="text-xs font-semibold text-[#d7d0c4]">Ritmo</h3>
-          <div role="radiogroup" aria-label="Ritmo" className={`grid grid-cols-3 rounded-full border border-white/10 bg-black/20 ${large ? "p-1" : "p-0.5"}`}>
+          <div role="radiogroup" aria-label="Ritmo" className="grid grid-cols-3 rounded-full border border-white/10 bg-black/20 p-0.5">
             {GAME_PACES.map((pace) => {
               const selected = pace === gamePace;
               return (
@@ -209,7 +265,7 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
                   onClick={() => {
                     if (!selected) save("gamePace", pace);
                   }}
-                  className={`${large ? "min-h-10 text-sm" : "min-h-7"} whitespace-nowrap rounded-full px-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-60 ${
+                  className={`min-h-7 whitespace-nowrap rounded-full px-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-60 ${
                     selected ? "bg-[#d3b88c] text-[#1b1d20]" : "text-[#bdb7ad] hover:text-[#fffaf0]"
                   }`}
                 >
