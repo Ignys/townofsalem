@@ -124,8 +124,77 @@ export function RealtimeLobbyView({
     );
   }
 
+  const connectionDot =
+    connectionStatus === "connected" ? "bg-[#6f9b77]" : connectionStatus === "unavailable" ? "bg-[#a33843]" : "bg-[#c18b2f]";
+
+  // Mesa do jogador: a sala no alto e cada jogador como um assento no pergaminho.
+  if (configuring && gameId) {
+    return (
+      <section className="w-full max-w-md pb-24">
+        <header className="pt-2 text-center">
+          <h1 className="font-serif text-[2.5rem] leading-tight font-semibold tracking-tight text-[#fffaf0]">
+            {roomName ?? <span className="sr-only">Sala </span>}
+            {roomName ? null : code}
+          </h1>
+          <p className="mt-1.5 flex items-center justify-center gap-2 text-xs text-[#a9a297]">
+            {roomName && <span className="font-semibold tracking-[0.14em] text-[#d3b88c]">{code}</span>}
+            {roomName && <span aria-hidden="true" className="h-3 w-px bg-white/15" />}
+            <span aria-hidden="true" className={`size-1.5 rounded-full ${connectionDot}`} />
+            <span aria-live="polite">
+              {connectionLabels[connectionStatus]}
+              {updating ? ", atualizando…" : ""}
+            </span>
+          </p>
+        </header>
+
+        <div className="mt-7 rounded-3xl border border-[#e0cfb4] bg-[#f4ead9] px-4 pt-5 pb-4 text-[#251f1d] shadow-[0_24px_70px_rgba(0,0,0,0.34)]">
+          <h2 className="flex items-baseline justify-between gap-3 px-1">
+            <span className="font-serif text-xl font-semibold">Na mesa</span>
+            <span className="text-sm text-[#75685f]">
+              <span className="font-serif text-2xl font-semibold text-[#7d2330] tabular-nums">{connectedPlayers.length}</span>{" "}
+              {connectedPlayers.length === 1 ? "jogador" : "jogadores"}
+            </span>
+          </h2>
+
+          {connectedPlayers.length ? (
+            <ul className="mt-4 grid grid-cols-2 gap-2" aria-live="polite">
+              {connectedPlayers.map(([uid, player], index) => {
+                const isViewer = uid === viewerUid;
+                return (
+                  <li
+                    key={uid}
+                    className={`flex min-h-14 items-center gap-2.5 rounded-2xl border px-2.5 ${
+                      isViewer ? "border-[#7d2330] bg-[#7d2330] text-[#fffaf0] shadow-[0_8px_20px_rgba(125,35,48,0.3)]" : "border-[#e2d5c1] bg-[#fffaf1]"
+                    }`}
+                  >
+                    <span
+                      aria-label={`Casa ${player.seat ?? index + 1}`}
+                      className={`grid size-8 shrink-0 place-items-center rounded-full font-serif text-base font-semibold tabular-nums ${
+                        isViewer ? "bg-[#fffaf0]/15 text-[#fffaf0]" : "bg-[#ebdfcb] text-[#5b4d44]"
+                      }`}
+                    >
+                      {player.seat ?? index + 1}
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block truncate text-sm leading-5 font-semibold">{player.name}</span>
+                      {isViewer && <span className="block text-[11px] leading-4 text-[#f6dfb5]">Você</span>}
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="mt-4 rounded-2xl border border-dashed border-[#cdbb9f] px-4 py-6 text-center text-sm text-[#75685f]">Ninguém sentou ainda.</p>
+          )}
+        </div>
+
+        <PlayerLobbyTabs tab={tab} onChange={setTab} />
+      </section>
+    );
+  }
+
   return (
-    <section className={`w-full max-w-md ${configuring && gameId ? "pb-24" : ""}`}>
+    <section className="w-full max-w-md">
       <header className="mb-6 text-center">
         {roomName ? (
           <h1 className="font-mono text-xl font-semibold tracking-[0.14em] text-[#f6dfb5] uppercase">
@@ -205,7 +274,7 @@ export function RealtimeLobbyView({
         </span>
       </footer>
 
-      {configuring && gameId ? <PlayerLobbyTabs tab={tab} onChange={setTab} /> : <RolesGuideButton />}
+      <RolesGuideButton />
     </section>
   );
 }
