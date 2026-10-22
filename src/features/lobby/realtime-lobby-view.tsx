@@ -110,9 +110,7 @@ export function RealtimeLobbyView({
       ? "A partida está em andamento."
       : viewer === "host"
         ? "Aguardando jogadores."
-        : game.playMode === "hosted" || !game.playMode
-          ? "O mestre está configurando a partida."
-          : "Configurando partida...";
+        : "Jogadores";
   const configuring = viewer === "player" && !gameFinished && !gameInProgress;
   const [tab, setTab] = useState<"table" | "roles">("table");
 
@@ -146,12 +144,6 @@ export function RealtimeLobbyView({
       <div className="rounded-2xl border border-[#e0cfb4] bg-[#f4ead9] p-5 text-[#251f1d] shadow-[0_24px_70px_rgba(0,0,0,0.34)]">
         <div className="flex items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 font-serif text-base font-semibold">
-            {configuring && (
-              <span aria-hidden="true" className="relative flex size-2.5 shrink-0">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#c18b2f]/60 motion-reduce:animate-none" />
-                <span className="relative inline-flex size-2.5 rounded-full bg-[#c18b2f]" />
-              </span>
-            )}
             {lobbyStatus}
           </h2>
           <span className="rounded-full bg-[#e4d6bf] px-3 py-0.5 text-sm font-bold text-[#3b2a22]">
