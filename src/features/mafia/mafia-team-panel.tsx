@@ -20,12 +20,11 @@ import type { MafiaBoardPickRecord, MafiaReactionRecord, MafiaTeamMemberRecord, 
 
 import { MAFIA_KILL_ACTION_ID, tallyMafiaKill } from "./mafia-kill-projection";
 
-// Só as com `mention` aceitam marcar alguém, segurando o botão.
-export const MAFIA_REACTIONS: readonly { key: string; label: string; mention?: true }[] = [
-  { key: "trust", label: "Confia em mim", mention: true },
+export const MAFIA_REACTIONS: readonly { key: string; label: string }[] = [
+  { key: "trust", label: "Confia em mim" },
   { key: "no", label: "NÃOOO 😱" },
-  { key: "go", label: "Vamos nele 🔪", mention: true },
-  { key: "wait", label: "Espera ✋", mention: true },
+  { key: "go", label: "Vamos nele 🔪" },
+  { key: "wait", label: "Espera ✋" },
   { key: "changed", label: "Mudei de ideia" },
   { key: "ok", label: "👍" },
 ];
@@ -382,21 +381,21 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
           )}
           {viewerAlive && !pendingKey && (
             <div aria-label="Reações" className="flex flex-wrap gap-1.5">
-              {MAFIA_REACTIONS.map(({ key, label, mention }) => (
+              {MAFIA_REACTIONS.map(({ key, label }) => (
                 <button
                   key={key}
                   type="button"
                   disabled={sending}
-                  onPointerDown={mention ? () => {
+                  onPointerDown={() => {
                     held.current = false;
                     holdTimer.current = setTimeout(() => {
                       held.current = true;
                       setPendingKey(key);
                     }, HOLD_MS);
-                  } : undefined}
+                  }}
                   onPointerUp={stopHold}
                   onPointerLeave={stopHold}
-                  onContextMenu={mention ? (event) => event.preventDefault() : undefined}
+                  onContextMenu={(event) => event.preventDefault()}
                   onClick={() => {
                     if (held.current) {
                       held.current = false;
