@@ -33,14 +33,11 @@ export function JoinPlayerFields({
           maxLength={PLAYER_NAME_MAX_LENGTH}
           autoComplete="nickname"
           enterKeyHint="go"
-          aria-describedby="nickname-help game-action-feedback"
+          aria-describedby="game-action-feedback"
           aria-invalid={nicknameHasError}
           className="min-h-12 w-full rounded-xl border border-[#b9a994] bg-[#fffaf1] px-4 py-3 text-base text-[#251f1d] outline-none placeholder:text-[#a99c8c] focus:border-[#7d2330] focus:ring-3 focus:ring-[#7d2330]/15 disabled:cursor-not-allowed disabled:bg-[#e4d9c8]"
           placeholder="Como você quer ser chamado?"
         />
-        <p id="nickname-help" className="mt-2 text-xs text-[#75685f]">
-          Entre 1 e {PLAYER_NAME_MAX_LENGTH} caracteres.
-        </p>
       </div>
     </div>
   );

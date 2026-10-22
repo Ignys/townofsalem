@@ -204,7 +204,7 @@ export function HomeGameActions({
           onNicknameChange={handleNicknameChange}
         />
 
-        <fieldset aria-describedby="room-code-help game-action-feedback">
+        <fieldset aria-describedby="game-action-feedback">
           <legend className="mb-2 block text-sm font-semibold text-[#3b322e] max-sm:font-serif max-sm:text-lg max-sm:text-[#251f1d]">
             Salas abertas
           </legend>
@@ -277,10 +277,6 @@ export function HomeGameActions({
             </ul>
           )}
         </fieldset>
-        <p id="room-code-help" className="mt-2 text-xs text-[#75685f]">
-          Toque na sala do seu moderador. Se a partida já começou, use o mesmo
-          nickname para voltar.
-        </p>
 
         {/* Celular: o botão acompanha a rolagem da lista, sempre ao alcance do polegar. */}
         <button
