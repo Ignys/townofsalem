@@ -159,17 +159,17 @@ export function RealtimeLobbyView({
               return (
                 <li
                   key={uid}
-                  className={`relative flex min-h-16 items-center gap-3.5 border-b border-white/6 last:border-b-0 ${isViewer ? "-mx-3 rounded-2xl border-transparent bg-[#7d2330]/18 px-3" : ""}`}
+                  className={`relative flex min-h-12 items-center gap-3 border-b border-white/6 last:border-b-0 ${isViewer ? "-mx-3 rounded-2xl border-transparent bg-[#7d2330]/18 px-3" : ""}`}
                 >
-                  {isViewer && <span aria-hidden="true" className="absolute inset-y-3 left-0 w-1 rounded-full bg-[#b8394b]" />}
+                  {isViewer && <span aria-hidden="true" className="absolute inset-y-2.5 left-0 w-1 rounded-full bg-[#b8394b]" />}
                   <span
                     aria-label={`Casa ${player.seat ?? index + 1}`}
-                    className="grid size-10 shrink-0 place-items-center rounded-full border border-[#d3b88c]/30 bg-[#d3b88c]/[0.07] font-serif text-lg font-semibold text-[#f6dfb5] tabular-nums"
+                    className="grid size-7 shrink-0 place-items-center rounded-full border border-[#d3b88c]/30 bg-[#d3b88c]/[0.07] font-serif text-sm font-semibold text-[#f6dfb5] tabular-nums"
                   >
                     {player.seat ?? index + 1}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-[15px] font-semibold text-[#fffaf0]">{player.name}</span>
-                  {isViewer && <span className="shrink-0 rounded-full bg-[#7d2330] px-2.5 py-0.5 text-xs font-semibold text-white">Você</span>}
+                  <span className="min-w-0 flex-1 truncate text-sm font-semibold text-[#fffaf0]">{player.name}</span>
+                  {isViewer && <span className="shrink-0 rounded-full bg-[#7d2330] px-2 py-px text-[11px] font-semibold text-white">Você</span>}
                 </li>
               );
             })}
