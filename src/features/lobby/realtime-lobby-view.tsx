@@ -10,9 +10,12 @@ import { getConnectedPlayerEntries } from "@/features/game-state/player-roster";
 import type { FirebaseConnectionStatus } from "./use-firebase-connection";
 import { RolesGuideButton } from "@/features/roles/roles-guide-button";
 import { RoomShareCard } from "./room-share-card";
+import { LobbyCompositionPreview } from "@/features/roles/lobby-composition-preview";
 
 interface RealtimeLobbyViewProps {
   code: string;
+  /** Com ele, quem espera vê as roles que o mestre está montando. */
+  gameId?: string;
   viewer: "host" | "player";
   viewerUid?: string;
   game: GamePublicRecord;
@@ -55,6 +58,7 @@ export function useRoomName(code: string): string | null {
 
 export function RealtimeLobbyView({
   code,
+  gameId,
   viewer,
   viewerUid,
   game,
@@ -72,7 +76,10 @@ export function RealtimeLobbyView({
       ? "A partida está em andamento."
       : viewer === "host"
         ? "Aguardando jogadores."
-        : "Aguardando o mestre iniciar a partida.";
+        : game.playMode === "hosted" || !game.playMode
+          ? "O mestre está configurando a partida."
+          : "Quem criou a sala está configurando a partida.";
+  const configuring = viewer === "player" && !gameFinished && !gameInProgress;
 
   return (
     <section className="w-full max-w-md">
@@ -93,11 +100,21 @@ export function RealtimeLobbyView({
 
       <div className="rounded-2xl border border-[#e0cfb4] bg-[#f4ead9] p-5 text-[#251f1d] shadow-[0_24px_70px_rgba(0,0,0,0.34)]">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-serif text-base font-semibold">{lobbyStatus}</h2>
+          <h2 className="flex items-center gap-2 font-serif text-base font-semibold">
+            {configuring && (
+              <span aria-hidden="true" className="relative flex size-2.5 shrink-0">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-[#c18b2f]/60 motion-reduce:animate-none" />
+                <span className="relative inline-flex size-2.5 rounded-full bg-[#c18b2f]" />
+              </span>
+            )}
+            {lobbyStatus}
+          </h2>
           <span className="rounded-full bg-[#e4d6bf] px-3 py-0.5 text-sm font-bold text-[#3b2a22]">
             {connectedPlayers.length}
           </span>
         </div>
+
+        {configuring && gameId && <LobbyCompositionPreview gameId={gameId} playerCount={connectedPlayers.length} />}
 
         {connectedPlayers.length ? (
           <ul className="mt-3 divide-y divide-[#d8c8b0]" aria-live="polite">

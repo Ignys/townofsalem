@@ -154,6 +154,7 @@ export function PlayerGameSession({ roomCode }: PlayerGameSessionProps) {
     return (
       <RealtimeLobbyView
         code={sessionState.session.code}
+        gameId={sessionState.session.gameId}
         viewer="player"
         viewerUid={sessionState.session.uid}
         game={game}
