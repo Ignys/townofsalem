@@ -101,7 +101,7 @@ export function HostMobileConsole({ code, phase, roundNumber, header, sidebar, t
                         </button>
                     )}
                     <div className="min-w-0 flex-1">
-                        <h1 className="truncate font-serif text-xl font-semibold leading-6 text-[#fffaf0]">{roomName ?? "Sala"}</h1>
+                        <h1 className="truncate font-sans text-lg font-bold leading-6 tracking-[-0.01em] text-[#fffaf0]">{roomName ?? "Sala"}</h1>
                         <p className="mt-0.5 text-xs font-semibold tracking-[0.14em] text-[#d3b88c]/80">
                             <span className="sr-only">Código </span>
                             {code}
