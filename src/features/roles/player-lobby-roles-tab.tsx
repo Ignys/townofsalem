@@ -1,0 +1,98 @@
+"use client";
+
+import { ArrowLeft, Dices } from "lucide-react";
+import { useState } from "react";
+
+import { getRoleById } from "@/data/roles";
+import { PlayerRoleCard } from "@/features/game-state/player-role-card";
+import { useGameVariants } from "@/features/game-variants/use-game-variants";
+import type { RoleDefinition } from "@/types";
+
+import { getRandomRoleSlot } from "./random-role-slots";
+import { roleNameColor } from "./role-colors";
+import { orderSelectedRoles } from "./role-composition-order";
+import { RoleLibrary } from "./role-library";
+import { useRoleComposition } from "./use-role-composition";
+
+/** Aba Roles do lobby do jogador: o que está nesta partida primeiro, depois a biblioteca inteira. */
+export function PlayerLobbyRolesTab({ gameId, playerCount }: Readonly<{ gameId: string; playerCount: number }>) {
+  const composition = useRoleComposition(gameId);
+  const { variants } = useGameVariants(gameId);
+  const [selected, setSelected] = useState<RoleDefinition | null>(null);
+
+  const open = (role: RoleDefinition) => {
+    setSelected(role);
+    window.scrollTo({ top: 0 });
+  };
+
+  if (selected) {
+    return (
+      <div>
+        <button
+          type="button"
+          onClick={() => setSelected(null)}
+          className="mb-4 flex min-h-11 items-center gap-2 rounded-full pr-3 text-sm font-semibold text-[#d3b88c] focus-visible:outline-2 focus-visible:outline-[#c18b2f]"
+        >
+          <ArrowLeft aria-hidden="true" className="size-4" />
+          Todas as roles
+        </button>
+        {/* Regras desta sala, não as padrão: é o que vai valer na partida. */}
+        <PlayerRoleCard role={selected} variants={variants} playerCount={playerCount} />
+      </div>
+    );
+  }
+
+  const grouped = new Map<string, number>();
+  for (const { roleId } of orderSelectedRoles(composition.roleIds, "natural")) grouped.set(roleId, (grouped.get(roleId) ?? 0) + 1);
+  const inGame = new Set(grouped.keys());
+
+  return (
+    <div>
+      <header className="text-center">
+        <h1 className="font-serif text-4xl font-semibold tracking-tight text-[#fffaf0]">Biblioteca</h1>
+        <p className="mt-1.5 text-sm text-[#9f9990]">Toque numa role para ver tudo o que ela faz.</p>
+      </header>
+
+      <section aria-labelledby="in-game-roles-title" className="mt-6">
+        <h2 id="in-game-roles-title" className="text-sm font-semibold text-[#d7d0c4]">
+          Nesta partida
+        </h2>
+        {grouped.size === 0 ? (
+          <p className="mt-2 text-sm text-[#8d877e]">O mestre ainda não escolheu as roles.</p>
+        ) : (
+          <ul className="mt-2 flex flex-wrap gap-1.5">
+            {[...grouped].map(([roleId, count]) => {
+              const role = getRoleById(roleId);
+              const slot = getRandomRoleSlot(roleId);
+              const label = (
+                <>
+                  {slot && <Dices aria-hidden="true" className="size-3.5" />}
+                  {role?.name ?? slot?.name ?? roleId}
+                  {count > 1 && <span className="text-[#8d877e] tabular-nums">×{count}</span>}
+                </>
+              );
+              return (
+                <li key={roleId}>
+                  {role ? (
+                    <button
+                      type="button"
+                      onClick={() => open(role)}
+                      className="flex min-h-9 items-center gap-1.5 rounded-full border border-white/12 bg-white/[0.04] px-3 text-sm font-semibold active:bg-white/[0.08] focus-visible:outline-2 focus-visible:outline-[#c18b2f]"
+                      style={{ color: roleNameColor(role.id, role.faction) }}
+                    >
+                      {label}
+                    </button>
+                  ) : (
+                    <span className="flex min-h-9 items-center gap-1.5 rounded-full border border-dashed border-white/15 px-3 text-sm font-semibold text-[#d3b88c]">{label}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <RoleLibrary onSelect={open} highlightIds={inGame} className="mt-6" />
+    </div>
+  );
+}

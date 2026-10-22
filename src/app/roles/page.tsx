@@ -1,19 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { MAFIA_ROLES, NEUTRAL_ROLES, TOWN_ROLES } from "@/data/roles";
 import { roleNameColor } from "@/features/roles/role-colors";
+import { LIBRARY_FACTIONS as FACTIONS, RoleLibrary } from "@/features/roles/role-library";
 
 export const metadata: Metadata = {
   title: "Enciclopédia de roles | Town of Salem",
   description: "Consulte as roles disponíveis no companion.",
 };
-
-const FACTIONS = [
-  { id: "town", label: "Cidade", color: "#3dd69b", blurb: "Descubra quem são os culpados e enforque-os antes que a cidade caia.", roles: TOWN_ROLES },
-  { id: "mafia", label: "Máfia", color: "#db4242", blurb: "Mate quem se opõe a vocês até a família controlar a cidade.", roles: MAFIA_ROLES },
-  { id: "neutral", label: "Neutros", color: "#c8c8c8", blurb: "Cada um joga pelo próprio objetivo, ao lado de quem convier.", roles: NEUTRAL_ROLES },
-] as const;
 
 export default function RolesPage() {
   return (
@@ -26,14 +20,14 @@ export default function RolesPage() {
           ← Voltar ao início
         </Link>
 
-        <header className="mt-10 text-center">
-          <h1 className="font-serif text-5xl font-semibold tracking-tight text-[#fffaf0] sm:text-6xl">
+        <header className="mt-10 text-center max-sm:mt-6">
+          <h1 className="font-serif text-5xl font-semibold tracking-tight text-[#fffaf0] max-sm:text-[2.75rem] sm:text-6xl">
             Biblioteca
           </h1>
-          <p className="mx-auto mt-4 max-w-md leading-7 text-[#bdb7ad]">
+          <p className="mx-auto mt-4 max-w-md leading-7 text-[#bdb7ad] max-sm:mt-2 max-sm:text-sm max-sm:leading-6">
             Todas as roles que usamos em nossos jogos, com seus objetivos e habilidades.
           </p>
-          <nav aria-label="Facções" className="mt-7 flex justify-center gap-2">
+          <nav aria-label="Facções" className="mt-7 flex justify-center gap-2 max-sm:hidden">
             {FACTIONS.map(({ id, label, color, roles }) => (
               <a
                 key={id}
@@ -47,8 +41,11 @@ export default function RolesPage() {
           </nav>
         </header>
 
+        {/* Celular: lista com abas fixas; PC: cards em duas colunas. */}
+        <RoleLibrary linkRoles className="mt-6 sm:hidden" />
+
         {FACTIONS.map(({ id, label, color, blurb, roles }) => (
-          <section key={id} id={id} className="mt-16 scroll-mt-6">
+          <section key={id} id={id} className="mt-16 scroll-mt-6 max-sm:hidden">
             <div className="flex items-center gap-4">
               <h2 className="font-serif text-3xl font-semibold sm:text-4xl" style={{ color }}>
                 {label}

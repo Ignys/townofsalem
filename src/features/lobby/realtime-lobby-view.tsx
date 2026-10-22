@@ -1,3 +1,4 @@
+import { BookOpen, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { firebasePaths } from "@/lib/firebase/paths";
@@ -11,6 +12,7 @@ import type { FirebaseConnectionStatus } from "./use-firebase-connection";
 import { RolesGuideButton } from "@/features/roles/roles-guide-button";
 import { RoomShareCard } from "./room-share-card";
 import { LobbyCompositionPreview } from "@/features/roles/lobby-composition-preview";
+import { PlayerLobbyRolesTab } from "@/features/roles/player-lobby-roles-tab";
 
 interface RealtimeLobbyViewProps {
   code: string;
@@ -56,6 +58,39 @@ export function useRoomName(code: string): string | null {
   return name;
 }
 
+function PlayerLobbyTabs({ tab, onChange }: Readonly<{ tab: "table" | "roles"; onChange: (tab: "table" | "roles") => void }>) {
+  const tabs = [
+    { id: "table", label: "Mesa", icon: Users },
+    { id: "roles", label: "Roles", icon: BookOpen },
+  ] as const;
+  return (
+    <nav aria-label="Seções do lobby" className="fixed inset-x-0 bottom-0 z-30 border-t border-[#2e3136] bg-[#16181b]/97 pb-[env(safe-area-inset-bottom)] backdrop-blur">
+      <ul className="mx-auto flex max-w-md">
+        {tabs.map(({ id, label, icon: Icon }) => {
+          const active = id === tab;
+          return (
+            <li key={id} className="flex-1">
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(id);
+                  window.scrollTo({ top: 0 });
+                }}
+                aria-current={active ? "page" : undefined}
+                className={`relative flex min-h-16 w-full flex-col items-center justify-center gap-1 text-xs font-semibold transition-colors focus-visible:outline-3 focus-visible:-outline-offset-4 focus-visible:outline-[#d3b88c] ${active ? "text-[#f6dfb5]" : "text-[#8d877e]"}`}
+              >
+                {active && <span aria-hidden="true" className="absolute inset-x-10 top-0 h-0.5 rounded-full bg-[#c18b2f] shadow-[0_0_12px_#c18b2f]" />}
+                <Icon aria-hidden="true" className="size-5" />
+                {label}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
+  );
+}
+
 export function RealtimeLobbyView({
   code,
   gameId,
@@ -80,9 +115,20 @@ export function RealtimeLobbyView({
           ? "O mestre está configurando a partida."
           : "Configurando partida...";
   const configuring = viewer === "player" && !gameFinished && !gameInProgress;
+  const [tab, setTab] = useState<"table" | "roles">("table");
+
+  // Lobby do jogador: duas abas no rodapé, Mesa e a biblioteca de roles.
+  if (configuring && gameId && tab === "roles") {
+    return (
+      <section className="w-full max-w-md pb-24">
+        <PlayerLobbyRolesTab gameId={gameId} playerCount={connectedPlayers.length} />
+        <PlayerLobbyTabs tab={tab} onChange={setTab} />
+      </section>
+    );
+  }
 
   return (
-    <section className="w-full max-w-md">
+    <section className={`w-full max-w-md ${configuring && gameId ? "pb-24" : ""}`}>
       <header className="mb-6 text-center">
         {roomName ? (
           <h1 className="font-mono text-xl font-semibold tracking-[0.14em] text-[#f6dfb5] uppercase">
@@ -169,7 +215,7 @@ export function RealtimeLobbyView({
         </span>
       </footer>
 
-      <RolesGuideButton />
+      {configuring && gameId ? <PlayerLobbyTabs tab={tab} onChange={setTab} /> : <RolesGuideButton />}
     </section>
   );
 }
