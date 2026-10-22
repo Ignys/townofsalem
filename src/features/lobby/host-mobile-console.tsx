@@ -37,6 +37,8 @@ interface HostMobileConsoleProps {
     header: ReactNode;
     sidebar: ReactNode;
     tabs: HostMobileTab[];
+    /** Ação principal fixa no centro, acima das abas. */
+    floatingAction?: ReactNode;
     /** Peças sem tela (sons, espelhos) que precisam viver em qualquer aba. */
     background?: ReactNode;
     activeTab: HostMobileTabId;
@@ -55,7 +57,7 @@ const TAB_ICONS: Record<HostMobileTabId, typeof Moon> = {
     settings: Settings,
 };
 
-export function HostMobileConsole({ code, phase, roundNumber, header, sidebar, tabs, background, activeTab, onTabChange, playersOpen, onPlayersOpenChange }: HostMobileConsoleProps) {
+export function HostMobileConsole({ code, phase, roundNumber, header, sidebar, tabs, floatingAction, background, activeTab, onTabChange, playersOpen, onPlayersOpenChange }: HostMobileConsoleProps) {
     const drawerRef = useRef<HTMLDialogElement>(null);
     const [scrollPositions] = useState(() => new Map<HostMobileTabId, number>());
     const current = tabs.some((tab) => tab.id === activeTab) ? activeTab : tabs[0].id;
@@ -109,7 +111,7 @@ export function HostMobileConsole({ code, phase, roundNumber, header, sidebar, t
                 ) : null}
             </header>
 
-            <div className="flex-1 px-3 pt-3 pb-28">
+            <div className={`flex-1 px-3 pt-3 ${floatingAction ? "pb-44" : "pb-28"}`}>
                 {tabs.map((tab) => (
                     // Abas escondidas continuam montadas: seleção da noite e votos não se perdem.
                     <section key={tab.id} hidden={tab.id !== current} aria-label={tab.label} className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
@@ -120,6 +122,8 @@ export function HostMobileConsole({ code, phase, roundNumber, header, sidebar, t
                     </section>
                 ))}
             </div>
+
+            {floatingAction && <div className="fixed bottom-[calc(4.75rem+env(safe-area-inset-bottom))] left-1/2 z-30 -translate-x-1/2">{floatingAction}</div>}
 
             {tabs.length > 1 && (<nav aria-label="Seções do painel" className="fixed inset-x-0 bottom-0 z-30 border-t border-[#2e3136] bg-[#16181b]/97 pb-[env(safe-area-inset-bottom)] backdrop-blur">
                 <ul className="flex">

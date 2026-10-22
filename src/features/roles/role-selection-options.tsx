@@ -11,8 +11,6 @@ interface RoleSelectionOptionsProps {
     respectCardCount: boolean;
     disabled: boolean;
     onAdd: (roleId: string) => void;
-    /** Só estas facções; o celular mostra uma por vez. */
-    factions?: readonly (typeof FACTION_ORDER)[number][];
 }
 
 export const FACTION_STYLES: Record<string, { tag: string; card: string }> = {
@@ -39,10 +37,10 @@ const FACTION_STRIPES: Record<string, string> = {
 
 const FACTION_ORDER = ["town", "mafia", "neutral"] as const;
 
-export function RoleSelectionOptions({ roles, selectedRoleCounts, allowDuplicateRoleIds, respectCardCount, disabled, onAdd, factions = FACTION_ORDER }: RoleSelectionOptionsProps) {
+export function RoleSelectionOptions({ roles, selectedRoleCounts, allowDuplicateRoleIds, respectCardCount, disabled, onAdd }: RoleSelectionOptionsProps) {
     return (
         <div className="grid gap-6">
-            {factions.map((faction) => {
+            {FACTION_ORDER.map((faction) => {
                 // Roles novas ficam no fim de cada facção.
                 const factionRoles = roles
                     .filter((role) => role.faction === faction)

@@ -21,6 +21,7 @@ import { HostDayAnnouncements } from "@/features/night-actions/host-day-announce
 import { HostNightWorkspace } from "@/features/night-actions/host-night-workspace";
 import { HostVotingPanel } from "@/features/voting/host-voting-panel";
 import { HostRoleComposition } from "@/features/roles/host-role-composition";
+import { MobileDrawButton, MobileRolePicker, MobileRoleStats } from "@/features/roles/mobile-role-composition";
 import { firebasePaths } from "@/lib/firebase/paths";
 import { isHostlessGame } from "@/lib/firebase/schema";
 
@@ -311,7 +312,12 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                           />
                       ),
                   },
-                  { id: "roles", label: "Roles", content: <HostRoleComposition gameId={gameId} playerCount={playerCount} editable layout="mobile" /> },
+                  {
+                      id: "roles",
+                      label: "Roles",
+                      headerActions: <MobileRoleStats gameId={gameId} playerCount={playerCount} />,
+                      content: <MobileRolePicker gameId={gameId} playerCount={playerCount} />,
+                  },
                   {
                       id: "settings",
                       label: "Sala",
@@ -379,6 +385,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                 header={header}
                 sidebar={sidebar}
                 tabs={tabs}
+                floatingAction={compositionEditable && <MobileDrawButton gameId={gameId} playerCount={playerCount} />}
                 background={
                     !compositionEditable && (
                         <>
