@@ -11,6 +11,7 @@ import type { RoleDefinition } from "@/types";
 import { getRandomRoleSlot } from "./random-role-slots";
 import { roleNameColor } from "./role-colors";
 import { orderSelectedRoles } from "./role-composition-order";
+import { RoleBonusRules } from "./role-bonus-rules";
 import { RoleLibrary } from "./role-library";
 import { useRoleComposition } from "./use-role-composition";
 
@@ -44,6 +45,7 @@ export function PlayerLobbyRolesTab({ gameId, playerCount }: Readonly<{ gameId: 
         </button>
         {/* Regras desta sala, não as padrão: é o que vai valer na partida. */}
         <PlayerRoleCard role={selected} variants={variants} playerCount={playerCount} />
+        <RoleBonusRules roleId={selected.id} roomVariants={variants} />
       </div>
     );
   }

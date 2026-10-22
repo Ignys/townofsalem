@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { roleNameColor } from "@/features/roles/role-colors";
+import { LibraryVisitMark } from "@/features/roles/back-to-library-link";
 import { LIBRARY_FACTIONS as FACTIONS, RoleLibrary } from "@/features/roles/role-library";
 
 export const metadata: Metadata = {
@@ -42,6 +43,7 @@ export default function RolesPage() {
         </header>
 
         {/* Celular: lista com abas fixas; PC: cards em duas colunas. */}
+        <LibraryVisitMark />
         <RoleLibrary linkRoles className="mt-6 sm:hidden" />
 
         {FACTIONS.map(({ id, label, color, blurb, roles }) => (
