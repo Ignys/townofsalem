@@ -11,7 +11,6 @@ import { getConnectedPlayerEntries } from "@/features/game-state/player-roster";
 import type { FirebaseConnectionStatus } from "./use-firebase-connection";
 import { RolesGuideButton } from "@/features/roles/roles-guide-button";
 import { RoomShareCard } from "./room-share-card";
-import { LobbyCompositionPreview } from "@/features/roles/lobby-composition-preview";
 import { PlayerLobbyRolesTab } from "@/features/roles/player-lobby-roles-tab";
 
 interface RealtimeLobbyViewProps {
@@ -160,7 +159,6 @@ export function RealtimeLobbyView({
           </span>
         </div>
 
-        {configuring && gameId && <LobbyCompositionPreview gameId={gameId} playerCount={connectedPlayers.length} />}
 
         {connectedPlayers.length ? (
           <ul className="mt-3 divide-y divide-[#d8c8b0]" aria-live="polite">
