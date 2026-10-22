@@ -131,10 +131,14 @@ export function RealtimeLobbyView({
   if (configuring && gameId) {
     return (
       <section className="w-full max-w-md pb-24">
-        <header className="border-b border-white/8 pb-4">
-          <h1 className="truncate text-2xl font-bold tracking-[-0.01em] text-[#fffaf0]">{roomName ?? `Sala ${code}`}</h1>
-          <p className="mt-1 flex items-center gap-2 text-xs text-[#9f9990]">
-            {roomName && <span className="font-semibold tracking-[0.14em] text-[#d3b88c]/80">{code}</span>}
+        <header className="pt-2 text-center">
+          <h1 className="font-serif text-[2.5rem] leading-tight font-semibold tracking-tight text-[#fffaf0]">
+            {roomName ?? <span className="sr-only">Sala </span>}
+            {roomName ? null : code}
+          </h1>
+          <p className="mt-1.5 flex items-center justify-center gap-2 text-xs text-[#a9a297]">
+            {roomName && <span className="font-semibold tracking-[0.14em] text-[#d3b88c]">{code}</span>}
+            {roomName && <span aria-hidden="true" className="h-3 w-px bg-white/15" />}
             <span aria-hidden="true" className={`size-1.5 rounded-full ${connectionDot}`} />
             <span aria-live="polite">
               {connectionLabels[connectionStatus]}
@@ -143,9 +147,8 @@ export function RealtimeLobbyView({
           </p>
         </header>
 
-        <h2 className="mt-6 flex items-center gap-3 text-sm font-semibold text-[#d7d0c4]">
+        <h2 className="mt-8 flex items-center justify-between gap-3 text-sm font-semibold text-[#d7d0c4]">
           Jogadores
-          <span aria-hidden="true" className="h-px flex-1 bg-linear-to-r from-[#d3b88c]/35 to-transparent" />
           <span className="tabular-nums text-[#9f9990]">{connectedPlayers.length}</span>
         </h2>
 
