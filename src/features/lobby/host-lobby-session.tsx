@@ -34,6 +34,7 @@ import { useFirebaseConnection } from "./use-firebase-connection";
 import { useRealtimeLobby } from "./use-realtime-lobby";
 import { HostNightConsole } from "./host-night-console";
 import { PlayModeSelector } from "./play-mode-selector";
+import { useRememberHostPreferences } from "./host-preferences";
 import { MobileRoomSettings } from "./mobile-room-settings";
 import { DeleteRoomButton } from "./delete-room-button";
 import { HostMobileConsole, useIsDesktop, type HostMobileTab, type HostMobileTabId } from "./host-mobile-console";
@@ -128,6 +129,8 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
     const gameStarted = lobby.game?.status === "in-progress";
     const lobbyPlayerCount = getPlayerEntries(lobby.players).length;
     const lobbyStatus = lobby.game?.status;
+    // Guarda neste aparelho o que o mestre configura no lobby, para a próxima sala.
+    useRememberHostPreferences(session?.gameId ?? null, lobby.game ?? null);
 
     // Mostra na home quantos jogadores e em que fase está cada sala.
     useEffect(() => {

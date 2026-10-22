@@ -16,6 +16,7 @@ import type {
 import { generateRoomCode } from "@/lib/utils/room-code";
 
 import { CreateGameError } from "./create-game-error";
+import { hostPreferencesUpdate } from "./host-preferences";
 
 const MAX_ROOM_CODE_ATTEMPTS = 12;
 
@@ -100,6 +101,16 @@ export async function createGame(roomNameInput: string): Promise<CreateGameResul
     }
 
     throw new CreateGameError("persistence-failed", error);
+  }
+
+  // Separado da criação: a regra de settings só aceita escrita com a sala já no lobby.
+  const preferences = hostPreferencesUpdate(gameId);
+  if (preferences) {
+    try {
+      await applyAtomicUpdate(preferences);
+    } catch {
+      // A sala já existe; sem as preferências ela só começa com os padrões.
+    }
   }
 
   return { code, gameId };
