@@ -1,7 +1,7 @@
 "use client";
 
-import { Dices, Eraser, Shuffle, X } from "lucide-react";
-import { useState } from "react";
+import { Dices, Eraser, Shuffle, TriangleAlert, X } from "lucide-react";
+import { useRef, useState } from "react";
 
 import { getRoleById, NEW_ROLE_IDS } from "@/data/roles";
 
@@ -70,29 +70,71 @@ export function MobileRoleStats({ gameId, playerCount }: MobileRoleCompositionPr
 export function MobileDrawButton({ gameId, playerCount }: MobileRoleCompositionProps) {
     const { composition, validation } = useRoleCompositionState(gameId, playerCount);
     const roleDraw = useRoleDraw();
-    const ready = composition.loaded && !composition.error && !composition.saving && validation.valid;
-    const reason = composition.error ? "Não foi possível salvar a composição." : validation.errors[0]?.message;
+    const dialogRef = useRef<HTMLDialogElement>(null);
+    const problems = [
+        ...(composition.error ? ["Não foi possível salvar a composição. Tente de novo."] : []),
+        ...(roleDraw.feedback?.kind === "error" ? [roleDraw.feedback.message] : []),
+        ...validation.errors.map((error) => error.message),
+    ];
+    const blocked = !composition.loaded || composition.saving || roleDraw.drawing;
+
+    // Com pendência, o toque explica o motivo em vez de não fazer nada.
+    const handleClick = () => {
+        if (problems.length > 0) dialogRef.current?.showModal();
+        else void roleDraw.start(gameId, validation);
+    };
 
     return (
-        <div className="flex flex-col items-center gap-1.5">
-            {(roleDraw.feedback || (!ready && reason)) && (
-                <p
-                    role={roleDraw.feedback?.kind === "error" || !ready ? "alert" : "status"}
-                    className="max-w-[min(22rem,calc(100vw-2rem))] rounded-full border border-white/10 bg-[#16181b]/95 px-3 py-1 text-center text-xs text-[#d7d0c4] shadow-[0_8px_24px_rgba(0,0,0,0.4)] backdrop-blur"
-                >
-                    {roleDraw.feedback?.message ?? reason}
-                </p>
-            )}
+        <>
             <button
                 type="button"
-                onClick={() => void roleDraw.start(gameId, validation)}
-                disabled={!ready || roleDraw.drawing}
-                className="flex min-h-12 items-center gap-2 rounded-full border border-[#d3b88c]/40 bg-[#7d2330] px-6 text-sm font-bold text-white shadow-[0_10px_30px_rgba(125,35,48,0.45)] transition-colors hover:bg-[#681c27] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-[#24262a] disabled:text-[#8d877e] disabled:shadow-[0_10px_30px_rgba(0,0,0,0.4)]"
+                onClick={handleClick}
+                disabled={blocked}
+                aria-describedby={problems.length > 0 ? "draw-blocked-hint" : undefined}
+                className={`relative flex min-h-12 items-center gap-2 rounded-full border px-6 text-sm font-bold transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-wait disabled:opacity-70 ${
+                    problems.length > 0
+                        ? "border-white/10 bg-[#24262a] text-[#bdb7ad] shadow-[0_10px_30px_rgba(0,0,0,0.4)]"
+                        : "border-[#d3b88c]/40 bg-[#7d2330] text-white shadow-[0_10px_30px_rgba(125,35,48,0.45)] hover:bg-[#681c27]"
+                }`}
             >
                 <Shuffle aria-hidden="true" className="size-4" />
                 {roleDraw.drawing ? "Sorteando…" : "Sortear e começar"}
+                {problems.length > 0 && (
+                    <span aria-hidden="true" className="absolute -top-1.5 -right-1.5 grid size-6 place-items-center rounded-full border-2 border-[#111315] bg-[#e0a43a] text-[#1b1d20]">
+                        <TriangleAlert className="size-3.5" strokeWidth={2.5} />
+                    </span>
+                )}
             </button>
-        </div>
+            {problems.length > 0 && (
+                <span id="draw-blocked-hint" className="sr-only">
+                    Ainda não dá para sortear. Toque para ver o motivo.
+                </span>
+            )}
+
+            <dialog
+                ref={dialogRef}
+                aria-labelledby="draw-blocked-title"
+                onClick={(event) => {
+                    if (event.target === event.currentTarget) dialogRef.current?.close();
+                }}
+                className="m-auto w-[min(24rem,calc(100%-2rem))] rounded-3xl border border-[#2e3136] bg-[#1b1d20] p-5 text-[#e5ded2] shadow-[0_24px_70px_rgba(0,0,0,0.6)] backdrop:bg-black/70"
+            >
+                <h2 id="draw-blocked-title" className="flex items-center gap-2 font-serif text-xl font-semibold text-[#fffaf0]">
+                    <TriangleAlert aria-hidden="true" className="size-5 text-[#e0a43a]" />
+                    Antes de sortear
+                </h2>
+                <ul className="mt-4 grid gap-2">
+                    {problems.map((problem) => (
+                        <li key={problem} className="rounded-xl border border-white/10 bg-white/[0.03] px-3.5 py-2.5 text-sm leading-5">
+                            {problem}
+                        </li>
+                    ))}
+                </ul>
+                <button type="button" onClick={() => dialogRef.current?.close()} className="btn-quiet-dark mt-5 w-full">
+                    Entendi
+                </button>
+            </dialog>
+        </>
     );
 }
 
