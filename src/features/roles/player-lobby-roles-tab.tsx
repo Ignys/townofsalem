@@ -13,7 +13,6 @@ import { roleNameColor } from "./role-colors";
 import { orderSelectedRoles } from "./role-composition-order";
 import { RoleBonusRules } from "./role-bonus-rules";
 import { RoleLibrary } from "./role-library";
-import { PlayerLobbyHeader } from "@/features/lobby/player-lobby-header";
 import { useRoleComposition } from "./use-role-composition";
 
 /** Aba Roles do lobby do jogador: o que está nesta partida primeiro, depois a biblioteca inteira. */
@@ -57,9 +56,7 @@ export function PlayerLobbyRolesTab({ gameId, playerCount }: Readonly<{ gameId: 
 
   return (
     <div>
-      <PlayerLobbyHeader title="Biblioteca">Toque numa role para ver tudo o que ela faz.</PlayerLobbyHeader>
-
-      <section aria-labelledby="in-game-roles-title" className="mt-8">
+      <section aria-labelledby="in-game-roles-title" className="mt-2">
         <h2 id="in-game-roles-title" className="text-sm font-semibold text-[#d7d0c4]">
           Nesta partida
         </h2>

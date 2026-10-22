@@ -10,7 +10,6 @@ import { getConnectedPlayerEntries } from "@/features/game-state/player-roster";
 
 import type { FirebaseConnectionStatus } from "./use-firebase-connection";
 import { RolesGuideButton } from "@/features/roles/roles-guide-button";
-import { PlayerLobbyHeader } from "./player-lobby-header";
 import { RoomShareCard } from "./room-share-card";
 import { PlayerLobbyRolesTab } from "@/features/roles/player-lobby-roles-tab";
 
@@ -125,24 +124,11 @@ export function RealtimeLobbyView({
     );
   }
 
-  const connectionDot =
-    connectionStatus === "connected" ? "bg-[#6f9b77]" : connectionStatus === "unavailable" ? "bg-[#a33843]" : "bg-[#c18b2f]";
-
   // Mesa do jogador: mesma linguagem do painel do celular, sem cards, uma linha por casa.
   if (configuring && gameId) {
     return (
       <section className="w-full max-w-md pb-24">
-        <PlayerLobbyHeader title={roomName ?? `Sala ${code}`}>
-            {roomName && <span className="font-semibold tracking-[0.14em] text-[#d3b88c]">{code}</span>}
-            {roomName && <span aria-hidden="true" className="h-3 w-px bg-white/15" />}
-            <span aria-hidden="true" className={`size-1.5 rounded-full ${connectionDot}`} />
-            <span aria-live="polite">
-              {connectionLabels[connectionStatus]}
-              {updating ? ", atualizando…" : ""}
-            </span>
-        </PlayerLobbyHeader>
-
-        <h2 className="mt-8 flex items-center justify-between gap-3 text-sm font-semibold text-[#d7d0c4]">
+        <h2 className="mt-2 flex items-center justify-between gap-3 text-sm font-semibold text-[#d7d0c4]">
           Jogadores
           <span className="tabular-nums text-[#9f9990]">{connectedPlayers.length}</span>
         </h2>
