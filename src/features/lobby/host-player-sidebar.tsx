@@ -1,5 +1,6 @@
 "use client";
 
+import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
 import { closestCenter, DndContext, KeyboardSensor, PointerSensor, useSensor, useSensors, type DragEndEvent } from "@dnd-kit/core";
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
@@ -162,11 +163,21 @@ export function HostPlayerSidebar({ gameId, verifiedHostUid, players, gameStarte
             )}
 
             {playerEntries.length === 0 ? (
+                layout === "page" ? (
+                    <div className="grid place-items-center gap-2 px-6 pt-16 pb-8 text-center">
+                        <span aria-hidden="true" className="grid size-14 place-items-center rounded-full border border-dashed border-[#d3b88c]/35 text-[#d3b88c]">
+                            <Users className="size-6" />
+                        </span>
+                        <p className="mt-2 font-serif text-lg font-semibold text-[#fffaf0]">A mesa está vazia</p>
+                        <p className="text-sm text-[#9f9990]">Mande o convite da aba Sala para os jogadores entrarem.</p>
+                    </div>
+                ) : (
                 <p className="mt-4 rounded-xl border border-dashed border-white/10 px-4 py-5 text-center text-sm text-[#9f9990]">Nenhum jogador na sala.</p>
+                )
             ) : (
                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(event) => void handleDragEnd(event)}>
                     <SortableContext items={orderedPlayerUids} strategy={verticalListSortingStrategy}>
-                        <ul className="mt-4 grid gap-2" aria-live="polite">
+                        <ul className={layout === "page" ? "grid" : "mt-4 grid gap-2"} aria-live="polite">
                             {sidebarItems.map((item) => {
                                 if (item.kind === "living-separator") {
                                     return <HostPlayerSidebarSectionHeader key="living-player-separator" label="Vivos" playerCount={item.livingPlayerCount} />;
@@ -198,7 +209,7 @@ export function HostPlayerSidebar({ gameId, verifiedHostUid, players, gameStarte
                                         canMoveUp={item.houseNumber > 1}
                                         canMoveDown={item.houseNumber < orderedPlayerUids.length}
                                         onMove={(direction) => void handleMovePlayer(item.playerUid, direction)}
-                                        showMoveButtons={layout === "panel"}
+                                        layout={layout}
                                         onComposeAction={onComposeAction}
                                     />
                                 );

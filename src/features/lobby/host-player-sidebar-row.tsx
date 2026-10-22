@@ -35,8 +35,8 @@ interface HostPlayerSidebarRowProps {
     canMoveUp: boolean;
     canMoveDown: boolean;
     onMove: (direction: -1 | 1) => void;
-    /** Celular: só a alça de arrastar, sem as setas. */
-    showMoveButtons?: boolean;
+    /** "page": linha sem card da aba Jogadores do celular, alça à direita. */
+    layout?: "panel" | "page";
     onComposeAction?: (playerUid: string) => void;
 }
 
@@ -63,7 +63,7 @@ export function HostPlayerSidebarRow({
     canMoveUp,
     canMoveDown,
     onMove,
-    showMoveButtons = true,
+    layout = "panel",
     onComposeAction,
 }: HostPlayerSidebarRowProps) {
     const [detailsOpen, setDetailsOpen] = useState(false);
@@ -100,6 +100,91 @@ export function HostPlayerSidebarRow({
         }
     };
 
+    const dialogs = (
+        <>
+            <HostPlayerDetailsDialog
+                gameId={gameId}
+                playerUid={playerUid}
+                player={player}
+                playerCount={playerCount}
+                houseNumber={houseNumber}
+                assignment={assignment}
+                actionHistory={actionHistory}
+                actionHistoryLoaded={actionHistoryLoaded}
+                nightNumberById={nightNumberById}
+                playerNames={playerNames}
+                deathDetails={deathDetails}
+                role={role}
+                roleLabel={roleLabel}
+                gameStarted={gameStarted}
+                statusEditable={statusEditable}
+                open={detailsOpen}
+                onClose={() => setDetailsOpen(false)}
+                onRequestKick={requestKick}
+                onComposeAction={onComposeAction}
+            />
+
+            <HostPlayerRemovalDialog
+                playerName={player.name}
+                isBot={Boolean(player.isBot)}
+                open={confirmingKick}
+                busy={kicking}
+                error={kickError}
+                onCancel={cancelKick}
+                onConfirm={() => void handleKick()}
+            />
+        </>
+    );
+
+    if (layout === "page") {
+        const status = player.isBot ? { label: "Bot", dot: "bg-[#8d877e]" } : player.disconnected ? { label: "Desconectado", dot: "bg-[#a33843]" } : { label: "Conectado", dot: "bg-[#6f9b77]" };
+        return (
+            <li
+                ref={setNodeRef}
+                style={{ transform, transition }}
+                className={`flex items-center gap-1 border-b border-white/7 transition-colors last:border-b-0 ${
+                    isDragging ? "relative z-10 rounded-2xl border-transparent bg-[#1d1f23] shadow-[0_16px_40px_rgba(0,0,0,0.5)] ring-1 ring-[#d3b88c]/50" : ""
+                } ${player.disconnected ? "opacity-60" : ""}`}
+            >
+                <button
+                    type="button"
+                    onClick={() => setDetailsOpen(true)}
+                    aria-label={`Abrir detalhes de ${player.name}, casa ${houseNumber}`}
+                    className="flex min-h-16 min-w-0 flex-1 items-center gap-3.5 rounded-xl py-2 pr-1 text-left transition-colors active:bg-white/[0.04] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#d3b88c]"
+                >
+                    <span className="grid size-10 shrink-0 place-items-center rounded-full border border-[#d3b88c]/30 bg-[#d3b88c]/[0.07] font-serif text-lg font-semibold text-[#f6dfb5] tabular-nums">
+                        {houseNumber}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                        <span className="flex min-w-0 items-center gap-1.5">
+                            {Boolean(player.isBot) && <Bot aria-hidden="true" size={15} className="shrink-0 text-[#9f9990]" />}
+                            <span className="truncate text-[15px] font-semibold text-[#fffaf0]">{player.name}</span>
+                        </span>
+                        <span className="mt-0.5 flex items-center gap-1.5 text-xs text-[#8d877e]">
+                            <span aria-hidden="true" className={`size-1.5 rounded-full ${status.dot}`} />
+                            {status.label}
+                        </span>
+                    </span>
+                    <ChevronRight aria-hidden="true" size={16} className="shrink-0 text-[#5f5a54]" />
+                </button>
+                {!gameStarted && (
+                    <button
+                        type="button"
+                        ref={setActivatorNodeRef}
+                        {...attributes}
+                        {...listeners}
+                        disabled={!reorderEnabled}
+                        aria-label={`Arrastar ${player.name} para outra casa`}
+                        className="grid size-11 shrink-0 cursor-grab touch-none place-items-center rounded-xl text-[#8d877e] transition-colors active:cursor-grabbing active:bg-white/[0.06] active:text-[#d3b88c] focus-visible:outline-2 focus-visible:outline-[#d3b88c] disabled:opacity-30"
+                    >
+                        <GripVertical aria-hidden="true" size={18} />
+                    </button>
+                )}
+                {dialogs}
+            </li>
+        );
+    }
+
     return (
         <li
             ref={setNodeRef}
@@ -109,8 +194,8 @@ export function HostPlayerSidebarRow({
             } ${player.disconnected ? "opacity-60" : ""}`}
         >
             {!gameStarted && (
-                <div className={`grid shrink-0 divide-x divide-white/10 border-r border-white/10 bg-white/[0.03] ${showMoveButtons ? "w-12 grid-cols-2" : "w-11"}`}>
-                    {showMoveButtons && (<div className="grid grid-rows-2 divide-y divide-white/10">
+                <div className={`grid shrink-0 divide-x divide-white/10 border-r border-white/10 bg-white/[0.03] w-12 grid-cols-2`}>
+                    {(<div className="grid grid-rows-2 divide-y divide-white/10">
                         <button
                             type="button"
                             onClick={() => onMove(-1)}
@@ -174,37 +259,7 @@ export function HostPlayerSidebarRow({
                 </span>
             </button>
 
-            <HostPlayerDetailsDialog
-                gameId={gameId}
-                playerUid={playerUid}
-                player={player}
-                playerCount={playerCount}
-                houseNumber={houseNumber}
-                assignment={assignment}
-                actionHistory={actionHistory}
-                actionHistoryLoaded={actionHistoryLoaded}
-                nightNumberById={nightNumberById}
-                playerNames={playerNames}
-                deathDetails={deathDetails}
-                role={role}
-                roleLabel={roleLabel}
-                gameStarted={gameStarted}
-                statusEditable={statusEditable}
-                open={detailsOpen}
-                onClose={() => setDetailsOpen(false)}
-                onRequestKick={requestKick}
-                onComposeAction={onComposeAction}
-            />
-
-            <HostPlayerRemovalDialog
-                playerName={player.name}
-                isBot={Boolean(player.isBot)}
-                open={confirmingKick}
-                busy={kicking}
-                error={kickError}
-                onCancel={cancelKick}
-                onConfirm={() => void handleKick()}
-            />
+            {dialogs}
         </li>
     );
 }
