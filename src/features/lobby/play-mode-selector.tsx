@@ -86,8 +86,8 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
 
   return (
     <section aria-label="Modo de jogo">
-      <header className={`flex items-center gap-3 ${large ? "justify-end" : "justify-between"}`}>
-        <h2 className={large ? "sr-only" : "whitespace-nowrap font-serif text-lg font-semibold text-[#fffaf0]"}>Modo de jogo</h2>
+      <header className="flex items-center justify-between gap-3">
+        <h2 className="whitespace-nowrap font-serif text-lg font-semibold text-[#fffaf0]">Modo de jogo</h2>
         {large ? (
           <button
             type="button"
@@ -101,7 +101,7 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
           <GameSettingsButton gameId={gameId} />
         )}
       </header>
-      <div role="radiogroup" aria-label="Modo de jogo" className={`grid ${large ? "mt-2 grid-cols-2 items-stretch gap-2.5" : "mt-4 gap-2"}`}>
+      <div role="radiogroup" aria-label="Modo de jogo" className={`grid ${large ? "mt-3 grid-cols-2 items-stretch gap-2.5" : "mt-4 gap-2"}`}>
         {OPTIONS.map(({ mode, title, description, icon: Icon }) => {
           const selected = mode === playMode;
           const unavailable = unavailableModes.includes(mode);
@@ -114,9 +114,11 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
                 type="button"
                 role="radio"
                 aria-checked={selected}
+                aria-label={title}
+                title={title}
                 disabled={saving || unavailable}
                 onClick={() => select(mode)}
-                className={`relative flex flex-col items-start gap-3 rounded-2xl border p-3.5 text-left transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed ${
+                className={`relative grid min-h-24 place-items-center rounded-2xl border p-3.5 transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed ${
                   selected
                     ? "border-[#d3b88c]/70 bg-[linear-gradient(160deg,rgba(211,184,140,0.16),rgba(211,184,140,0.03))] shadow-[inset_0_1px_0_rgba(246,223,181,0.12)]"
                     : "border-white/10 bg-white/[0.02] hover:border-white/25"
@@ -124,11 +126,10 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
               >
                 <span
                   aria-hidden="true"
-                  className={`grid size-11 shrink-0 place-items-center rounded-xl ${selected ? "bg-[#d3b88c] text-[#1b1d20]" : "bg-white/[0.06] text-[#bdb7ad]"}`}
+                  className={`grid size-14 shrink-0 place-items-center rounded-2xl ${selected ? "bg-[#d3b88c] text-[#1b1d20]" : "bg-white/[0.06] text-[#bdb7ad]"}`}
                 >
-                  <Icon className="size-5" />
+                  <Icon className="size-7" />
                 </span>
-                <span className="block min-w-0 pr-5 font-serif text-[17px] leading-6 font-semibold text-[#fffaf0]">{title}</span>
                 {selected && (
                   <span aria-hidden="true" className="absolute top-3 right-3 grid size-6 place-items-center rounded-full bg-[#d3b88c] text-[#1b1d20]">
                     <Check className="size-3.5" strokeWidth={3} />
