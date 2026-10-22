@@ -51,6 +51,7 @@ const TEAM_PANEL = {
     killText: "text-[#f0b9bd]",
     ownBubble: "bg-[#7d2330]",
     mentionPill: "border-[#db4242]/30 bg-[#7d2330]/25 hover:bg-[#7d2330]/45",
+    targetCard: "border-[#db4242]",
   },
   vampire: {
     title: "Seus Vampiros",
@@ -64,6 +65,7 @@ const TEAM_PANEL = {
     killText: "text-[#c9d6b8]",
     ownBubble: "bg-[#4c5a3c]",
     mentionPill: "border-[#9aab84]/30 bg-[#4c5a3c]/25 hover:bg-[#4c5a3c]/45",
+    targetCard: "border-[#9aab84]",
   },
 } as const;
 
@@ -224,7 +226,7 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
               {resting
                 ? "Sem mordida nesta noite."
                 : tally.projectedTargetUid
-                ? `Alvo: ${nameOf(tally.projectedTargetUid)} (${projectedVotes} ${projectedVotes === 1 ? "voto" : "votos"})`
+                ? "O grupo escolheu o alvo desta noite."
                 : tally.tied
                   ? "Empate: um dos alvos empatados será sorteado."
                   : "Ninguém votou ainda. Escolha o alvo na lista."}
@@ -232,6 +234,38 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
           )}
         </div>
       </div>
+
+      {nightId && !resting && tally.projectedTargetUid && (
+        // O alvo marcado: o nome em destaque e uma lâmina por membro vivo, acesa para quem votou nele.
+        <div
+          role="status"
+          className={`mt-3 flex items-center gap-3 rounded-xl border-l-4 ${look.targetCard} bg-black/30 py-2.5 pr-3 pl-3.5`}
+        >
+          <div className="min-w-0 flex-1">
+            <p className={`text-xs ${look.accentText}`}>{look.killLabel} em</p>
+            <p className="truncate font-serif text-2xl leading-tight font-semibold text-[#fffaf0]">
+              {nameOf(tally.projectedTargetUid)}
+            </p>
+            <p className="truncate text-xs text-[#bdb7ad]">
+              {tally.votesByTarget[tally.projectedTargetUid].map(({ uid }) => nameOf(uid)).join(", ")}
+            </p>
+          </div>
+          <div className="shrink-0 text-right">
+            <span className="flex justify-end gap-0.5" aria-hidden="true">
+              {members.filter(([uid]) => players[uid]?.alive).map(([uid], index) => (
+                <look.Icon
+                  key={uid}
+                  className={`size-4 ${index < projectedVotes ? look.killText : "text-white/15"}`}
+                />
+              ))}
+            </span>
+            <p className="mt-1 text-xs tabular-nums text-[#bdb7ad]">
+              {projectedVotes} de {members.filter(([uid]) => players[uid]?.alive).length}{" "}
+              {projectedVotes === 1 ? "voto" : "votos"}
+            </p>
+          </div>
+        </div>
+      )}
 
       {nightId && resting && (
         // A noite de descanso substitui a votação: fica claro que não há o que escolher.
