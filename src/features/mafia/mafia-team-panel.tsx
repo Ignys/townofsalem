@@ -2,7 +2,7 @@
 
 import { createId } from "@/lib/utils/create-id";
 import { X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { GiCoffin, GiFangs } from "react-icons/gi";
 import { PiKnife } from "react-icons/pi";
 
@@ -20,16 +20,18 @@ import type { MafiaBoardPickRecord, MafiaReactionRecord, MafiaTeamMemberRecord, 
 
 import { MAFIA_KILL_ACTION_ID, tallyMafiaKill } from "./mafia-kill-projection";
 
-export const MAFIA_REACTIONS: readonly { key: string; label: string }[] = [
-  { key: "trust", label: "Confia em mim" },
+// Só as com `mention` aceitam marcar alguém, segurando o botão.
+export const MAFIA_REACTIONS: readonly { key: string; label: string; mention?: true }[] = [
+  { key: "trust", label: "Confia em mim", mention: true },
   { key: "no", label: "NÃOOO 😱" },
-  { key: "go", label: "Vamos nele 🔪" },
-  { key: "wait", label: "Espera ✋" },
+  { key: "go", label: "Vamos nele 🔪", mention: true },
+  { key: "wait", label: "Espera ✋", mention: true },
   { key: "changed", label: "Mudei de ideia" },
   { key: "ok", label: "👍" },
 ];
 const REACTION_LABELS = Object.fromEntries(MAFIA_REACTIONS.map(({ key, label }) => [key, label]));
 const VISIBLE_REACTIONS = 4;
+const HOLD_MS = 450;
 
 export type MafiaBoard = Record<string, Record<string, MafiaBoardPickRecord>>;
 
@@ -74,13 +76,25 @@ export function teamKillActionId(team: NightTeam): string {
 export function useMafiaTeam(gameId: string, nightTeam: NightTeam | null) {
   const [team, setTeam] = useState<Record<string, MafiaTeamMemberRecord>>({});
 
+  const [attempt, setAttempt] = useState(0);
+
   useEffect(() => {
     if (!nightTeam) return;
-    return observeMafiaTeam(gameId, {
+    let retry: ReturnType<typeof setTimeout> | undefined;
+    const unsubscribe = observeMafiaTeam(gameId, {
       onData: (value) => setTeam(value ?? {}),
-      onError: () => setTeam({}),
+      // O mestre pode publicar o time depois desta tela abrir: até lá a regra nega a leitura
+      // e o listener morre. Tenta de novo em vez de ficar sem time até o F5.
+      onError: () => {
+        setTeam({});
+        retry = setTimeout(() => setAttempt((count) => count + 1), 3000);
+      },
     }, nightTeam);
-  }, [nightTeam, gameId]);
+    return () => {
+      clearTimeout(retry);
+      unsubscribe();
+    };
+  }, [nightTeam, gameId, attempt]);
 
   return nightTeam ? team : {};
 }
@@ -149,6 +163,13 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
   const [sending, setSending] = useState(false);
   // Reação escolhida, esperando o segundo toque: sobre quem ela é.
   const [pendingKey, setPendingKey] = useState<string | null>(null);
+  // Toque envia; segurar abre a menção. O clique que encerra o toque longo é ignorado.
+  const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const held = useRef(false);
+  const stopHold = () => {
+    if (holdTimer.current) clearTimeout(holdTimer.current);
+    holdTimer.current = null;
+  };
 
   useEffect(() => {
     if (!nightId) return;
@@ -283,7 +304,9 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
                   {reaction.uid !== viewerUid && <strong className="mr-1 font-semibold">{nameOf(reaction.uid)}:</strong>}
                   {REACTION_LABELS[reaction.key] ?? reaction.key}
                   {reaction.targetUid && (
-                    <strong className="ml-1 font-semibold">→ {nameOf(reaction.targetUid)}</strong>
+                    <span className="ml-1.5 inline-flex rounded-full bg-black/30 px-2 py-0.5 align-middle text-xs font-semibold text-[#fffaf0] ring-1 ring-white/15">
+                      @{nameOf(reaction.targetUid)}
+                    </span>
                   )}
                 </li>
               ))}
@@ -329,18 +352,40 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
           )}
           {viewerAlive && !pendingKey && (
             <div aria-label="Reações" className="flex flex-wrap gap-1.5">
-              {MAFIA_REACTIONS.map(({ key, label }) => (
+              {MAFIA_REACTIONS.map(({ key, label, mention }) => (
                 <button
                   key={key}
                   type="button"
                   disabled={sending}
-                  onClick={() => setPendingKey(key)}
-                  className={`${pillClass} border-white/15 bg-white/5 text-[#e5ded2] hover:bg-white/10`}
+                  onPointerDown={mention ? () => {
+                    held.current = false;
+                    holdTimer.current = setTimeout(() => {
+                      held.current = true;
+                      setPendingKey(key);
+                    }, HOLD_MS);
+                  } : undefined}
+                  onPointerUp={stopHold}
+                  onPointerLeave={stopHold}
+                  onContextMenu={mention ? (event) => event.preventDefault() : undefined}
+                  onClick={() => {
+                    if (held.current) {
+                      held.current = false;
+                      return;
+                    }
+                    stopHold();
+                    react(key, null);
+                  }}
+                  className={`${pillClass} touch-manipulation select-none [-webkit-touch-callout:none] border-white/15 bg-white/5 text-[#e5ded2] hover:bg-white/10`}
                 >
                   {label}
                 </button>
               ))}
             </div>
+          )}
+          {viewerAlive && !pendingKey && (
+            <p className="mt-2 text-xs text-[#8f8a82]">
+              Toque para enviar. Segure “Confia em mim”, “Vamos nele” ou “Espera” para marcar alguém.
+            </p>
           )}
         </div>
       )}
