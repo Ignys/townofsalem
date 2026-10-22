@@ -3,6 +3,8 @@
 import { History, LayoutDashboard, Moon, ScrollText, Settings, Sun, Users, Vote, X } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 
+import { useRoomName } from "./realtime-lobby-view";
+
 const DESKTOP_QUERY = "(min-width: 1024px)";
 
 /** Escolhe um esqueleto só; montar os dois duplicaria sons, espelhos e o piloto automático. */
@@ -64,6 +66,7 @@ export function HostMobileConsole({ code, phase, roundNumber, header, sidebar, t
     const hasPlayersTab = tabs.some((tab) => tab.id === "players");
     const currentTab = tabs.find((tab) => tab.id === current);
     const currentLabel = currentTab?.label;
+    const roomName = useRoomName(code);
 
     useEffect(() => {
         const drawer = drawerRef.current;
@@ -86,29 +89,42 @@ export function HostMobileConsole({ code, phase, roundNumber, header, sidebar, t
         <div className="flex min-h-svh w-full min-w-0 flex-col">
             {background}
 
-            <header className="sticky top-0 z-30 flex items-center gap-3 border-b border-[#2e3136]/70 bg-[#16181b]/95 px-4 py-3 shadow-[0_12px_30px_rgba(0,0,0,0.35)] backdrop-blur">
-                {!hasPlayersTab && (<button
-                    type="button"
-                    onClick={() => onPlayersOpenChange(true)}
-                    aria-label="Abrir jogadores"
-                    className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-white/15 text-[#e6cfa9] focus-visible:outline-3 focus-visible:outline-[#d3b88c]"
-                >
-                    <Users aria-hidden="true" className="size-5" />
-                </button>)}
-                <div className="min-w-0 flex-1">
-                    <p className="truncate font-serif text-lg font-semibold leading-tight text-[#fffaf0]">{currentLabel}</p>
-                    <p className="truncate text-xs text-[#9f9990]">
-                        Sala {code}
-                        {phase === "night" && `, noite ${roundNumber ?? ""}`}
-                        {phase === "day" && `, dia ${roundNumber ?? ""}`}
-                    </p>
+            <header className="sticky top-0 z-30 border-b border-[#2e3136]/70 bg-[#16181b]/95 shadow-[0_12px_30px_rgba(0,0,0,0.35)] backdrop-blur">
+                <div className="flex min-h-16 items-center gap-3 px-4 py-2">
+                    {!hasPlayersTab && (
+                        <button
+                            type="button"
+                            onClick={() => onPlayersOpenChange(true)}
+                            aria-label="Abrir jogadores"
+                            className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-white/12 bg-white/[0.03] text-[#e6cfa9] transition-colors hover:bg-white/[0.07] focus-visible:outline-3 focus-visible:outline-[#d3b88c]"
+                        >
+                            <Users aria-hidden="true" className="size-5" />
+                        </button>
+                    )}
+                    <div className="min-w-0 flex-1">
+                        <p className="flex min-w-0 items-center gap-2 text-xs">
+                            <span className="truncate font-semibold text-[#d3b88c]">{roomName ?? "Sala"}</span>
+                            <span className="shrink-0 rounded border border-white/12 px-1 text-[10px] font-semibold tracking-[0.12em] text-[#9f9990]">{code}</span>
+                        </p>
+                        <h1 className="truncate font-serif text-xl font-semibold leading-6 text-[#fffaf0]">{currentLabel}</h1>
+                    </div>
+                    {currentTab?.headerActions ??
+                        (phase === "night" || phase === "day" ? (
+                            <p
+                                className={`flex shrink-0 items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                                    phase === "night" ? "border-[#8fa3d9]/30 bg-[#2a3350]/60 text-[#c9d4f2]" : "border-[#d3b88c]/35 bg-[#d3b88c]/12 text-[#f6dfb5]"
+                                }`}
+                            >
+                                {phase === "night" ? <Moon aria-hidden="true" className="size-3.5" /> : <Sun aria-hidden="true" className="size-3.5" />}
+                                {phase === "night" ? "Noite" : "Dia"} {roundNumber}
+                            </p>
+                        ) : null)}
                 </div>
-                {currentTab?.headerActions}
-                {currentTab?.headerActions ? null : phase === "night" ? (
-                    <Moon aria-hidden="true" className="size-5 shrink-0 text-[#d3b88c]" />
-                ) : phase === "day" ? (
-                    <Sun aria-hidden="true" className="size-5 shrink-0 text-[#d3b88c]" />
-                ) : null}
+                {/* Fio da fase: azul de noite, dourado de dia, neutro no lobby. */}
+                <div
+                    aria-hidden="true"
+                    className={`h-px ${phase === "night" ? "bg-linear-to-r from-transparent via-[#8fa3d9]/60 to-transparent" : phase === "day" ? "bg-linear-to-r from-transparent via-[#d3b88c]/60 to-transparent" : "bg-transparent"}`}
+                />
             </header>
 
             <div className={`flex-1 px-3 pt-3 ${floatingAction ? "pb-44" : "pb-28"}`}>

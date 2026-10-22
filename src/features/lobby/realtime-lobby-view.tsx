@@ -29,7 +29,7 @@ const connectionLabels: Record<FirebaseConnectionStatus, string> = {
 };
 
 /** Nome que o moderador deu à sala; salas antigas não têm e caem no código. */
-function useRoomName(code: string): string | null {
+export function useRoomName(code: string): string | null {
   const [name, setName] = useState<string | null>(null);
 
   useEffect(() => {
