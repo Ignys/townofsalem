@@ -26,6 +26,7 @@ import { compositionRecordToRoleIds } from "./role-composition";
 import { ROLE_COMPOSITION_RULES } from "./role-composition-rules";
 import { RoleAssignmentError } from "./role-assignment-error";
 import { createRoleAssignmentUpdates } from "./role-assignment-updates";
+import { getPlayerEntries } from "@/features/game-state/player-roster";
 import { validateRoleComposition } from "./validate-role-composition";
 
 export interface DrawAndPersistRolesOptions {
@@ -143,6 +144,12 @@ export async function drawAndPersistRoles(
   );
 
   // Only players of this game are kept; whoever left the room drops out.
+  // Bots nascem com casa; quem entrou pelo celular só tem se o mestre reordenou. Sem casa, cada tela numera de um jeito.
+  let nextSeat = Math.max(0, ...Object.values(players ?? {}).map((player) => player.seat ?? 0));
+  getPlayerEntries(players ?? {}).forEach(([uid, player]) => {
+    if (!player.seat) updates[firebasePaths.gamePlayerField(gameId, uid, "seat")] = ++nextSeat;
+  });
+
   updates[firebasePaths.gameRoleHistory(gameId)] = nextRoleHistory(assignments, roleHistory ?? {});
 
   try {
