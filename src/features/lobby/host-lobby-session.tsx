@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Siren } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 import { getPlayerEntries } from "@/features/game-state/player-roster";
 import { HostGameControlPanel } from "@/features/game-state/host-game-control-panel";
@@ -45,6 +46,36 @@ function MayorRevealMirror({ gameId, hostUid }: Readonly<{ gameId: string; hostU
     useMirrorMafiaTeam(gameId, hostUid);
     useMirrorMafiaTeam(gameId, hostUid, "vampire");
     return null;
+}
+
+/** Abre os controles da mesa num diálogo; só para emergências no modo só celulares. */
+function EmergencyControlsButton({ controls }: Readonly<{ controls: ReactNode }>) {
+    const dialogRef = useRef<HTMLDialogElement>(null);
+    return (
+        <>
+            <button
+                type="button"
+                onClick={() => dialogRef.current?.showModal()}
+                className="mt-6 flex min-h-11 items-center gap-2 rounded-xl border border-[#e0cfb4]/40 px-5 text-sm font-semibold text-[#f6dfb5] hover:bg-white/5 focus-visible:outline-3 focus-visible:outline-[#c18b2f]"
+            >
+                <Siren aria-hidden="true" className="size-4" />
+                Controles de emergência
+            </button>
+            <dialog
+                ref={dialogRef}
+                onClick={(event) => {
+                    if (event.target === event.currentTarget) dialogRef.current?.close();
+                }}
+                aria-label="Controles de emergência"
+                className="m-auto w-[calc(100%-2rem)] max-w-md rounded-3xl bg-transparent p-0 backdrop:bg-black/70"
+            >
+                {controls}
+                <button type="button" onClick={() => dialogRef.current?.close()} className="mt-3 min-h-11 w-full rounded-xl border border-white/20 bg-[#1c1715] text-sm font-semibold text-[#f6dfb5]">
+                    Fechar
+                </button>
+            </dialog>
+        </>
+    );
 }
 
 type HostSessionState = { status: "loading" } | { status: "ready"; session: RestoredHostSession } | { status: "error"; message: string };
@@ -188,13 +219,8 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                     alive={hostPlayer.alive}
                     players={lobby.players}
                     viewerUid={hostUid}
+                    footerAction={<EmergencyControlsButton controls={<HostlessTableControls gameId={gameId} game={game} />} />}
                 />
-                <details className="rounded-2xl border border-white/10 bg-black/20 p-3">
-                    <summary className="cursor-pointer text-sm font-semibold text-[#d7d0c4]">Controles de emergência</summary>
-                    <div className="mt-3">
-                        <HostlessTableControls gameId={gameId} game={game} />
-                    </div>
-                </details>
                 <div hidden aria-hidden="true">
                     {engine}
                 </div>

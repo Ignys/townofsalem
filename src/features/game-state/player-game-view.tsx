@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { Moon, Skull, Sun } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 
 import { getRoleById } from "@/data/roles";
 import { getChosenExecutionTarget } from "@/game-engine/role-rules";
@@ -59,6 +59,8 @@ interface PlayerGameViewProps {
   alive: boolean;
   players: Readonly<Record<string, PublicPlayerRecord>>;
   viewerUid: string;
+  /** Botão extra ao lado de "Ver roles do jogo" (controles de emergência do modo só celulares). */
+  footerAction?: ReactNode;
 }
 
 // O número fica ao lado do ícone; o título mostra só o nome da fase.
@@ -74,6 +76,7 @@ export function PlayerGameView({
   alive,
   players,
   viewerUid,
+  footerAction,
 }: PlayerGameViewProps) {
   const privateRole = usePrivatePlayerRole(gameId);
   const gameVariants = useGameVariants(gameId);
@@ -424,7 +427,13 @@ export function PlayerGameView({
         secrets={holdSecrets}
       />
 
-      <RolesGuideButton />
+      <div className="flex flex-wrap items-start justify-center gap-x-2">
+        <RolesGuideButton
+          roleComposition={gameVariants.roleComposition}
+          randomRoleExclusions={gameVariants.randomRoleExclusions}
+        />
+        {footerAction}
+      </div>
     </div>
   );
 }
