@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ChessQueen, Lock, Monitor, Smartphone, type LucideIcon } from "lucide-react";
+import { Check, ChessQueen, Monitor, Smartphone, type LucideIcon } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { firebasePaths } from "@/lib/firebase/paths";
@@ -88,11 +88,13 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
         {!large && <GameSettingsButton gameId={gameId} />}
       </header>
       {large && <p className="mt-1 text-sm text-[#a9a297]">Como a mesa vai jogar esta partida.</p>}
-      <div role="radiogroup" aria-label="Modo de jogo" className={`mt-4 grid ${large ? "gap-2.5" : "gap-2"}`}>
+      <div role="radiogroup" aria-label="Modo de jogo" className={`mt-4 grid ${large ? "grid-cols-2 items-stretch gap-2.5" : "gap-2"}`}>
         {OPTIONS.map(({ mode, title, description, icon: Icon }) => {
           const selected = mode === playMode;
           const unavailable = unavailableModes.includes(mode);
           if (large) {
+            // Indisponível some de vez; só aparece se a sala já estiver nesse modo.
+            if (unavailable && !selected) return null;
             return (
               <button
                 key={mode}
@@ -101,13 +103,11 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
                 aria-checked={selected}
                 disabled={saving || unavailable}
                 onClick={() => select(mode)}
-                className={`relative flex items-start gap-3.5 rounded-2xl border p-3.5 text-left transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] ${
-                  unavailable
-                    ? "border-dashed border-white/12 opacity-55"
-                    : selected
-                      ? "border-[#d3b88c]/70 bg-[linear-gradient(135deg,rgba(211,184,140,0.14),rgba(211,184,140,0.03))] shadow-[inset_0_1px_0_rgba(246,223,181,0.12)]"
-                      : "border-white/10 bg-white/[0.02] hover:border-white/25"
-                } ${saving && !unavailable ? "opacity-70" : ""}`}
+                className={`relative flex flex-col items-start gap-3 rounded-2xl border p-3.5 text-left transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:cursor-not-allowed ${
+                  selected
+                    ? "border-[#d3b88c]/70 bg-[linear-gradient(160deg,rgba(211,184,140,0.16),rgba(211,184,140,0.03))] shadow-[inset_0_1px_0_rgba(246,223,181,0.12)]"
+                    : "border-white/10 bg-white/[0.02] hover:border-white/25"
+                } ${saving ? "opacity-70" : ""}`}
               >
                 <span
                   aria-hidden="true"
@@ -115,15 +115,9 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
                 >
                   <Icon className="size-5" />
                 </span>
-                <span className="min-w-0 flex-1 pr-6">
+                <span className="min-w-0">
                   <span className="block font-serif text-[17px] leading-6 font-semibold text-[#fffaf0]">{title}</span>
-                  <span className="mt-0.5 block text-[13px] leading-5 text-[#a9a297]">{description}</span>
-                  {unavailable && (
-                    <span className="mt-2 inline-flex items-center gap-1 rounded-full border border-white/12 px-2 py-0.5 text-[11px] font-semibold text-[#bdb7ad]">
-                      <Lock aria-hidden="true" className="size-3" />
-                      Só com computador na mesa
-                    </span>
-                  )}
+                  <span className="mt-1 block text-xs leading-[1.125rem] text-[#a9a297]">{description}</span>
                 </span>
                 {selected && (
                   <span aria-hidden="true" className="absolute top-3 right-3 grid size-6 place-items-center rounded-full bg-[#d3b88c] text-[#1b1d20]">
