@@ -239,31 +239,20 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
         // O alvo marcado: o nome em destaque e uma lâmina por membro vivo, acesa para quem votou nele.
         <div
           role="status"
-          className={`mt-3 flex items-center gap-3 rounded-xl border-l-4 ${look.targetCard} bg-black/30 py-2.5 pr-3 pl-3.5`}
+          aria-label={`${look.killLabel} em ${nameOf(tally.projectedTargetUid)}, ${projectedVotes} de ${members.filter(([uid]) => players[uid]?.alive).length} votos`}
+          className={`mt-3 flex items-center gap-3 rounded-lg border-l-4 ${look.targetCard} bg-black/30 py-1.5 pr-3 pl-3`}
         >
-          <div className="min-w-0 flex-1">
-            <p className={`text-xs ${look.accentText}`}>{look.killLabel} em</p>
-            <p className="truncate font-serif text-2xl leading-tight font-semibold text-[#fffaf0]">
-              {nameOf(tally.projectedTargetUid)}
-            </p>
-            <p className="truncate text-xs text-[#bdb7ad]">
-              {tally.votesByTarget[tally.projectedTargetUid].map(({ uid }) => nameOf(uid)).join(", ")}
-            </p>
-          </div>
-          <div className="shrink-0 text-right">
-            <span className="flex justify-end gap-0.5" aria-hidden="true">
-              {members.filter(([uid]) => players[uid]?.alive).map(([uid], index) => (
-                <look.Icon
-                  key={uid}
-                  className={`size-4 ${index < projectedVotes ? look.killText : "text-white/15"}`}
-                />
-              ))}
-            </span>
-            <p className="mt-1 text-xs tabular-nums text-[#bdb7ad]">
-              {projectedVotes} de {members.filter(([uid]) => players[uid]?.alive).length}{" "}
-              {projectedVotes === 1 ? "voto" : "votos"}
-            </p>
-          </div>
+          <p className="min-w-0 flex-1 truncate font-serif text-lg font-semibold text-[#fffaf0]">
+            {nameOf(tally.projectedTargetUid)}
+          </p>
+          <span className="flex shrink-0 gap-0.5" aria-hidden="true">
+            {members.filter(([uid]) => players[uid]?.alive).map(([uid], index) => (
+              <look.Icon
+                key={uid}
+                className={`size-4 ${index < projectedVotes ? look.killText : "text-white/15"}`}
+              />
+            ))}
+          </span>
         </div>
       )}
 
