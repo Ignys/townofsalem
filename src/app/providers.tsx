@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
 
 import { AnonymousAuthProvider } from "@/features/auth";
 
@@ -9,5 +9,11 @@ interface AppProvidersProps {
 }
 
 export function AppProviders({ children }: AppProvidersProps) {
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" });
+    }
+  }, []);
+
   return <AnonymousAuthProvider>{children}</AnonymousAuthProvider>;
 }
