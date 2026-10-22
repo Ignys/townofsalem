@@ -65,7 +65,6 @@ export function HostMobileConsole({ code, phase, roundNumber, header, sidebar, t
     const current = tabs.some((tab) => tab.id === activeTab) ? activeTab : tabs[0].id;
     const hasPlayersTab = tabs.some((tab) => tab.id === "players");
     const currentTab = tabs.find((tab) => tab.id === current);
-    const currentLabel = currentTab?.label;
     const roomName = useRoomName(code);
 
     useEffect(() => {
@@ -102,11 +101,11 @@ export function HostMobileConsole({ code, phase, roundNumber, header, sidebar, t
                         </button>
                     )}
                     <div className="min-w-0 flex-1">
-                        <p className="flex min-w-0 items-center gap-2 text-xs">
-                            <span className="truncate font-semibold text-[#d3b88c]">{roomName ?? "Sala"}</span>
-                            <span className="shrink-0 rounded border border-white/12 px-1 text-[10px] font-semibold tracking-[0.12em] text-[#9f9990]">{code}</span>
+                        <h1 className="truncate font-serif text-xl font-semibold leading-6 text-[#fffaf0]">{roomName ?? "Sala"}</h1>
+                        <p className="mt-0.5 text-xs font-semibold tracking-[0.14em] text-[#d3b88c]/80">
+                            <span className="sr-only">Código </span>
+                            {code}
                         </p>
-                        <h1 className="truncate font-serif text-xl font-semibold leading-6 text-[#fffaf0]">{currentLabel}</h1>
                     </div>
                     {currentTab?.headerActions ??
                         (phase === "night" || phase === "day" ? (
