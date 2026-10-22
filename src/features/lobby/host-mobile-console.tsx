@@ -107,8 +107,10 @@ export function HostMobileConsole({ code, phase, header, sidebar, tabs, backgrou
                 {tabs.map((tab) => (
                     // Abas escondidas continuam montadas: seleção da noite e votos não se perdem.
                     <section key={tab.id} hidden={tab.id !== current} aria-label={tab.label} className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
-                        {tab.id === "table" || tab.id === "settings" ? <div className="-mx-3 -mt-3">{header}</div> : null}
+                        {tab.id === "settings" && <div className="-mx-3 -mt-3">{header}</div>}
                         {tab.content}
+                        {/* No jogo os controles da fase vêm primeiro; dados da sala ficam no fim. */}
+                        {tab.id === "table" && <div className="-mx-3 rounded-2xl">{header}</div>}
                     </section>
                 ))}
             </div>

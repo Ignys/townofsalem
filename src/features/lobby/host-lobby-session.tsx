@@ -301,7 +301,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                       // A lista vira página inteira: sem o limite de altura da coluna do PC.
                       content: <div className="[&>aside]:max-h-none [&>aside]:rounded-2xl [&>aside]:border">{sidebar}</div>,
                   },
-                  { id: "roles", label: "Roles", content: <HostRoleComposition gameId={gameId} playerCount={playerCount} editable /> },
+                  { id: "roles", label: "Roles", content: <HostRoleComposition gameId={gameId} playerCount={playerCount} editable layout="mobile" /> },
                   {
                       id: "settings",
                       label: "Sala",
