@@ -86,8 +86,8 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
 
   return (
     <section aria-label="Modo de jogo">
-      <header className="flex items-center justify-between gap-3">
-        <h2 className="whitespace-nowrap font-serif text-lg font-semibold text-[#fffaf0]">Modo de jogo</h2>
+      <header className={`flex items-center gap-3 ${large ? "justify-end" : "justify-between"}`}>
+        <h2 className={large ? "sr-only" : "whitespace-nowrap font-serif text-lg font-semibold text-[#fffaf0]"}>Modo de jogo</h2>
         {large ? (
           <button
             type="button"
@@ -101,7 +101,7 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
           <GameSettingsButton gameId={gameId} />
         )}
       </header>
-      <div role="radiogroup" aria-label="Modo de jogo" className={`mt-4 grid ${large ? "grid-cols-2 items-stretch gap-2.5" : "gap-2"}`}>
+      <div role="radiogroup" aria-label="Modo de jogo" className={`grid ${large ? "mt-2 grid-cols-2 items-stretch gap-2.5" : "mt-4 gap-2"}`}>
         {OPTIONS.map(({ mode, title, description, icon: Icon }) => {
           const selected = mode === playMode;
           const unavailable = unavailableModes.includes(mode);
@@ -251,7 +251,7 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
         </dialog>
       )}
       {large && (
-        <div className="mt-4 border-t border-white/10 pt-4">
+        <div className="mt-4 -mx-2">
           <GameSettingsButton gameId={gameId} variant="row" />
         </div>
       )}

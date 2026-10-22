@@ -22,7 +22,7 @@ export function GameSettingsButton({ gameId, disabled = false, variant = "chip" 
         onClick={() => setOpen(true)}
         className={
           variant === "row"
-            ? "flex min-h-14 w-full items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 text-left transition-colors hover:bg-white/[0.06] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-50"
+            ? "flex min-h-14 w-full items-center gap-3 rounded-xl px-2 text-left transition-colors hover:bg-white/[0.04] active:bg-white/[0.06] focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-50"
             : "btn-quiet-dark flex min-h-9 items-center gap-1.5 px-2.5 text-xs"
         }
       >
