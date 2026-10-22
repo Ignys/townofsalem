@@ -27,6 +27,10 @@ export const MAFIA_REACTIONS: readonly { key: string; label: string }[] = [
   { key: "wait", label: "Espera ✋" },
   { key: "changed", label: "Mudei de ideia" },
   { key: "ok", label: "👍" },
+  { key: "this-one", label: "Vai nesse 👉" },
+  { key: "dangerous", label: "Ele é perigoso ⚠️" },
+  { key: "mine", label: "Eu cuido dele" },
+  { key: "goodnight", label: "Boa noite, família 🌙" },
 ];
 const REACTION_LABELS = Object.fromEntries(MAFIA_REACTIONS.map(({ key, label }) => [key, label]));
 const VISIBLE_REACTIONS = 4;
