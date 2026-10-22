@@ -35,6 +35,8 @@ interface HostPlayerSidebarRowProps {
     canMoveUp: boolean;
     canMoveDown: boolean;
     onMove: (direction: -1 | 1) => void;
+    /** Celular: só a alça de arrastar, sem as setas. */
+    showMoveButtons?: boolean;
     onComposeAction?: (playerUid: string) => void;
 }
 
@@ -61,6 +63,7 @@ export function HostPlayerSidebarRow({
     canMoveUp,
     canMoveDown,
     onMove,
+    showMoveButtons = true,
     onComposeAction,
 }: HostPlayerSidebarRowProps) {
     const [detailsOpen, setDetailsOpen] = useState(false);
@@ -106,8 +109,8 @@ export function HostPlayerSidebarRow({
             } ${player.disconnected ? "opacity-60" : ""}`}
         >
             {!gameStarted && (
-                <div className="grid w-12 shrink-0 grid-cols-2 divide-x divide-white/10 border-r border-white/10 bg-white/[0.03]">
-                    <div className="grid grid-rows-2 divide-y divide-white/10">
+                <div className={`grid shrink-0 divide-x divide-white/10 border-r border-white/10 bg-white/[0.03] ${showMoveButtons ? "w-12 grid-cols-2" : "w-11"}`}>
+                    {showMoveButtons && (<div className="grid grid-rows-2 divide-y divide-white/10">
                         <button
                             type="button"
                             onClick={() => onMove(-1)}
@@ -126,7 +129,7 @@ export function HostPlayerSidebarRow({
                         >
                             <ChevronDown aria-hidden="true" size={16} strokeWidth={2} />
                         </button>
-                    </div>
+                    </div>)}
                     <button
                         type="button"
                         ref={setActivatorNodeRef}
@@ -134,7 +137,7 @@ export function HostPlayerSidebarRow({
                         {...listeners}
                         disabled={!reorderEnabled}
                         aria-label={`Arrastar ${player.name} para outra casa`}
-                        className={`${reorderButtonClassName} cursor-grab active:cursor-grabbing`}
+                        className={`${reorderButtonClassName} cursor-grab touch-none active:cursor-grabbing`}
                     >
                         <GripVertical aria-hidden="true" size={16} strokeWidth={2} />
                     </button>

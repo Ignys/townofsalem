@@ -198,6 +198,7 @@ export function HostPlayerSidebar({ gameId, verifiedHostUid, players, gameStarte
                                         canMoveUp={item.houseNumber > 1}
                                         canMoveDown={item.houseNumber < orderedPlayerUids.length}
                                         onMove={(direction) => void handleMovePlayer(item.playerUid, direction)}
+                                        showMoveButtons={layout === "panel"}
                                         onComposeAction={onComposeAction}
                                     />
                                 );
