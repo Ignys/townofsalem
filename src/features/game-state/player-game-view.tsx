@@ -286,7 +286,7 @@ export function PlayerGameView({
           <div className="min-w-0">
             <p className="font-serif text-base font-semibold text-[#fffaf0]">Você está morto</p>
             <p className="text-sm leading-6 text-[#a9a297]">
-              Continue acompanhando a partida, mas sem falar sobre o jogo.
+              Continue acompanhando a partida, mas sem falar sobre o jogo. Quem sabe você não volta à vida?
             </p>
           </div>
         </section>
