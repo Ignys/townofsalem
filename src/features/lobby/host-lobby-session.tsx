@@ -34,6 +34,7 @@ import { useFirebaseConnection } from "./use-firebase-connection";
 import { useRealtimeLobby } from "./use-realtime-lobby";
 import { HostNightConsole } from "./host-night-console";
 import { PlayModeSelector } from "./play-mode-selector";
+import { MobileRoomSettings } from "./mobile-room-settings";
 import { HostMobileConsole, useIsDesktop, type HostMobileTab, type HostMobileTabId } from "./host-mobile-console";
 import { scrollToNightConsoleAction } from "@/features/night-actions/night-console-navigation";
 
@@ -322,16 +323,21 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                       id: "settings",
                       label: "Sala",
                       content: (
-                          <div className="panel-private">
-                              <PlayModeSelector
-                                  gameId={gameId}
-                                  playMode={game.playMode ?? "hosted"}
-                                  gamePace={game.gamePace ?? "relaxed"}
-                                  code={sessionState.session.code}
-                                  hostJoined={Boolean(lobby.players[hostUid])}
-                                  unavailableModes={["hostless"]}
-                              />
-                          </div>
+                          <MobileRoomSettings
+                              code={sessionState.session.code}
+                              gameId={gameId}
+                              connectionStatus={connectionStatus}
+                              playModeSelector={
+                                  <PlayModeSelector
+                                      gameId={gameId}
+                                      playMode={game.playMode ?? "hosted"}
+                                      gamePace={game.gamePace ?? "relaxed"}
+                                      code={sessionState.session.code}
+                                      hostJoined={Boolean(lobby.players[hostUid])}
+                                      unavailableModes={["hostless"]}
+                                  />
+                              }
+                          />
                       ),
                   },
               ]

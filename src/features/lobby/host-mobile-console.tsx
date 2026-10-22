@@ -33,7 +33,7 @@ interface HostMobileConsoleProps {
     phase: string | undefined;
     /** Número da noite atual; o dia leva o mesmo número. */
     roundNumber?: number;
-    /** Cabeçalho completo do PC; no celular mora dentro da aba "Mesa" ou "Sala". */
+    /** Cabeçalho completo do PC; no celular mora no fim da aba "Mesa". */
     header: ReactNode;
     sidebar: ReactNode;
     tabs: HostMobileTab[];
@@ -115,7 +115,6 @@ export function HostMobileConsole({ code, phase, roundNumber, header, sidebar, t
                 {tabs.map((tab) => (
                     // Abas escondidas continuam montadas: seleção da noite e votos não se perdem.
                     <section key={tab.id} hidden={tab.id !== current} aria-label={tab.label} className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-4">
-                        {tab.id === "settings" && <div className="-mx-3 -mt-3">{header}</div>}
                         {tab.content}
                         {/* No jogo os controles da fase vêm primeiro; dados da sala ficam no fim. */}
                         {tab.id === "table" && <div className="-mx-3 rounded-2xl">{header}</div>}
