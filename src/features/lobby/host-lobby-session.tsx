@@ -35,6 +35,7 @@ import { useRealtimeLobby } from "./use-realtime-lobby";
 import { HostNightConsole } from "./host-night-console";
 import { PlayModeSelector } from "./play-mode-selector";
 import { MobileRoomSettings } from "./mobile-room-settings";
+import { DeleteRoomButton } from "./delete-room-button";
 import { HostMobileConsole, useIsDesktop, type HostMobileTab, type HostMobileTabId } from "./host-mobile-console";
 import { scrollToNightConsoleAction } from "@/features/night-actions/night-console-navigation";
 
@@ -322,10 +323,10 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                   {
                       id: "settings",
                       label: "Sala",
+                      headerActions: <DeleteRoomButton gameId={gameId} code={sessionState.session.code} compact />,
                       content: (
                           <MobileRoomSettings
                               code={sessionState.session.code}
-                              gameId={gameId}
                               connectionStatus={connectionStatus}
                               playModeSelector={
                                   <PlayModeSelector

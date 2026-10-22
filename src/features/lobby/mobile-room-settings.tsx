@@ -5,7 +5,6 @@ import { useState, type ReactNode } from "react";
 
 import { buildRoomShareUrl } from "@/lib/utils/room-share-url";
 
-import { DeleteRoomButton } from "./delete-room-button";
 import type { FirebaseConnectionStatus } from "./use-firebase-connection";
 
 const CONNECTION: Record<FirebaseConnectionStatus, { label: string; dot: string }> = {
@@ -17,13 +16,12 @@ const CONNECTION: Record<FirebaseConnectionStatus, { label: string; dot: string 
 
 interface MobileRoomSettingsProps {
     code: string;
-    gameId: string;
     connectionStatus: FirebaseConnectionStatus;
     playModeSelector: ReactNode;
 }
 
-/** Aba Sala do celular: convite em destaque, modo de jogo e, longe do polegar, excluir. */
-export function MobileRoomSettings({ code, gameId, connectionStatus, playModeSelector }: MobileRoomSettingsProps) {
+/** Aba Sala do celular: convite em destaque e modo de jogo; excluir fica no header. */
+export function MobileRoomSettings({ code, connectionStatus, playModeSelector }: MobileRoomSettingsProps) {
     const [feedback, setFeedback] = useState<"code" | "link" | "error" | null>(null);
     const connection = CONNECTION[connectionStatus];
 
@@ -89,13 +87,6 @@ export function MobileRoomSettings({ code, gameId, connectionStatus, playModeSel
             </section>
 
             <section className="panel-private px-4">{playModeSelector}</section>
-
-            <section aria-label="Excluir sala" className="mt-4 grid gap-2 border-t border-white/10 pt-5">
-                <p className="text-xs leading-5 text-[#8d877e]">Excluir encerra a sala para todos e tira ela da lista de salas abertas.</p>
-                <div className="[&>*]:w-full">
-                    <DeleteRoomButton gameId={gameId} code={code} />
-                </div>
-            </section>
         </div>
     );
 }

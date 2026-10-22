@@ -9,7 +9,8 @@ import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 
 /** Apaga a sala inteira (partida, código e anúncio na home) e volta para o início. */
-export function DeleteRoomButton({ gameId, code }: Readonly<{ gameId: string; code: string }>) {
+/** compact: só o ícone, para caber no header do celular. */
+export function DeleteRoomButton({ gameId, code, compact = false }: Readonly<{ gameId: string; code: string; compact?: boolean }>) {
     const router = useRouter();
     const [busy, setBusy] = useState(false);
 
@@ -35,10 +36,12 @@ export function DeleteRoomButton({ gameId, code }: Readonly<{ gameId: string; co
             type="button"
             disabled={busy}
             onClick={() => void deleteRoom()}
-            className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg border border-[#a33843]/50 px-3 text-sm font-semibold text-[#f0b9bd] transition hover:bg-[#a33843]/15 focus-visible:outline-3 focus-visible:outline-[#d3b88c] disabled:opacity-50"
+            aria-label={compact ? (busy ? "Excluindo sala" : "Excluir sala") : undefined}
+            title={compact ? "Excluir sala" : undefined}
+            className={`inline-flex min-h-10 ${compact ? "size-11" : ""} items-center justify-center gap-2 rounded-lg border border-[#a33843]/50 px-3 text-sm font-semibold text-[#f0b9bd] transition hover:bg-[#a33843]/15 focus-visible:outline-3 focus-visible:outline-[#d3b88c] disabled:opacity-50`}
         >
             <Trash2 aria-hidden="true" size={16} />
-            {busy ? "Excluindo…" : "Excluir sala"}
+            {!compact && (busy ? "Excluindo…" : "Excluir sala")}
         </button>
     );
 }
