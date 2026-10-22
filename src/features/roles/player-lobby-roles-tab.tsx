@@ -56,7 +56,7 @@ export function PlayerLobbyRolesTab({ gameId, playerCount }: Readonly<{ gameId: 
 
   return (
     <div>
-      <section aria-labelledby="in-game-roles-title" className="mt-2">
+      <section aria-labelledby="in-game-roles-title">
         <h2 id="in-game-roles-title" className="text-sm font-semibold text-[#d7d0c4]">
           Nesta partida
         </h2>

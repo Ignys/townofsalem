@@ -128,7 +128,7 @@ export function RealtimeLobbyView({
   if (configuring && gameId) {
     return (
       <section className="w-full max-w-md pb-24">
-        <h2 className="mt-2 flex items-center justify-between gap-3 text-sm font-semibold text-[#d7d0c4]">
+        <h2 className="flex items-center justify-between gap-3 text-sm font-semibold text-[#d7d0c4]">
           Jogadores
           <span className="tabular-nums text-[#9f9990]">{connectedPlayers.length}</span>
         </h2>
@@ -152,7 +152,7 @@ export function RealtimeLobbyView({
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm leading-5 font-semibold text-[#fffaf0]">{player.name}</span>
                     {isViewer && <span className="block text-[11px] leading-3.5 font-semibold text-[#e58a97]">Você</span>}
-                  </span>
+                  </span>
                 </li>
               );
             })}
