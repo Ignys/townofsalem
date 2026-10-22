@@ -1,6 +1,8 @@
 import { getRoleById, ROLE_DEFINITIONS } from "@/data/roles";
 import type { Faction } from "@/types";
 
+import { getRandomRoleSlot } from "./random-role-slots";
+
 export type RoleCompositionOrder = "natural" | "virtue";
 
 export interface OrderedRoleSelection {
@@ -22,26 +24,29 @@ function compareNaturalOrder(
   first: OrderedRoleSelection,
   second: OrderedRoleSelection,
 ): number {
-  const firstRole = getRoleById(first.roleId);
-  const secondRole = getRoleById(second.roleId);
+  const [firstRank, secondRank] = [first, second].map(naturalRank);
 
-  if (!firstRole || !secondRole) {
-    if (firstRole) return -1;
-    if (secondRole) return 1;
-    return first.originalIndex - second.originalIndex;
+  for (let index = 0; index < firstRank.length; index += 1) {
+    const difference = firstRank[index] - secondRank[index];
+    if (difference !== 0) return difference;
   }
 
-  const factionDifference =
-    FACTION_ORDER[firstRole.faction] - FACTION_ORDER[secondRole.faction];
+  return first.originalIndex - second.originalIndex;
+}
 
-  if (factionDifference !== 0) {
-    return factionDifference;
+// [faction, random slot after fixed roles, position]; "Aleatório" (any faction) goes last.
+function naturalRank({ roleId }: OrderedRoleSelection): number[] {
+  const role = getRoleById(roleId);
+  if (role) {
+    return [FACTION_ORDER[role.faction], 0, NATURAL_ROLE_ORDER.get(roleId) ?? Number.MAX_SAFE_INTEGER];
   }
 
-  return (
-    (NATURAL_ROLE_ORDER.get(first.roleId) ?? Number.MAX_SAFE_INTEGER) -
-    (NATURAL_ROLE_ORDER.get(second.roleId) ?? Number.MAX_SAFE_INTEGER)
-  );
+  const slot = getRandomRoleSlot(roleId);
+  if (slot) {
+    return [slot.faction ? FACTION_ORDER[slot.faction] : 3, 1, 0];
+  }
+
+  return [4, 0, 0];
 }
 
 export function orderSelectedRoles(

@@ -432,7 +432,7 @@ export function resolveNight(
     .flatMap(({ targetUids }) => targetUids)
     .filter((uid) => {
       const target = playersByUid.get(uid);
-      return target && !target.alive && target.faction === "town";
+      return target && !target.alive;
     }))].sort();
   const nonTownRoleIds = [...new Set(gameState.players
     .filter(({ faction }) => faction !== "town")

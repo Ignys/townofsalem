@@ -124,14 +124,14 @@ export const TOWN_SUPPORT_ROLES = [
     faction: "town",
     alignment: "Town Support",
     description:
-      "Uma vez por partida, a partir da segunda noite, escolha uma pessoa morta da Town. Ela volta à vida ao amanhecer, com a mesma role.",
+      "Uma vez por partida, a partir da segunda noite, escolha uma pessoa morta. Ela volta à vida ao amanhecer, com a mesma role.",
     playTip:
       "Guarde a ressurreição para uma role forte que a Town já confirmou, como um Sheriff ou um Doctor.",
     goal: TOWN_GOAL,
     virtueValue: 5,
     cardCount: 1,
     importantInteractions: [
-      "Só ressuscita jogadores da Town; escolher alguém de outra facção gasta o uso sem efeito.",
+      "Ressuscita qualquer pessoa morta, de qualquer facção — cuidado com quem se disfarçou de Town.",
       "A ressurreição acontece mesmo se você morrer na mesma noite.",
       "Ressuscitar não conta como visita.",
     ],

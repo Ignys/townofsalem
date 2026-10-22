@@ -1,21 +1,8 @@
 import type { EnginePlayer } from "./types";
 import type { GameVariants } from "./variants";
 
-const SHERIFF_EVIL_ROLES = new Set([
-  "blackmailer",
-  "consigliere",
-  "janitor",
-  "mafioso",
-  "serial-killer",
-  "politician",
-]);
-
-const SHERIFF_KNOWN_GOOD_ROLES = new Set([
-  "townie", "doctor", "bodyguard", "sheriff", "deputy", "investigator",
-  "mayor", "medium", "veteran", "vigilante", "survivor",
-  "peaceful-townie", "spiteful-townie", "godfather", "amnesiac",
-  "executioner", "jester", "witch", "werewolf",
-]);
+// Fora da Town, só estes aparecem como Good; o Politician é a única Town que aparece como Evil.
+const SHERIFF_GOOD_NON_TOWN_ROLES = new Set(["godfather", "executioner", "jester", "witch"]);
 
 export function isFullMoonNight(nightNumber: number): boolean {
   return nightNumber >= 2 && nightNumber % 2 === 0;
@@ -26,7 +13,6 @@ export function getSheriffInvestigationResult(
   nightNumber: number,
   werewolfDetection: GameVariants["sheriffWerewolfDetection"],
 ): "Good" | "Evil" {
-  if (target.roleId === "godfather") return "Good";
   if (target.roleId === "werewolf") {
     if (werewolfDetection === "always") return "Evil";
     if (werewolfDetection === "full-moon" && isFullMoonNight(nightNumber)) {
@@ -34,9 +20,8 @@ export function getSheriffInvestigationResult(
     }
     return "Good";
   }
-  if (SHERIFF_EVIL_ROLES.has(target.roleId)) return "Evil";
-  if (target.faction === "mafia") return "Evil";
-  return "Good";
+  if (target.roleId === "politician") return "Evil";
+  return target.faction === "town" || SHERIFF_GOOD_NON_TOWN_ROLES.has(target.roleId) ? "Good" : "Evil";
 }
 
 export function getInvestigationResult(
@@ -46,15 +31,6 @@ export function getInvestigationResult(
   variants: GameVariants,
 ): string | null {
   if (investigationType === "sheriff") {
-    const configured = target.investigativeAppearance?.sheriff;
-    if (
-      configured
-      && !SHERIFF_EVIL_ROLES.has(target.roleId)
-      && !SHERIFF_KNOWN_GOOD_ROLES.has(target.roleId)
-      && target.faction !== "mafia"
-    ) {
-      return configured;
-    }
     return getSheriffInvestigationResult(
       target,
       nightNumber,

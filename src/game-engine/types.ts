@@ -145,7 +145,7 @@ export interface NightResolution {
     amount: number;
   }[];
   individualWinnerUids?: readonly string[];
-  /** Mortos da Town que o Retributionist trouxe de volta. */
+  /** Mortos que o Retributionist trouxe de volta. */
   revivedUids?: readonly string[];
   /** Vítimas do Forger e a role da Town (da composição) que a cidade vê no lugar da real. */
   forgedRoles?: readonly { targetUid: string; roleId: string }[];

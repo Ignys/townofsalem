@@ -35,14 +35,14 @@ export const TOWN_INVESTIGATIVE_ROLES = [
     faction: "town",
     alignment: "Town Investigative",
     description:
-      "Enquanto o Sheriff estiver vivo, você não investiga. Na noite seguinte à morte dele, você pode ser promovido e passa a verificar se uma pessoa aparece como Good (boa) ou Evil (má).",
+      "Enquanto o Sheriff estiver vivo, você não investiga. Na noite seguinte à morte dele, você é promovido a Sheriff e passa a verificar se uma pessoa aparece como Good (boa) ou Evil (má).",
     playTip:
       "O moderador avisará em segredo quando você passar a agir como Sheriff.",
     goal: TOWN_GOAL,
     virtueValue: 4,
     cardCount: 1,
     importantInteractions: [
-      "Se houver mais de um Deputy vivo, a promoção é por sorteio.",
+      "Se houver mais de um Deputy vivo, só um deles, sorteado, vira Sheriff; os outros continuam Deputy.",
       "Como Sheriff, vê Politician como Evil e Godfather como Good.",
     ],
     canDieAtNight: true,
@@ -91,7 +91,6 @@ export const TOWN_INVESTIGATIVE_ROLES = [
     importantInteractions: [
       "O ataque coletivo da Mafia aparece apenas como \"a Mafia\", sem nomes.",
       "Doctor, Bodyguard, Framer e Transporter também contam como visitas.",
-      "Um Disguiser aparece com o nome da pessoa de quem se disfarçou.",
     ],
     canDieAtNight: true,
     wakesAtNight: true,
@@ -114,9 +113,9 @@ export const TOWN_INVESTIGATIVE_ROLES = [
     virtueValue: 7,
     cardCount: 1,
     importantInteractions: [
-      "Mafia e Serial Killer aparecem como Evil.",
-      "Politician é Town, mas aparece como Evil.",
-      "Godfather é Mafia, mas aparece como Good.",
+      "Aparecem como Good: toda a Town (menos o Politician), Godfather, Executioner, Jester e Witch.",
+      "Todas as outras roles aparecem como Evil.",
+      "O Werewolf depende da regra ativa na sala.",
       "Se morrer, um Deputy vivo assume sua habilidade.",
     ],
     canDieAtNight: true,

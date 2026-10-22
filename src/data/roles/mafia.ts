@@ -105,7 +105,6 @@ export const MAFIA_ROLES = [
     virtueValue: -6,
     cardCount: 1,
     importantInteractions: [
-      "O disfarce não muda investigações nem o que o Lookout vê.",
       "Vale a role da pessoa no momento em que você a escolheu.",
       "Não é possível copiar alguém da Mafia.",
     ],
@@ -162,7 +161,7 @@ export const MAFIA_ROLES = [
     virtueValue: -8,
     cardCount: 1,
     importantInteractions: [
-      "Aparece como Good para o Sheriff, mas é revelado por Investigator e Consigliere.",
+      "Aparece como Good para o Sheriff, mas o Investigator descobre sua role exata.",
       "O ataque coletivo da Mafia não mata na primeira noite.",
     ],
     actionDefinitions: [mafiaAttackOrderAction],

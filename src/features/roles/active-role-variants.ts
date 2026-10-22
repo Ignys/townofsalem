@@ -125,3 +125,15 @@ export function getActiveRoleVariants(
 
   return activeVariants;
 }
+
+/** Toda regra extra que pode valer para a role, para consulta fora de uma sala. */
+export function getAllRoleVariants(roleId: string, base: GameVariants): readonly string[] {
+  const allOn = Object.fromEntries(
+    Object.entries(base).map(([key, value]) => [key, typeof value === "boolean" ? true : value]),
+  ) as unknown as GameVariants;
+  // As duas formas de o Sheriff ver o Werewolf se excluem; mostra as duas.
+  return [...new Set([
+    ...getActiveRoleVariants(roleId, { ...allOn, sheriffWerewolfDetection: "full-moon" }),
+    ...getActiveRoleVariants(roleId, { ...allOn, sheriffWerewolfDetection: "always" }),
+  ])];
+}

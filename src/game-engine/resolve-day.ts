@@ -62,6 +62,8 @@ export function resolveHanging(
   for (const status of hanged.statuses) {
     if (!status.startsWith("execution-target:")) continue;
     const executionerUid = status.slice("execution-target:".length);
+    // Executioner morto não vence, mesmo que o alvo seja enforcado depois.
+    if (!gameState.players.some(({ uid, alive }) => uid === executionerUid && alive)) continue;
     individualWinnerUids.push(executionerUid);
     executionerWon = true;
     appliedStatuses.push({ targetUid: executionerUid, statusType: "executioner-won" });

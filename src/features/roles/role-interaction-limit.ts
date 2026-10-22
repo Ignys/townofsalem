@@ -64,7 +64,7 @@ export function getRoleInteractionLimit(
   if (roleId === "retributionist") {
     return {
       amount,
-      description: "Você pode ressuscitar 1 pessoa morta da Town durante toda a partida.",
+      description: "Você pode ressuscitar 1 pessoa morta durante toda a partida.",
     };
   }
 

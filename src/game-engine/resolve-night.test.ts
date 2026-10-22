@@ -68,7 +68,7 @@ test("does not let a legacy arbitrary clean target replace automatic Janitor cle
   ]);
   assert.deepEqual(result.deaths, ["target"]);
   assert.deepEqual(result.cleanedPlayerUids, []);
-  assert.equal(result.investigationResults[0].result, "INOCENTE");
+  assert.equal(result.investigationResults[0].result, "Good");
 });
 
 test("resolves configured persistent status effects", () => {

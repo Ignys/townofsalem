@@ -22,6 +22,7 @@ const chooseExecutionTarget = nightAction({
   label: "Escolher alvo",
   verb: "marca como alvo",
   maxUses: 1,
+  availableOnNight: 1,
   priority: 6,
   engineEffectType: "status-effect",
   engineEffectConfig: { statusType: "execution-target" },
@@ -73,16 +74,14 @@ export const NEUTRAL_ROLES = [
     faction: "neutral",
     alignment: "Neutral Benign",
     description:
-      "Até a terceira noite, você ainda não tem uma facção definitiva. Na noite 3, recebe aleatoriamente uma das roles separadas pelo moderador antes da partida.",
+      "Até a terceira noite, você ainda não tem uma facção definitiva. Na noite 3, você se torna uma das roles separadas antes da partida: por sorteio ou por escolha sua, conforme a regra ativa na sala.",
     playTip:
-      "Se a partida terminar antes da noite 3, você vence com a facção vencedora. Depois de lembrar, siga a habilidade, a facção e o objetivo da nova role.",
+      "Depois de lembrar, siga a habilidade, a facção e o objetivo da nova role.",
     goal:
       "Vença se a partida terminar antes da noite 3; depois da transformação, siga a condição de vitória da role lembrada.",
     virtueValue: 0,
     cardCount: 1,
-    importantInteractions: [
-      "O conjunto de roles possíveis precisa ser registrado antes da partida.",
-    ],
+    importantInteractions: [],
     canDieAtNight: true,
     wakesAtNight: true,
     wakeOrder: 5,
@@ -97,14 +96,14 @@ export const NEUTRAL_ROLES = [
     faction: "neutral",
     alignment: "Neutral Evil",
     description:
-      "Escolha um alvo à noite (a partir da primeira, até escolher). Você vence se essa pessoa for enforcada. Se ela morrer durante a noite antes disso, você se transforma em Jester.",
+      "Na noite 1, escolha seu alvo. Você vence se essa pessoa for enforcada enquanto você ainda estiver vivo. Se ela morrer à noite antes disso, você se transforma em Jester.",
     playTip:
       "Convença a Town de que seu alvo é suspeito sem parecer obcecado por ele.",
-    goal: "Faça seu alvo ser enforcado em um julgamento.",
+    goal: "Faça seu alvo ser enforcado em um julgamento enquanto você estiver vivo.",
     virtueValue: -4,
     cardCount: 1,
     importantInteractions: [
-      "A consequência de uma morte diurna que não seja enforcamento deve ser configurada pelo grupo.",
+      "Se você morrer antes, não vence, mesmo que seu alvo seja enforcado depois.",
     ],
     canDieAtNight: true,
     wakesAtNight: true,
@@ -113,9 +112,6 @@ export const NEUTRAL_ROLES = [
     action: chooseExecutionTarget,
     investigativeAppearance: investigativeAppearance("Executioner", "neutral"),
     verificationStatus: "needs-verification",
-    verificationNotes: [
-      "A transformação após uma morte diurna não causada por enforcamento não está definida.",
-    ],
   },
   {
     id: "jester",
@@ -123,7 +119,7 @@ export const NEUTRAL_ROLES = [
     faction: "neutral",
     alignment: "Neutral Evil",
     description:
-      "Seu objetivo é ser enforcado. Quando isso acontecer, escolha imediatamente uma das pessoas que votaram Guilty (culpado) em você para morrer; essa morte não pode ser impedida.",
+      "Quando você for enforcado, escolha imediatamente uma das pessoas que votaram Guilty (culpado) em você para morrer; essa morte não pode ser impedida.",
     playTip:
       "Pareça suspeito o bastante para ser condenado, sem deixar claro que é isso que você quer.",
     goal: "Seja enforcado em um julgamento.",
@@ -144,9 +140,9 @@ export const NEUTRAL_ROLES = [
     description:
       "A partir da segunda noite, escolha uma pessoa por noite para matar. Você não pode ser morto durante a noite.",
     playTip:
-      "Você joga sozinho e precisa eliminar a Town, a Mafia, o Werewolf e a Witch.",
+      "Você joga sozinho contra Town, Máfia e os outros neutros que matam. Jester, Executioner e Amnesiac não atrapalham sua vitória.",
     goal:
-      "Permaneça como a ameaça independente vencedora depois de eliminar os demais lados, conforme a regra configurada pelo grupo.",
+      "Elimine toda a Town, toda a Máfia e quem também mata: Werewolf, Witch e Vampiros. Os outros neutros podem continuar vivos.",
     virtueValue: -8,
     cardCount: 1,
     importantInteractions: [
@@ -159,9 +155,6 @@ export const NEUTRAL_ROLES = [
     action: serialKillerAttack,
     investigativeAppearance: investigativeAppearance("Serial Killer", "neutral"),
     verificationStatus: "verified",
-    verificationNotes: [
-      "A condição formal de vitória ainda deve ser configurada.",
-    ],
   },
   {
     id: "werewolf",
@@ -173,7 +166,7 @@ export const NEUTRAL_ROLES = [
     playTip:
       "Planeje os assentos com antecedência: cada morte muda quem fica adjacente.",
     goal:
-      "Permaneça como a ameaça independente vencedora depois de eliminar os demais lados, conforme a regra configurada pelo grupo.",
+      "Elimine toda a Town, toda a Máfia e quem também mata: Serial Killer, Witch e Vampiros. Os outros neutros podem continuar vivos.",
     virtueValue: -9,
     cardCount: 1,
     importantInteractions: [
@@ -185,9 +178,6 @@ export const NEUTRAL_ROLES = [
     action: werewolfAttack,
     investigativeAppearance: investigativeAppearance("Werewolf", "neutral"),
     verificationStatus: "needs-verification",
-    verificationNotes: [
-      "A condição formal de vitória deve ser configurada pelo grupo.",
-    ],
   },
   {
     id: "witch",

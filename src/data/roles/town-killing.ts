@@ -71,7 +71,6 @@ export const TOWN_KILLING_ROLES = [
     virtueValue: 5,
     cardCount: 1,
     importantInteractions: [
-      "Não se suicida automaticamente se atingir uma role da Town.",
     ],
     canDieAtNight: true,
     wakesAtNight: true,

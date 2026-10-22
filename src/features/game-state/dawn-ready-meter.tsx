@@ -64,7 +64,7 @@ export function DawnReadyMeter({
           </span>
         </p>
       )}
-      <ul aria-hidden="true" className="flex flex-wrap justify-center gap-1.5">
+      <ul aria-hidden="true" className="px-5 pb-1 flex flex-wrap justify-center gap-1.5">
         {alive.map(([uid]) => (
           <li
             key={uid}

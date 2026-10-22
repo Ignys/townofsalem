@@ -241,7 +241,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
     // controles da mesa ficam guardados para emergências.
     if (tableOnly && game.playMode === "host-player" && hostPlayer) {
         return (
-            <div className="grid w-full max-w-xl min-w-0 gap-4 px-5 py-8">
+            <div className="flex flex-col items-center w-full max-w-xl min-w-0 gap-4 px-5 py-8">
                 <PlayerGameView
                     gameId={gameId}
                     code={sessionState.session.code}
