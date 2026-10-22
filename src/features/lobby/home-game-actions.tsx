@@ -190,7 +190,7 @@ export function HomeGameActions({
   return (
     <section
       aria-labelledby="game-actions-title"
-      className="rounded-2xl bg-[#f4ead9] p-5 text-[#251f1d] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] sm:p-7"
+      className="relative rounded-2xl bg-[#f4ead9] p-5 text-[#251f1d] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)] max-sm:flex-1 max-sm:rounded-b-none max-sm:rounded-t-[1.75rem] max-sm:px-5 max-sm:pt-7 max-sm:pb-[calc(1.5rem+env(safe-area-inset-bottom))] max-sm:shadow-[0_-18px_50px_rgba(0,0,0,0.45)] sm:p-7"
     >
       <h2 id="game-actions-title" className="sr-only">
         Entrar em uma sala
@@ -205,7 +205,7 @@ export function HomeGameActions({
         />
 
         <fieldset aria-describedby="room-code-help game-action-feedback">
-          <legend className="mb-2 block text-sm font-semibold text-[#3b322e]">
+          <legend className="mb-2 block text-sm font-semibold text-[#3b322e] max-sm:font-serif max-sm:text-lg max-sm:text-[#251f1d]">
             Salas abertas
           </legend>
           {openRooms === null || openRooms.length === 0 ? (
@@ -218,7 +218,7 @@ export function HomeGameActions({
             </p>
           ) : (
             <ul
-              className={`-mx-1 max-h-72 space-y-2 overflow-y-auto rounded-xl px-1 py-1 ${
+              className={`-mx-1 max-h-72 space-y-2 max-sm:max-h-none overflow-y-auto rounded-xl px-1 py-1 ${
                 roomCodeHasError
                   ? "outline-2 outline-offset-2 outline-[#7d2330]"
                   : ""
@@ -282,11 +282,12 @@ export function HomeGameActions({
           nickname para voltar.
         </p>
 
+        {/* Celular: o botão acompanha a rolagem da lista, sempre ao alcance do polegar. */}
         <button
           type="submit"
           disabled={accessUnavailable}
           aria-busy={joinProgress === "joining"}
-          className="mt-5 min-h-12 w-full rounded-xl bg-[#7d2330] px-6 py-3 text-base font-bold text-white shadow-[0_8px_20px_rgba(125,35,48,0.2)] transition-colors hover:bg-[#681c27] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#7d2330] disabled:cursor-not-allowed disabled:bg-[#a79991] disabled:shadow-none"
+          className="mt-5 min-h-12 max-sm:sticky max-sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] max-sm:min-h-14 max-sm:shadow-[0_10px_30px_rgba(125,35,48,0.35)] w-full rounded-xl bg-[#7d2330] px-6 py-3 text-base font-bold text-white shadow-[0_8px_20px_rgba(125,35,48,0.2)] transition-colors hover:bg-[#681c27] focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-[#7d2330] disabled:cursor-not-allowed disabled:bg-[#a79991] disabled:shadow-none"
         >
           {joinProgress === "joining" ? "Entrando…" : "Entrar na sala"}
         </button>

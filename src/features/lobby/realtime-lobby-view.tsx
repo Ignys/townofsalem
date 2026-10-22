@@ -78,7 +78,7 @@ export function RealtimeLobbyView({
         ? "Aguardando jogadores."
         : game.playMode === "hosted" || !game.playMode
           ? "O mestre está configurando a partida."
-          : "Quem criou a sala está configurando a partida.";
+          : "Configurando partida...";
   const configuring = viewer === "player" && !gameFinished && !gameInProgress;
 
   return (
