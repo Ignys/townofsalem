@@ -33,6 +33,7 @@ import { useFirebaseConnection } from "./use-firebase-connection";
 import { useRealtimeLobby } from "./use-realtime-lobby";
 import { HostNightConsole } from "./host-night-console";
 import { PlayModeSelector } from "./play-mode-selector";
+import { HostMobileConsole, useIsDesktop, type HostMobileTab, type HostMobileTabId } from "./host-mobile-console";
 import { scrollToNightConsoleAction } from "@/features/night-actions/night-console-navigation";
 
 interface HostLobbySessionProps {
@@ -115,6 +116,9 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
         status: "loading",
     });
     const [composeActorUid, setComposeActorUid] = useState<string | null>(null);
+    const isDesktop = useIsDesktop();
+    const [mobileTab, setMobileTab] = useState<HostMobileTabId>("table");
+    const [mobilePlayersOpen, setMobilePlayersOpen] = useState(false);
     const session = sessionState.status === "ready" ? sessionState.session : null;
     const lobby = useRealtimeLobby({ gameId: session?.gameId ?? null });
     const connectionStatus = useFirebaseConnection(Boolean(session));
@@ -195,6 +199,9 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
         game.phase === "night"
             ? (playerUid: string) => {
                   setComposeActorUid(playerUid);
+                  // No celular o console mora na aba da fase, atrás da gaveta de jogadores.
+                  setMobilePlayersOpen(false);
+                  setMobileTab("phase");
                   requestAnimationFrame(() => scrollToNightConsoleAction(playerUid));
               }
             : undefined;
@@ -271,6 +278,106 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                     engine={engine}
                 />
             </div>
+        );
+    }
+
+    if (!isDesktop) {
+        const header = <HostLobbyHeader code={sessionState.session.code} gameId={gameId} game={game} connectionStatus={connectionStatus} updating={lobby.isLoading} />;
+        const sidebar = (
+            <HostPlayerSidebar
+                gameId={gameId}
+                verifiedHostUid={hostUid}
+                players={lobby.players}
+                gameStarted={!compositionEditable}
+                statusEditable={game.status === "in-progress"}
+                onComposeAction={handleComposeAction}
+            />
+        );
+        const tabs: HostMobileTab[] = compositionEditable
+            ? [
+                  {
+                      id: "setup",
+                      label: "Sala",
+                      content: (
+                          <HostRoleComposition
+                              gameId={gameId}
+                              playerCount={playerCount}
+                              editable
+                              playModeSelector={
+                                  <PlayModeSelector
+                                      gameId={gameId}
+                                      playMode={game.playMode ?? "hosted"}
+                                      gamePace={game.gamePace ?? "relaxed"}
+                                      code={sessionState.session.code}
+                                      hostJoined={Boolean(lobby.players[hostUid])}
+                                  />
+                              }
+                          />
+                      ),
+                  },
+              ]
+            : [
+                  {
+                      id: "table",
+                      label: "Mesa",
+                      content: (
+                          <>
+                              {controlPanel}
+                              <HostWinConditionSuggestion gameId={gameId} hostUid={hostUid} nightId={game.currentNightId} players={lobby.players} />
+                          </>
+                      ),
+                  },
+                  {
+                      id: "phase",
+                      label: game.phase === "night" ? "Noite" : "Dia",
+                      content: (
+                          <>
+                              {game.currentNightId && nightConsole}
+                              {game.phase !== "night" && (
+                                  <>
+                                      <HostDayAnnouncements gameId={gameId} />
+                                      <HostDayWorkspace
+                                          gameId={gameId}
+                                          hostUid={hostUid}
+                                          players={lobby.players}
+                                          condemnedPlayerUid={
+                                              game.verdictOutcome === "guilty" && game.verdictClosedAt ? game.accusedPlayerUid ?? undefined : undefined
+                                          }
+                                      />
+                                  </>
+                              )}
+                              {nightWorkspace}
+                          </>
+                      ),
+                  },
+                  ...(game.phase !== "night" ? [{ id: "voting" as const, label: "Votação", content: votingPanel }] : []),
+                  {
+                      id: "history",
+                      label: "Histórico",
+                      content: <HostHistoryPanel gameId={gameId} hostUid={hostUid} players={lobby.players} />,
+                  },
+              ];
+
+        return (
+            <HostMobileConsole
+                code={sessionState.session.code}
+                phase={compositionEditable ? undefined : game.phase}
+                header={header}
+                sidebar={sidebar}
+                tabs={tabs}
+                background={
+                    !compositionEditable && (
+                        <>
+                            <MayorRevealMirror gameId={gameId} hostUid={hostUid} />
+                            <HostAnnouncementSounds gameId={gameId} game={game} />
+                        </>
+                    )
+                }
+                activeTab={mobileTab}
+                onTabChange={setMobileTab}
+                playersOpen={mobilePlayersOpen}
+                onPlayersOpenChange={setMobilePlayersOpen}
+            />
         );
     }
 

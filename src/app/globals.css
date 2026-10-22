@@ -75,3 +75,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .candle-flame, .candle-halo { animation: none; }
 }
+
+@keyframes drawer-in {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
