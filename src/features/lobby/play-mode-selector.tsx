@@ -1,6 +1,6 @@
 "use client";
 
-import { ChessQueen, Monitor, Smartphone, type LucideIcon } from "lucide-react";
+import { Check, ChessQueen, Lock, Monitor, Smartphone, type LucideIcon } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { firebasePaths } from "@/lib/firebase/paths";
@@ -40,10 +40,12 @@ interface PlayModeSelectorProps {
   hostJoined: boolean;
   /** Modos que aparecem mas não podem ser escolhidos neste aparelho. */
   unavailableModes?: readonly GamePlayMode[];
+  /** Cartas grandes com descrição sempre à vista; usado na aba Sala do celular. */
+  large?: boolean;
 }
 
 /** Escolha do modo de jogo, só no lobby (a regra do RTDB trava o modo depois do início). */
-export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined, unavailableModes = [] }: PlayModeSelectorProps) {
+export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined, unavailableModes = [], large = false }: PlayModeSelectorProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
@@ -83,12 +85,54 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
     <section aria-label="Modo de jogo">
       <header className="flex items-center justify-between gap-3">
         <h2 className="whitespace-nowrap font-serif text-lg font-semibold text-[#fffaf0]">Modo de jogo</h2>
-        <GameSettingsButton gameId={gameId} />
+        {!large && <GameSettingsButton gameId={gameId} />}
       </header>
-      <div role="radiogroup" aria-label="Modo de jogo" className="mt-4 grid gap-2">
+      {large && <p className="mt-1 text-sm text-[#a9a297]">Como a mesa vai jogar esta partida.</p>}
+      <div role="radiogroup" aria-label="Modo de jogo" className={`mt-4 grid ${large ? "gap-2.5" : "gap-2"}`}>
         {OPTIONS.map(({ mode, title, description, icon: Icon }) => {
           const selected = mode === playMode;
           const unavailable = unavailableModes.includes(mode);
+          if (large) {
+            return (
+              <button
+                key={mode}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                disabled={saving || unavailable}
+                onClick={() => select(mode)}
+                className={`relative flex items-start gap-3.5 rounded-2xl border p-3.5 text-left transition-colors focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] ${
+                  unavailable
+                    ? "border-dashed border-white/12 opacity-55"
+                    : selected
+                      ? "border-[#d3b88c]/70 bg-[linear-gradient(135deg,rgba(211,184,140,0.14),rgba(211,184,140,0.03))] shadow-[inset_0_1px_0_rgba(246,223,181,0.12)]"
+                      : "border-white/10 bg-white/[0.02] hover:border-white/25"
+                } ${saving && !unavailable ? "opacity-70" : ""}`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`grid size-11 shrink-0 place-items-center rounded-xl ${selected ? "bg-[#d3b88c] text-[#1b1d20]" : "bg-white/[0.06] text-[#bdb7ad]"}`}
+                >
+                  <Icon className="size-5" />
+                </span>
+                <span className="min-w-0 flex-1 pr-6">
+                  <span className="block font-serif text-[17px] leading-6 font-semibold text-[#fffaf0]">{title}</span>
+                  <span className="mt-0.5 block text-[13px] leading-5 text-[#a9a297]">{description}</span>
+                  {unavailable && (
+                    <span className="mt-2 inline-flex items-center gap-1 rounded-full border border-white/12 px-2 py-0.5 text-[11px] font-semibold text-[#bdb7ad]">
+                      <Lock aria-hidden="true" className="size-3" />
+                      Só com computador na mesa
+                    </span>
+                  )}
+                </span>
+                {selected && (
+                  <span aria-hidden="true" className="absolute top-3 right-3 grid size-6 place-items-center rounded-full bg-[#d3b88c] text-[#1b1d20]">
+                    <Check className="size-3.5" strokeWidth={3} />
+                  </span>
+                )}
+              </button>
+            );
+          }
           return (
             <button
               key={mode}
@@ -147,7 +191,7 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
       {playMode !== "hosted" && (
         <div className="mt-3 grid gap-1.5 border-t border-white/10 pt-3">
           <h3 className="text-xs font-semibold text-[#d7d0c4]">Ritmo</h3>
-          <div role="radiogroup" aria-label="Ritmo" className="grid grid-cols-3 rounded-full border border-white/10 bg-black/20 p-0.5">
+          <div role="radiogroup" aria-label="Ritmo" className={`grid grid-cols-3 rounded-full border border-white/10 bg-black/20 ${large ? "p-1" : "p-0.5"}`}>
             {GAME_PACES.map((pace) => {
               const selected = pace === gamePace;
               return (
@@ -160,7 +204,7 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
                   onClick={() => {
                     if (!selected) save("gamePace", pace);
                   }}
-                  className={`min-h-7 whitespace-nowrap rounded-full px-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-60 ${
+                  className={`${large ? "min-h-10 text-sm" : "min-h-7"} whitespace-nowrap rounded-full px-2 text-xs font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#d3b88c] disabled:opacity-60 ${
                     selected ? "bg-[#d3b88c] text-[#1b1d20]" : "text-[#bdb7ad] hover:text-[#fffaf0]"
                   }`}
                 >
@@ -170,6 +214,11 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
             })}
           </div>
           <p className="text-xs leading-4 text-[#a9a297]">{GAME_PACE_LABELS[gamePace].description}</p>
+        </div>
+      )}
+      {large && (
+        <div className="mt-4 border-t border-white/10 pt-4">
+          <GameSettingsButton gameId={gameId} variant="row" />
         </div>
       )}
       {error && (

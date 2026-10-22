@@ -336,6 +336,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                                       code={sessionState.session.code}
                                       hostJoined={Boolean(lobby.players[hostUid])}
                                       unavailableModes={["hostless"]}
+                                      large
                                   />
                               }
                           />
