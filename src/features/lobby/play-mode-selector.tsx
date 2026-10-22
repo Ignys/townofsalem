@@ -1,7 +1,7 @@
 "use client";
 
-import { Check, ChessQueen, Monitor, Smartphone, type LucideIcon } from "lucide-react";
-import { useState, type FormEvent } from "react";
+import { Check, ChessQueen, Info, Monitor, Smartphone, type LucideIcon } from "lucide-react";
+import { useRef, useState, type FormEvent } from "react";
 
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
@@ -57,6 +57,9 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
       .catch(() => setError(true))
       .finally(() => setSaving(false));
   };
+  const infoRef = useRef<HTMLDialogElement>(null);
+  // No celular as cartas só mostram o nome; a explicação fica no botão de informação.
+  const shownOptions = OPTIONS.filter(({ mode }) => !large || !unavailableModes.includes(mode) || mode === playMode);
   const [nickname, setNickname] = useState("");
   const [joining, setJoining] = useState(false);
   const [joinError, setJoinError] = useState<string | null>(null);
@@ -85,9 +88,19 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
     <section aria-label="Modo de jogo">
       <header className="flex items-center justify-between gap-3">
         <h2 className="whitespace-nowrap font-serif text-lg font-semibold text-[#fffaf0]">Modo de jogo</h2>
-        {!large && <GameSettingsButton gameId={gameId} />}
+        {large ? (
+          <button
+            type="button"
+            onClick={() => infoRef.current?.showModal()}
+            aria-label="O que cada modo faz"
+            className="grid size-10 place-items-center rounded-full border border-white/12 text-[#d3b88c] transition-colors hover:bg-white/5 focus-visible:outline-3 focus-visible:outline-[#d3b88c]"
+          >
+            <Info aria-hidden="true" className="size-5" />
+          </button>
+        ) : (
+          <GameSettingsButton gameId={gameId} />
+        )}
       </header>
-      {large && <p className="mt-1 text-sm text-[#a9a297]">Como a mesa vai jogar esta partida.</p>}
       <div role="radiogroup" aria-label="Modo de jogo" className={`mt-4 grid ${large ? "grid-cols-2 items-stretch gap-2.5" : "gap-2"}`}>
         {OPTIONS.map(({ mode, title, description, icon: Icon }) => {
           const selected = mode === playMode;
@@ -115,10 +128,7 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
                 >
                   <Icon className="size-5" />
                 </span>
-                <span className="min-w-0">
-                  <span className="block font-serif text-[17px] leading-6 font-semibold text-[#fffaf0]">{title}</span>
-                  <span className="mt-1 block text-xs leading-[1.125rem] text-[#a9a297]">{description}</span>
-                </span>
+                <span className="block min-w-0 pr-5 font-serif text-[17px] leading-6 font-semibold text-[#fffaf0]">{title}</span>
                 {selected && (
                   <span aria-hidden="true" className="absolute top-3 right-3 grid size-6 place-items-center rounded-full bg-[#d3b88c] text-[#1b1d20]">
                     <Check className="size-3.5" strokeWidth={3} />
@@ -209,6 +219,36 @@ export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined,
           </div>
           <p className="text-xs leading-4 text-[#a9a297]">{GAME_PACE_LABELS[gamePace].description}</p>
         </div>
+      )}
+      {large && (
+        <dialog
+          ref={infoRef}
+          aria-labelledby="play-mode-info-title"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) infoRef.current?.close();
+          }}
+          className="m-auto w-[min(24rem,calc(100%-2rem))] rounded-3xl border border-[#2e3136] bg-[#1b1d20] p-5 text-[#e5ded2] shadow-[0_24px_70px_rgba(0,0,0,0.6)] backdrop:bg-black/70"
+        >
+          <h2 id="play-mode-info-title" className="font-serif text-xl font-semibold text-[#fffaf0]">
+            Modos de jogo
+          </h2>
+          <ul className="mt-4 grid gap-3">
+            {shownOptions.map(({ mode, title, description, icon: Icon }) => (
+              <li key={mode} className="flex gap-3">
+                <span aria-hidden="true" className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-[#d3b88c]">
+                  <Icon className="size-5" />
+                </span>
+                <span>
+                  <span className="block font-semibold text-[#fffaf0]">{title}</span>
+                  <span className="mt-0.5 block text-sm leading-5 text-[#a9a297]">{description}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+          <button type="button" onClick={() => infoRef.current?.close()} className="btn-quiet-dark mt-5 w-full">
+            Entendi
+          </button>
+        </dialog>
       )}
       {large && (
         <div className="mt-4 border-t border-white/10 pt-4">
