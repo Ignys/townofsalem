@@ -186,7 +186,14 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
   );
   const nameOf = (uid: string) => players[uid]?.name ?? "?";
   const tally = tallyMafiaKill(board, team, look.killActionId);
-  const projectedVotes = tally.projectedTargetUid ? tally.votesByTarget[tally.projectedTargetUid]?.length ?? 0 : 0;
+  // No empate o cartão mostra todos os que lideram; o sorteio fica entre eles.
+  const projectedVotes = Math.max(0, ...Object.values(tally.votesByTarget).map((votes) => votes.length));
+  const leadingUids = tally.projectedTargetUid
+    ? [tally.projectedTargetUid]
+    : tally.tied
+      ? Object.keys(tally.votesByTarget).filter((uid) => tally.votesByTarget[uid].length === projectedVotes)
+      : [];
+  const leadingNames = leadingUids.map(nameOf).join(" ou ");
   const recentReactions = nightId
     ? Object.values(reactions).sort((left, right) => right.at - left.at).slice(0, VISIBLE_REACTIONS)
     : [];
@@ -235,15 +242,15 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
         </div>
       </div>
 
-      {nightId && !resting && tally.projectedTargetUid && (
+      {nightId && !resting && leadingUids.length > 0 && (
         // O alvo marcado: o nome em destaque e uma lâmina por membro vivo, acesa para quem votou nele.
         <div
           role="status"
-          aria-label={`${look.killLabel} em ${nameOf(tally.projectedTargetUid)}, ${projectedVotes} de ${members.filter(([uid]) => players[uid]?.alive).length} votos`}
+          aria-label={`${look.killLabel} em ${leadingNames}, ${projectedVotes} de ${members.filter(([uid]) => players[uid]?.alive).length} votos`}
           className={`mt-3 flex items-center gap-3 rounded-lg border-l-4 ${look.targetCard} bg-black/30 py-1.5 pr-3 pl-3`}
         >
           <p className="min-w-0 flex-1 truncate font-serif text-lg font-semibold text-[#fffaf0]">
-            {nameOf(tally.projectedTargetUid)}
+            {leadingNames}
           </p>
           <span className="flex shrink-0 gap-0.5" aria-hidden="true">
             {members.filter(([uid]) => players[uid]?.alive).map(([uid], index) => (
@@ -407,7 +414,7 @@ export function MafiaTeamPanel({ gameId, viewerUid, viewerAlive, nightId, player
           )}
           {viewerAlive && !pendingKey && (
             <p className="mt-2 text-xs text-[#8f8a82]">
-              Toque para enviar. Segure “Confia em mim”, “Vamos nele” ou “Espera” para marcar alguém.
+              Toque para enviar. Segure para marcar alguém.
             </p>
           )}
         </div>
