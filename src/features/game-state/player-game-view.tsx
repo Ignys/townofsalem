@@ -275,9 +275,6 @@ export function PlayerGameView({
           hostless={isHostlessGame(game)}
         />
       )}
-      <PlayerDawnNightResults gameId={gameId} revealed={!isNight && game.phase !== "lobby"} />
-      {dawn && alive && game.day ? <PlayerDawnReady gameId={gameId} day={game.day} viewerUid={viewerUid} /> : null}
-
       {!alive && (
         <section aria-label="Você está morto" className="panel-private mt-4 flex items-center gap-3">
           <span
@@ -294,6 +291,10 @@ export function PlayerGameView({
           </div>
         </section>
       )}
+
+      {/* A morte vem antes do resumo da noite: é a primeira coisa que o jogador precisa saber. */}
+      <PlayerDawnNightResults gameId={gameId} revealed={!isNight && game.phase !== "lobby"} />
+      {dawn && alive && game.day ? <PlayerDawnReady gameId={gameId} day={game.day} viewerUid={viewerUid} /> : null}
 
       {silenced && alive && !isNight && game.status === "in-progress" && (
         <section
