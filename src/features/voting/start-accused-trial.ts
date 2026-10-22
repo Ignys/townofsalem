@@ -10,6 +10,7 @@ import {
   readHostPrivatePlayers,
   readPublicGame,
 } from "@/lib/firebase/game-access-repository";
+import { isHostlessGame } from "@/lib/firebase/schema";
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 import { getDatabaseReference } from "@/lib/firebase/references";
@@ -86,7 +87,7 @@ export async function startAccusedTrial(
   const startedAt = now();
   const eventId = createId();
   // Sem mestre, o acusado já começa a se defender: a fase se chama Defesa.
-  const trialLabel = game.playMode === "hostless"
+  const trialLabel = isHostlessGame(game)
     ? HOSTLESS_PHASE_LABELS.trial
     : getPhaseDefinition("trial").label;
 

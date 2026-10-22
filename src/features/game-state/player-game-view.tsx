@@ -27,7 +27,7 @@ import { PlayerVerdictVoting } from "@/features/voting/player-verdict-voting";
 import { PlayerJesterRevenge } from "@/features/voting/player-jester-revenge";
 import { VerdictVotesBoard } from "@/features/voting/verdict-votes-board";
 import { isAccusationPhase } from "@/features/voting/voting-phases";
-import type { GamePublicRecord, PublicPlayerRecord } from "@/lib/firebase/schema";
+import { isHostlessGame, type GamePublicRecord, type PublicPlayerRecord } from "@/lib/firebase/schema";
 import type { NightTeam, Player } from "@/types";
 
 import { getPlayerEntries } from "./player-roster";
@@ -155,7 +155,7 @@ export function PlayerGameView({
   }));
   const viewer = roster.find((player) => player.uid === viewerUid);
   // Sem mestre, o "dia" é a preparação: só se lê o que aconteceu na noite.
-  const dawn = game.playMode === "hostless" && game.phase === "day";
+  const dawn = isHostlessGame(game) && game.phase === "day";
   const accusing = isAccusationPhase(game.phase) && !dawn && !game.accusedPlayerUid;
   // O status vive só nos dados privados do próprio jogador: ninguém mais vê o aviso.
   const silenced = Boolean(privateRole.privatePlayer.statuses?.blackmailed);
@@ -231,7 +231,7 @@ export function PlayerGameView({
           {dawn && game.day ? (
             <DawnReadyMeter gameId={gameId} day={game.day} players={players} />
           ) : (
-            (game.phase !== "trial" || game.playMode === "hostless") && <GameTimerDisplay game={game} />
+            (game.phase !== "trial" || isHostlessGame(game)) && <GameTimerDisplay game={game} />
           )}
           </div>
         </div>
@@ -262,11 +262,11 @@ export function PlayerGameView({
           variants={gameVariants.variants}
           playerCount={playerCount}
           resourceUses={privateRole.privatePlayer.resourceUses}
-          fastTrack={game.playMode === "hostless" && game.gamePace === "fast"}
+          fastTrack={isHostlessGame(game) && game.gamePace === "fast"}
           teamUids={Object.keys(mafiaTeam)}
           amnesiacRolePool={gameVariants.amnesiacRolePool}
           onPickerChange={setNightPicker}
-          hostless={game.playMode === "hostless"}
+          hostless={isHostlessGame(game)}
         />
       )}
       <PlayerDawnNightResults gameId={gameId} revealed={!isNight && game.phase !== "lobby"} />

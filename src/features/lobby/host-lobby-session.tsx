@@ -12,6 +12,7 @@ import { HostWinConditionSuggestion } from "@/features/game-state/host-win-condi
 import { HostlessAutopilotRunner } from "@/features/game-state/hostless-autopilot-runner";
 import { HostlessTableControls } from "@/features/game-state/hostless-table-controls";
 import { HostAnnouncementSounds } from "@/features/game-state/announcement-sounds";
+import { PlayerGameView } from "@/features/game-state/player-game-view";
 import { HostlessTableView } from "@/features/game-state/hostless-table-view";
 import { useMirrorMayorReveals } from "@/features/game-state/use-mayor-reveals";
 import { useMirrorMafiaTeam } from "@/features/mafia/use-mirror-mafia-team";
@@ -163,6 +164,44 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
     );
     const controlPanel = <HostGameControlPanel gameId={gameId} game={game} />;
 
+    const engine = (
+        <>
+            <MayorRevealMirror gameId={gameId} hostUid={hostUid} />
+            <HostAnnouncementSounds gameId={gameId} game={game} />
+            <HostlessAutopilotRunner gameId={gameId} hostUid={hostUid} game={game} players={lobby.players} />
+            {nightConsole}
+            {game.phase !== "night" && votingPanel}
+            {nightWorkspace}
+        </>
+    );
+    const hostPlayer = lobby.players[hostUid];
+
+    // Só celulares: quem criou a sala joga como os outros; o motor roda escondido e os
+    // controles da mesa ficam guardados para emergências.
+    if (tableOnly && game.playMode === "host-player" && hostPlayer) {
+        return (
+            <div className="grid w-full max-w-xl min-w-0 gap-4 px-5 py-8">
+                <PlayerGameView
+                    gameId={gameId}
+                    code={sessionState.session.code}
+                    game={game}
+                    alive={hostPlayer.alive}
+                    players={lobby.players}
+                    viewerUid={hostUid}
+                />
+                <details className="rounded-2xl border border-white/10 bg-black/20 p-3">
+                    <summary className="cursor-pointer text-sm font-semibold text-[#d7d0c4]">Controles de emergência</summary>
+                    <div className="mt-3">
+                        <HostlessTableControls gameId={gameId} game={game} />
+                    </div>
+                </details>
+                <div hidden aria-hidden="true">
+                    {engine}
+                </div>
+            </div>
+        );
+    }
+
     if (tableOnly) {
         return (
             <div className="grid min-w-0 w-full">
@@ -172,16 +211,7 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                     game={game}
                     players={lobby.players}
                     controls={<HostlessTableControls gameId={gameId} game={game} />}
-                    engine={
-                        <>
-                            <MayorRevealMirror gameId={gameId} hostUid={hostUid} />
-                            <HostAnnouncementSounds gameId={gameId} game={game} />
-                            <HostlessAutopilotRunner gameId={gameId} hostUid={hostUid} game={game} players={lobby.players} />
-                            {nightConsole}
-                            {game.phase !== "night" && votingPanel}
-                            {nightWorkspace}
-                        </>
-                    }
+                    engine={engine}
                 />
             </div>
         );
@@ -206,7 +236,15 @@ export function HostLobbySession({ roomCode }: HostLobbySessionProps) {
                                 gameId={gameId}
                                 playerCount={playerCount}
                                 editable
-                                playModeSelector={<PlayModeSelector gameId={gameId} playMode={game.playMode ?? "hosted"} gamePace={game.gamePace ?? "relaxed"} />}
+                                playModeSelector={
+                                    <PlayModeSelector
+                                        gameId={gameId}
+                                        playMode={game.playMode ?? "hosted"}
+                                        gamePace={game.gamePace ?? "relaxed"}
+                                        code={sessionState.session.code}
+                                        hostJoined={Boolean(lobby.players[hostUid])}
+                                    />
+                                }
                             />
                         </>
                     ) : (

@@ -1,25 +1,32 @@
 "use client";
 
-import { ChessQueen, Smartphone, type LucideIcon } from "lucide-react";
-import { useState } from "react";
+import { ChessQueen, Monitor, Smartphone, type LucideIcon } from "lucide-react";
+import { useState, type FormEvent } from "react";
 
 import { firebasePaths } from "@/lib/firebase/paths";
 import { applyAtomicUpdate } from "@/lib/firebase/realtime-database-repository";
 import { GameSettingsButton } from "@/features/game-variants/game-settings-button";
 import { GAME_PACE_LABELS } from "@/features/game-state/hostless-autopilot";
+import { PLAYER_NAME_MAX_LENGTH } from "@/lib/utils/player-name";
 import { GAME_PACES, type GamePace, type GamePlayMode } from "@/lib/firebase/schema";
 
 const OPTIONS: readonly { mode: GamePlayMode; title: string; description: string; icon: LucideIcon }[] = [
   {
     mode: "hosted",
-    title: "Com mestre",
+    title: "Mestre narrador",
     description: "Alguém conduz pelo computador e vê as roles.",
     icon: ChessQueen,
   },
   {
     mode: "hostless",
-    title: "Sem mestre",
-    description: "O computador é só a mesa. Tudo se resolve pelos celulares.",
+    title: "Computador na mesa",
+    description: "Sem mestre: o computador é só a mesa. Tudo se resolve pelos celulares.",
+    icon: Monitor,
+  },
+  {
+    mode: "host-player",
+    title: "Só celulares",
+    description: "Sem mestre e sem computador: quem criou a sala também joga e guarda os controles de emergência.",
     icon: Smartphone,
   },
 ];
@@ -28,10 +35,13 @@ interface PlayModeSelectorProps {
   gameId: string;
   playMode: GamePlayMode;
   gamePace: GamePace;
+  code: string;
+  /** Só celulares: quem criou a sala já entrou como jogador. */
+  hostJoined: boolean;
 }
 
 /** Escolha do modo de jogo, só no lobby (a regra do RTDB trava o modo depois do início). */
-export function PlayModeSelector({ gameId, playMode, gamePace }: PlayModeSelectorProps) {
+export function PlayModeSelector({ gameId, playMode, gamePace, code, hostJoined }: PlayModeSelectorProps) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
 
@@ -42,6 +52,26 @@ export function PlayModeSelector({ gameId, playMode, gamePace }: PlayModeSelecto
     applyAtomicUpdate({ [firebasePaths.gamePublicField(gameId, field)]: value })
       .catch(() => setError(true))
       .finally(() => setSaving(false));
+  };
+  const [nickname, setNickname] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [joinError, setJoinError] = useState<string | null>(null);
+
+  // O celular que criou a sala entra como jogador com o mesmo uid de mestre.
+  const joinAsPlayer = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (joining) return;
+    setJoining(true);
+    setJoinError(null);
+    try {
+      const { joinGame } = await import("./join-game");
+      await joinGame({ code, nickname, experience: "experienced" });
+    } catch (error: unknown) {
+      const { getJoinGameErrorMessage } = await import("./join-game-error");
+      setJoinError(getJoinGameErrorMessage(error));
+    } finally {
+      setJoining(false);
+    }
   };
   const select = (mode: GamePlayMode) => {
     if (mode !== playMode) save("playMode", mode);
@@ -88,7 +118,29 @@ export function PlayModeSelector({ gameId, playMode, gamePace }: PlayModeSelecto
           );
         })}
       </div>
-      {playMode === "hostless" && (
+      {playMode === "host-player" && !hostJoined && (
+        <form onSubmit={joinAsPlayer} className="mt-3 grid gap-1.5 border-t border-white/10 pt-3">
+          <label htmlFor="host-player-nickname" className="text-xs font-semibold text-[#d7d0c4]">
+            Seu nome na partida
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="host-player-nickname"
+              value={nickname}
+              onChange={(event) => setNickname(event.target.value)}
+              maxLength={PLAYER_NAME_MAX_LENGTH}
+              required
+              autoComplete="nickname"
+              className="min-h-10 min-w-0 flex-1 rounded-lg border border-white/15 bg-black/20 px-3 text-sm text-[#fffaf0] outline-none focus:border-[#d3b88c]"
+            />
+            <button type="submit" disabled={joining} className="btn-primary min-h-10 px-4 text-sm disabled:opacity-60">
+              Entrar
+            </button>
+          </div>
+          {joinError && <p role="alert" className="text-xs text-[#f0b9bd]">{joinError}</p>}
+        </form>
+      )}
+      {playMode !== "hosted" && (
         <div className="mt-3 grid gap-1.5 border-t border-white/10 pt-3">
           <h3 className="text-xs font-semibold text-[#d7d0c4]">Ritmo</h3>
           <div role="radiogroup" aria-label="Ritmo" className="grid grid-cols-3 rounded-full border border-white/10 bg-black/20 p-0.5">

@@ -139,7 +139,7 @@
             ".validate": "newData.isString() && (newData.val() === 'guilty' || newData.val() === 'innocent' || newData.val() === 'tie')"
           },
           "playMode": {
-            ".validate": "newData.isString() && (newData.val() === 'hosted' || newData.val() === 'hostless') && (newData.val() === data.val() || root.child('games').child($gameId).child('public').child('status').val() === 'lobby' || !root.child('games').child($gameId).child('public').exists())"
+            ".validate": "newData.isString() && (newData.val() === 'hosted' || newData.val() === 'hostless' || newData.val() === 'host-player') && (newData.val() === data.val() || root.child('games').child($gameId).child('public').child('status').val() === 'lobby' || !root.child('games').child($gameId).child('public').exists())"
           },
           "gamePace": {
             ".validate": "newData.isString() && (newData.val() === 'relaxed' || newData.val() === 'normal' || newData.val() === 'fast') && (newData.val() === data.val() || root.child('games').child($gameId).child('public').child('status').val() === 'lobby' || !root.child('games').child($gameId).child('public').exists())"

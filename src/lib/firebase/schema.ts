@@ -42,7 +42,7 @@ export interface GamePublicRecord {
   /** Role de cada jogador, publicada só quando a partida termina. */
   finalRoles?: Record<string, string>;
   gameEndedAt?: number;
-  /** "hostless": o computador vira só a mesa e o motor resolve tudo. Ausente equivale a "hosted". */
+  /** "hostless": o computador vira só a mesa e o motor resolve tudo; "host-player": igual, mas a mesa é o celular de quem criou a sala, que também joga. Ausente equivale a "hosted". */
   playMode?: GamePlayMode;
   /** Ritmo do modo sem mestre. Ausente equivale a "relaxed". */
   gamePace?: GamePace;
@@ -51,11 +51,11 @@ export interface GamePublicRecord {
 export const GAME_PACES = ["relaxed", "normal", "fast"] as const;
 export type GamePace = (typeof GAME_PACES)[number];
 
-export const GAME_PLAY_MODES = ["hosted", "hostless"] as const;
+export const GAME_PLAY_MODES = ["hosted", "hostless", "host-player"] as const;
 export type GamePlayMode = (typeof GAME_PLAY_MODES)[number];
 
 export function isHostlessGame(game: Pick<GamePublicRecord, "playMode">): boolean {
-  return game.playMode === "hostless";
+  return game.playMode === "hostless" || game.playMode === "host-player";
 }
 
 export interface GameSettingsRecord {
